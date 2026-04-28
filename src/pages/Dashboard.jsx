@@ -6,8 +6,11 @@ import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import DesaOverview from "@/components/dashboard/DesaOverview";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+import { useAppConfig } from "@/lib/AppConfigContext";
 
 export default function Dashboard() {
+  const { config } = useAppConfig();
+  const pt = config.page_titles || {};
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
 
@@ -33,8 +36,8 @@ export default function Dashboard() {
     <div className="space-y-6 pb-20 md:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Ringkasan data daerah</p>
+          <h1 className="text-2xl font-bold text-foreground">{pt.dashboard || "Dashboard"}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{pt.dashboard_subtitle || "Ringkasan data daerah"}</p>
         </div>
         <Select value={selectedYear} onValueChange={setSelectedYear}>
           <SelectTrigger className="w-32">

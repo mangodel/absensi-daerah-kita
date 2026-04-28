@@ -27,10 +27,18 @@ export default function Sidebar() {
     )}>
       <div className="p-4 border-b border-border flex items-center justify-between">
         {!collapsed && (
-          <div>
-            <h1 className="text-lg font-bold text-primary tracking-tight">{config.org_name}</h1>
-            <p className="text-[11px] text-muted-foreground font-medium">{config.org_subtitle}</p>
+          <div className="flex items-center gap-2 min-w-0">
+            {config.logo_url && (
+              <img src={config.logo_url} alt="Logo" className="w-8 h-8 object-contain shrink-0 rounded" />
+            )}
+            <div className="min-w-0">
+              <h1 className="text-base font-bold text-primary tracking-tight truncate">{config.org_name}</h1>
+              <p className="text-[11px] text-muted-foreground font-medium truncate">{config.org_subtitle}</p>
+            </div>
           </div>
+        )}
+        {collapsed && config.logo_url && (
+          <img src={config.logo_url} alt="Logo" className="w-8 h-8 object-contain rounded mx-auto" />
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

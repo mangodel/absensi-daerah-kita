@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { DESA_KELOMPOK_MAP, DAPUKAN_LIST } from "@/lib/constants";
+import { useAppConfig } from "@/lib/AppConfigContext";
 import { Building2, Users, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Structure() {
+  const { config } = useAppConfig();
+  const pt = config.page_titles || {};
+  const desaKelompokMap = config.desa_kelompok_map || {};
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => base44.entities.Member.list(),
@@ -17,9 +20,9 @@ export default function Structure() {
     <div className="space-y-6 pb-20 md:pb-0">
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Building2 className="w-6 h-6 text-primary" /> Struktur Organisasi
+          <Building2 className="w-6 h-6 text-primary" /> {pt.structure || "Struktur Organisasi"}
         </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Daerah → Desa → Kelompok</p>
+        <p className="text-sm text-muted-foreground mt-0.5">{pt.structure_subtitle || "Daerah → Desa → Kelompok"}</p>
       </div>
 
       {/* Daerah Level */}
@@ -42,14 +45,14 @@ export default function Structure() {
       </div>
 
       {/* Desa Level */}
-      <Tabs defaultValue="Desa 1">
+      <Tabs defaultValue={Object.keys(desaKelompokMap)[0] || ""}>
         <TabsList>
-          {Object.keys(DESA_KELOMPOK_MAP).map(desa => (
+          {Object.keys(desaKelompokMap).map(desa => (
             <TabsTrigger key={desa} value={desa}>{desa}</TabsTrigger>
           ))}
         </TabsList>
 
-        {Object.entries(DESA_KELOMPOK_MAP).map(([desa, kelompoks]) => {
+        {Object.entries(desaKelompokMap).map(([desa, kelompoks]) => {
           const desaLeaders = members.filter(m => m.desa === desa && m.dapukan_level === "Desa" && m.dapukan !== "Anggota");
 
           return (

@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 export default function Members() {
   const { config } = useAppConfig();
+  const pt = config.page_titles || {};
   const desaList = config.desa_list || [];
   const kelompokList = config.kelompok_list || [];
   const [formOpen, setFormOpen] = useState(false);
@@ -64,8 +65,8 @@ export default function Members() {
     <div className="space-y-6 pb-20 md:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Data Anggota</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{members.length} anggota terdaftar</p>
+          <h1 className="text-2xl font-bold text-foreground">{pt.members || "Data Anggota"}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{members.length} {pt.members_subtitle || "anggota terdaftar"}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setCsvOpen(true)}>

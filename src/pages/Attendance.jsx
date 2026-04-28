@@ -32,6 +32,7 @@ export default function Attendance() {
   const [viewMonth, setViewMonth] = useState(String(currentMonth));
 
   const { config } = useAppConfig();
+  const pt = config.page_titles || {};
   const desaList = config.desa_list || [];
   const kelompokList = config.kelompok_list || [];
 
@@ -129,9 +130,9 @@ export default function Attendance() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <CalendarCheck className="w-6 h-6 text-primary" /> Absensi
+            <CalendarCheck className="w-6 h-6 text-primary" /> {pt.attendance || "Absensi"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Kelola kehadiran anggota per kegiatan</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{pt.attendance_subtitle || "Kelola kehadiran anggota per kegiatan"}</p>
         </div>
       </div>
 

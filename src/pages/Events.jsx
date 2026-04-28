@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, CalendarDays } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DESA_LIST, DESA_KELOMPOK_MAP, EVENT_LEVEL_LIST, MONTHS } from "@/lib/constants";
+import { EVENT_LEVEL_LIST } from "@/lib/constants";
+import { useAppConfig } from "@/lib/AppConfigContext";
 import EventFormDialog from "@/components/events/EventFormDialog";
 import EventList from "@/components/events/EventList";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,8 @@ export default function Events() {
   const [filterDesa, setFilterDesa] = useState("all");
   const [filterKelompok, setFilterKelompok] = useState("all");
   const navigate = useNavigate();
+  const { config } = useAppConfig();
+  const pt = config.page_titles || {};
 
   const queryClient = useQueryClient();
 
@@ -50,7 +53,7 @@ export default function Events() {
     navigate(`/attendance?event_id=${event.id}`);
   };
 
-  const kelompokOptions = filterDesa !== "all" ? DESA_KELOMPOK_MAP[filterDesa] || [] : [];
+  const kelompokOptions = filterDesa !== "all" ? (config.desa_kelompok_map || {})[filterDesa] || [] : [];
 
   const filtered = events.filter(e => {
     const matchLevel = filterLevel === "all" || e.level === filterLevel;
@@ -71,9 +74,9 @@ export default function Events() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <CalendarDays className="w-6 h-6 text-primary" /> Daftar Kegiatan
+            <CalendarDays className="w-6 h-6 text-primary" /> {pt.events || "Daftar Kegiatan"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{events.length} kegiatan terdaftar</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{events.length} {pt.events_subtitle || "kegiatan terdaftar"}</p>
         </div>
         <Button onClick={() => { setEditEvent(null); setFormOpen(true); }}>
           <Plus className="w-4 h-4 mr-2" /> Tambah Kegiatan
@@ -93,7 +96,7 @@ export default function Events() {
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Desa</SelectItem>
-            {DESA_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+            {(config.desa_list || []).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
           </SelectContent>
         </Select>
         {filterDesa !== "all" && (

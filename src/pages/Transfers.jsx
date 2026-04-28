@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRightLeft, ArrowRight, Plus } from "lucide-react";
-import { DESA_LIST, DESA_KELOMPOK_MAP } from "@/lib/constants";
+import { useAppConfig } from "@/lib/AppConfigContext";
 import { format } from "date-fns";
 
 export default function Transfers() {
@@ -19,6 +19,8 @@ export default function Transfers() {
   const [toKelompok, setToKelompok] = useState("");
   const [reason, setReason] = useState("");
 
+  const { config } = useAppConfig();
+  const pt = config.page_titles || {};
   const queryClient = useQueryClient();
 
   const { data: members = [] } = useQuery({
@@ -31,7 +33,7 @@ export default function Transfers() {
     queryFn: () => base44.entities.TransferHistory.list("-created_date"),
   });
 
-  const toKelompokOptions = toDesa ? DESA_KELOMPOK_MAP[toDesa] || [] : [];
+  const toKelompokOptions = toDesa ? (config.desa_kelompok_map || {})[toDesa] || [] : [];
   const member = members.find(m => m.id === selectedMember);
 
   const handleTransfer = async () => {
@@ -64,9 +66,9 @@ export default function Transfers() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <ArrowRightLeft className="w-6 h-6 text-primary" /> Pindah Kelompok
+            <ArrowRightLeft className="w-6 h-6 text-primary" /> {pt.transfers || "Pindah Kelompok"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Tracking perpindahan anggota lintas desa/kelompok</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{pt.transfers_subtitle || "Tracking perpindahan anggota lintas desa/kelompok"}</p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="w-4 h-4 mr-2" /> Pindahkan Anggota
@@ -154,7 +156,7 @@ export default function Transfers() {
               <Select value={toDesa} onValueChange={v => { setToDesa(v); setToKelompok(""); }}>
                 <SelectTrigger><SelectValue placeholder="Pilih Desa" /></SelectTrigger>
                 <SelectContent>
-                  {DESA_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  {(config.desa_list || []).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
