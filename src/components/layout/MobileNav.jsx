@@ -1,12 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2 } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
   { label: "Anggota", icon: Users, path: "/members" },
+  { label: "Kegiatan", icon: CalendarDays, path: "/events" },
   { label: "Absensi", icon: CalendarCheck, path: "/attendance" },
-  { label: "Pindah", icon: ArrowRightLeft, path: "/transfers" },
   { label: "Struktur", icon: Building2, path: "/structure" },
 ];
 

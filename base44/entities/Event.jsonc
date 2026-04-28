@@ -1,0 +1,53 @@
+{
+  "name": "Event",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nama kegiatan/event"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "Daerah",
+        "Desa",
+        "Kelompok"
+      ],
+      "description": "Tingkat event"
+    },
+    "desa": {
+      "type": "string",
+      "description": "Desa penyelenggara (untuk level Desa/Kelompok)"
+    },
+    "kelompok": {
+      "type": "string",
+      "description": "Kelompok penyelenggara (untuk level Kelompok)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal kegiatan"
+    },
+    "month": {
+      "type": "number",
+      "description": "Bulan (1-12)"
+    },
+    "year": {
+      "type": "number",
+      "description": "Tahun"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi kegiatan"
+    },
+    "location": {
+      "type": "string",
+      "description": "Lokasi kegiatan"
+    }
+  },
+  "required": [
+    "name",
+    "level",
+    "date"
+  ]
+}

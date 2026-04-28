@@ -11,6 +11,7 @@ import Members from '@/pages/Members';
 import Attendance from '@/pages/Attendance';
 import Transfers from '@/pages/Transfers';
 import Structure from '@/pages/Structure';
+import Events from '@/pages/Events';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
         <Route path="/attendance" element={<Attendance />} />
         <Route path="/transfers" element={<Transfers />} />
         <Route path="/structure" element={<Structure />} />
+        <Route path="/events" element={<Events />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

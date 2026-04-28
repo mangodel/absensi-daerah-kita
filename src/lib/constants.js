@@ -20,6 +20,8 @@ export const EMPLOYMENT_LIST = ["Bekerja", "Tidak Bekerja", "Retired"];
 export const ATTENDANCE_STATUS_LIST = ["Hadir", "Izin Sekolah", "Izin Kerja", "Alpa"];
 export const MEMBER_STATUS_LIST = ["Aktif", "Tidak Aktif"];
 
+export const EVENT_LEVEL_LIST = ["Daerah", "Desa", "Kelompok"];
+
 export const MONTHS = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember"

@@ -40,6 +40,18 @@
     "year": {
       "type": "number",
       "description": "Tahun"
+    },
+    "event_id": {
+      "type": "string",
+      "description": "ID event terkait"
+    },
+    "event_name": {
+      "type": "string",
+      "description": "Nama event terkait"
+    },
+    "event_level": {
+      "type": "string",
+      "description": "Level event (Daerah/Desa/Kelompok)"
     }
   },
   "required": [

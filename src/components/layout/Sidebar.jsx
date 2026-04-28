@@ -1,11 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
   { label: "Anggota", icon: Users, path: "/members" },
+  { label: "Kegiatan", icon: CalendarDays, path: "/events" },
   { label: "Absensi", icon: CalendarCheck, path: "/attendance" },
   { label: "Pindah Kelompok", icon: ArrowRightLeft, path: "/transfers" },
   { label: "Struktur Organisasi", icon: Building2, path: "/structure" },
