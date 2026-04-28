@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { DESA_LIST, DESA_KELOMPOK_MAP } from "@/lib/constants";
+import { useAppConfig } from "@/lib/AppConfigContext";
 
 export default function CsvUploadDialog({ open, onOpenChange, onComplete }) {
   const [file, setFile] = useState(null);
@@ -15,7 +15,10 @@ export default function CsvUploadDialog({ open, onOpenChange, onComplete }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const kelompokOptions = desa ? DESA_KELOMPOK_MAP[desa] || [] : [];
+  const { config } = useAppConfig();
+  const desaList = config.desa_list || [];
+  const desaKelompokMap = config.desa_kelompok_map || {};
+  const kelompokOptions = desa ? desaKelompokMap[desa] || [] : [];
 
   const handleUpload = async () => {
     if (!file || !desa || !kelompok) return;
@@ -96,7 +99,7 @@ export default function CsvUploadDialog({ open, onOpenChange, onComplete }) {
             <Select value={desa} onValueChange={v => { setDesa(v); setKelompok(""); }}>
               <SelectTrigger><SelectValue placeholder="Pilih Desa" /></SelectTrigger>
               <SelectContent>
-                {DESA_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

@@ -1,7 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useAppConfig } from "@/lib/AppConfigContext";
+import { useAuth } from "@/lib/AuthContext";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
@@ -15,6 +17,8 @@ const navItems = [
 export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { config } = useAppConfig();
+  const { user } = useAuth();
 
   return (
     <aside className={cn(
@@ -24,8 +28,8 @@ export default function Sidebar() {
       <div className="p-4 border-b border-border flex items-center justify-between">
         {!collapsed && (
           <div>
-            <h1 className="text-lg font-bold text-primary tracking-tight">Attendance</h1>
-            <p className="text-[11px] text-muted-foreground font-medium">Sistem Absensi Daerah</p>
+            <h1 className="text-lg font-bold text-primary tracking-tight">{config.org_name}</h1>
+            <p className="text-[11px] text-muted-foreground font-medium">{config.org_subtitle}</p>
           </div>
         )}
         <button
@@ -57,10 +61,24 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className={cn("p-4 border-t border-border", collapsed && "px-2")}>
+      <div className={cn("p-3 border-t border-border space-y-1", collapsed && "px-2")}>
+        {user?.role === "admin" && (
+          <Link
+            to="/settings"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+              location.pathname === "/settings"
+                ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            )}
+          >
+            <Settings className="w-[18px] h-[18px] shrink-0" />
+            {!collapsed && <span>Pengaturan</span>}
+          </Link>
+        )}
         {!collapsed && (
-          <div className="text-[11px] text-muted-foreground text-center">
-            © 2026 Attendance System
+          <div className="text-[11px] text-muted-foreground text-center pt-1">
+            © 2026 {config.org_name}
           </div>
         )}
       </div>

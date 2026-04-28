@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, CalendarDays } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, Building2, CalendarDays, Settings } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+const baseNavItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
   { label: "Anggota", icon: Users, path: "/members" },
   { label: "Kegiatan", icon: CalendarDays, path: "/events" },
@@ -12,6 +13,11 @@ const navItems = [
 
 export default function MobileNav() {
   const location = useLocation();
+  const { user } = useAuth();
+
+  const navItems = user?.role === "admin"
+    ? [...baseNavItems, { label: "Pengaturan", icon: Settings, path: "/settings" }]
+    : baseNavItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 px-2 py-1 safe-area-pb">

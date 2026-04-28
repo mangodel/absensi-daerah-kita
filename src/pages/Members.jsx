@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Upload, Search } from "lucide-react";
-import { DESA_LIST, KELOMPOK_LIST } from "@/lib/constants";
+import { useAppConfig } from "@/lib/AppConfigContext";
 import MemberFormDialog from "@/components/members/MemberFormDialog";
 import CsvUploadDialog from "@/components/members/CsvUploadDialog";
 import MemberTable from "@/components/members/MemberTable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Members() {
+  const { config } = useAppConfig();
+  const desaList = config.desa_list || [];
+  const kelompokList = config.kelompok_list || [];
   const [formOpen, setFormOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [editMember, setEditMember] = useState(null);
@@ -83,14 +86,14 @@ export default function Members() {
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Desa</SelectItem>
-            {DESA_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+            {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterKelompok} onValueChange={setFilterKelompok}>
           <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Kelompok</SelectItem>
-            {KELOMPOK_LIST.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+            {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

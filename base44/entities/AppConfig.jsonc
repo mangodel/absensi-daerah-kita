@@ -1,0 +1,22 @@
+{
+  "name": "AppConfig",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Config key (e.g. 'org_name', 'desa_list', 'kelompok_list', 'desa_kelompok_map')"
+    },
+    "value": {
+      "type": "string",
+      "description": "Config value (string or JSON string for arrays/objects)"
+    },
+    "label": {
+      "type": "string",
+      "description": "Label untuk ditampilkan di UI"
+    }
+  },
+  "required": [
+    "key",
+    "value"
+  ]
+}

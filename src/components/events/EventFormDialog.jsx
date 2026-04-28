@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DESA_LIST, DESA_KELOMPOK_MAP, EVENT_LEVEL_LIST } from "@/lib/constants";
+import { EVENT_LEVEL_LIST } from "@/lib/constants";
+import { useAppConfig } from "@/lib/AppConfigContext";
 
 const empty = {
   name: "", level: "Kelompok", desa: "", kelompok: "",
@@ -12,6 +13,10 @@ const empty = {
 };
 
 export default function EventFormDialog({ open, onOpenChange, event, onSave }) {
+  const { config } = useAppConfig();
+  const desaList = config.desa_list || [];
+  const desaKelompokMap = config.desa_kelompok_map || {};
+
   const [form, setForm] = useState(empty);
   const isEdit = !!event;
 
@@ -20,7 +25,7 @@ export default function EventFormDialog({ open, onOpenChange, event, onSave }) {
     else setForm(empty);
   }, [event, open]);
 
-  const kelompokOptions = form.desa ? DESA_KELOMPOK_MAP[form.desa] || [] : [];
+  const kelompokOptions = form.desa ? desaKelompokMap[form.desa] || [] : [];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -62,7 +67,7 @@ export default function EventFormDialog({ open, onOpenChange, event, onSave }) {
               <Select value={form.desa} onValueChange={v => setForm({ ...form, desa: v, kelompok: "" })}>
                 <SelectTrigger><SelectValue placeholder="Pilih Desa" /></SelectTrigger>
                 <SelectContent>
-                  {DESA_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DESA_LIST, DESA_KELOMPOK_MAP, DAPUKAN_LIST, DAPUKAN_LEVEL_LIST, BIRTHPLACE_LIST, VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, EMPLOYMENT_LIST, MEMBER_STATUS_LIST } from "@/lib/constants";
+import { DAPUKAN_LIST, DAPUKAN_LEVEL_LIST, BIRTHPLACE_LIST, VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, EMPLOYMENT_LIST, MEMBER_STATUS_LIST } from "@/lib/constants";
+import { useAppConfig } from "@/lib/AppConfigContext";
 
 const emptyMember = {
   full_name: "", desa: "", kelompok: "", birth_year: "",
@@ -13,6 +14,10 @@ const emptyMember = {
 };
 
 export default function MemberFormDialog({ open, onOpenChange, member, onSave }) {
+  const { config } = useAppConfig();
+  const desaList = config.desa_list || [];
+  const desaKelompokMap = config.desa_kelompok_map || {};
+
   const [form, setForm] = useState(emptyMember);
   const isEdit = !!member;
 
@@ -24,7 +29,7 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
     }
   }, [member, open]);
 
-  const kelompokOptions = form.desa ? DESA_KELOMPOK_MAP[form.desa] || [] : [];
+  const kelompokOptions = form.desa ? desaKelompokMap[form.desa] || [] : [];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -57,7 +62,7 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
               <Select value={form.desa} onValueChange={v => setForm({ ...form, desa: v, kelompok: "" })}>
                 <SelectTrigger><SelectValue placeholder="Pilih Desa" /></SelectTrigger>
                 <SelectContent>
-                  {DESA_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                 </SelectContent>
               </Select>
             </Field>

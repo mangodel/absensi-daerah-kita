@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DESA_LIST, KELOMPOK_LIST, MONTHS } from "@/lib/constants";
+import { MONTHS } from "@/lib/constants";
+import { useAppConfig } from "@/lib/AppConfigContext";
 import { CalendarCheck, Save, Loader2, CalendarDays } from "lucide-react";
 import AttendanceTable from "@/components/attendance/AttendanceTable";
 import AttendanceHistory from "@/components/attendance/AttendanceHistory";
@@ -29,6 +30,10 @@ export default function Attendance() {
   const [saving, setSaving] = useState(false);
   const [viewYear, setViewYear] = useState(String(currentYear));
   const [viewMonth, setViewMonth] = useState(String(currentMonth));
+
+  const { config } = useAppConfig();
+  const desaList = config.desa_list || [];
+  const kelompokList = config.kelompok_list || [];
 
   const queryClient = useQueryClient();
 
@@ -182,14 +187,14 @@ export default function Attendance() {
                   <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Desa</SelectItem>
-                    {DESA_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={filterKelompok} onValueChange={setFilterKelompok}>
                   <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Kelompok</SelectItem>
-                    {KELOMPOK_LIST.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                    {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Button onClick={handleSave} disabled={saving || filledCount === 0} className="sm:ml-auto">

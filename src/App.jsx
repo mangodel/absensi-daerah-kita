@@ -12,6 +12,8 @@ import Attendance from '@/pages/Attendance';
 import Transfers from '@/pages/Transfers';
 import Structure from '@/pages/Structure';
 import Events from '@/pages/Events';
+import Settings from '@/pages/Settings';
+import { AppConfigProvider } from '@/lib/AppConfigContext';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -46,6 +48,7 @@ const AuthenticatedApp = () => {
         <Route path="/transfers" element={<Transfers />} />
         <Route path="/structure" element={<Structure />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
@@ -58,10 +61,12 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
+        <AppConfigProvider>
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </AppConfigProvider>
       </QueryClientProvider>
     </AuthProvider>
   )
