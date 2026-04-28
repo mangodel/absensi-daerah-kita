@@ -1,0 +1,50 @@
+{
+  "name": "Attendance",
+  "type": "object",
+  "properties": {
+    "member_id": {
+      "type": "string",
+      "description": "ID anggota"
+    },
+    "member_name": {
+      "type": "string",
+      "description": "Nama anggota"
+    },
+    "desa": {
+      "type": "string",
+      "description": "Desa saat absensi"
+    },
+    "kelompok": {
+      "type": "string",
+      "description": "Kelompok saat absensi"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal kegiatan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Hadir",
+        "Izin Sekolah",
+        "Izin Kerja",
+        "Alpa"
+      ],
+      "description": "Status kehadiran"
+    },
+    "month": {
+      "type": "number",
+      "description": "Bulan (1-12)"
+    },
+    "year": {
+      "type": "number",
+      "description": "Tahun"
+    }
+  },
+  "required": [
+    "member_id",
+    "date",
+    "status"
+  ]
+}

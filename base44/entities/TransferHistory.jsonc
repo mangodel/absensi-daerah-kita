@@ -1,0 +1,46 @@
+{
+  "name": "TransferHistory",
+  "type": "object",
+  "properties": {
+    "member_id": {
+      "type": "string",
+      "description": "ID anggota"
+    },
+    "member_name": {
+      "type": "string",
+      "description": "Nama anggota"
+    },
+    "from_desa": {
+      "type": "string",
+      "description": "Desa asal"
+    },
+    "from_kelompok": {
+      "type": "string",
+      "description": "Kelompok asal"
+    },
+    "to_desa": {
+      "type": "string",
+      "description": "Desa tujuan"
+    },
+    "to_kelompok": {
+      "type": "string",
+      "description": "Kelompok tujuan"
+    },
+    "transfer_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal pindah"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Alasan pindah"
+    }
+  },
+  "required": [
+    "member_id",
+    "from_desa",
+    "from_kelompok",
+    "to_desa",
+    "to_kelompok"
+  ]
+}

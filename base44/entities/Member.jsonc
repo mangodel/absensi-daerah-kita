@@ -1,0 +1,133 @@
+{
+  "name": "Member",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "Nama lengkap anggota"
+    },
+    "desa": {
+      "type": "string",
+      "enum": [
+        "Desa 1",
+        "Desa 2"
+      ],
+      "description": "Desa anggota"
+    },
+    "kelompok": {
+      "type": "string",
+      "enum": [
+        "Kelompok 1",
+        "Kelompok 2",
+        "Kelompok 3",
+        "Kelompok 4",
+        "Kelompok 5",
+        "Kelompok 6",
+        "Kelompok 7",
+        "Kelompok 8",
+        "Kelompok 9",
+        "Kelompok 10",
+        "Kelompok 11",
+        "Kelompok 12",
+        "Kelompok 13"
+      ],
+      "description": "Kelompok anggota"
+    },
+    "birth_year": {
+      "type": "number",
+      "description": "Tahun lahir"
+    },
+    "birthplace": {
+      "type": "string",
+      "enum": [
+        "Indonesia",
+        "Australia",
+        "New Zealand",
+        "Lainnya"
+      ],
+      "description": "Tempat kelahiran"
+    },
+    "visa_status": {
+      "type": "string",
+      "enum": [
+        "PR",
+        "Citizen",
+        "Student",
+        "Sponsor",
+        "Bridging",
+        "WHV",
+        "Tourist",
+        "Partner",
+        "Lainnya"
+      ],
+      "description": "Status visa"
+    },
+    "muballigh_status": {
+      "type": "string",
+      "enum": [
+        "Muballigh",
+        "Muballighot",
+        "Bukan Muballigh"
+      ],
+      "description": "Status Muballigh/Muballighot"
+    },
+    "employment": {
+      "type": "string",
+      "enum": [
+        "Bekerja",
+        "Tidak Bekerja",
+        "Retired"
+      ],
+      "description": "Jenis pekerjaan"
+    },
+    "dapukan": {
+      "type": "string",
+      "enum": [
+        "Anggota",
+        "Ki",
+        "Wakil",
+        "Penerobos",
+        "KU",
+        "PKU",
+        "Aghnia",
+        "Muballigh 4S",
+        "PJP",
+        "PJK"
+      ],
+      "default": "Anggota",
+      "description": "Dapukan/role"
+    },
+    "dapukan_level": {
+      "type": "string",
+      "enum": [
+        "Daerah",
+        "Desa",
+        "Kelompok"
+      ],
+      "default": "Kelompok",
+      "description": "Tingkat struktur dapukan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Aktif",
+        "Tidak Aktif"
+      ],
+      "default": "Aktif",
+      "description": "Status keanggotaan"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Nomor telepon"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan tambahan"
+    }
+  },
+  "required": [
+    "full_name",
+    "desa",
+    "kelompok"
+  ]
+}
