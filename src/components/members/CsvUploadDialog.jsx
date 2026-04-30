@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { base44 } from "@/api/base44Client"; // used for bulkCreate
 import { useAppConfig } from "@/lib/AppConfigContext";
 
 export default function CsvUploadDialog({ open, onOpenChange, onComplete }) {
@@ -44,52 +44,19 @@ export default function CsvUploadDialog({ open, onOpenChange, onComplete }) {
     setLoading(true);
     setResult(null);
 
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
-    // Try ExtractDataFromUploadedFile first
-    let extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-      file_url,
-      json_schema: {
-        type: "object",
-        properties: {
-          members: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                full_name: { type: "string" },
-                birth_year: { type: "number" },
-                birthplace: { type: "string" },
-                visa_status: { type: "string" },
-                muballigh_status: { type: "string" },
-                employment: { type: "string" },
-                phone: { type: "string" },
-                dapukan: { type: "string" },
-              }
-            }
-          }
-        }
-      }
-    });
-
-    let membersRaw = extracted.status === "success" ? extracted.output?.members : null;
-
-    // Fallback: parse CSV manually from file
-    if (!membersRaw || membersRaw.length === 0) {
-      const text = await file.text();
-      const rows = parseCsvManually(text);
-      // Map common column name variants
-      membersRaw = rows.map(r => ({
-        full_name: r.full_name || r.nama || r.name || r["nama lengkap"] || "",
-        birth_year: r.birth_year ? Number(r.birth_year) : (r["tahun lahir"] ? Number(r["tahun lahir"]) : undefined),
-        birthplace: r.birthplace || r["tempat lahir"] || "",
-        visa_status: r.visa_status || r.visa || "",
-        muballigh_status: r.muballigh_status || r.muballigh || "",
-        employment: r.employment || r.pekerjaan || "",
-        phone: r.phone || r.telepon || r.hp || r.handphone || "",
-        dapukan: r.dapukan || "",
-      })).filter(m => m.full_name);
-    }
+    // Parse CSV manually directly from file (most reliable approach)
+    const text = await file.text();
+    const rows = parseCsvManually(text);
+    const membersRaw = rows.map(r => ({
+      full_name: r.full_name || r.nama || r.name || r["nama lengkap"] || "",
+      birth_year: r.birth_year ? Number(r.birth_year) : (r["tahun lahir"] ? Number(r["tahun lahir"]) : undefined),
+      birthplace: r.birthplace || r["tempat lahir"] || "",
+      visa_status: r.visa_status || r.visa || "",
+      muballigh_status: r.muballigh_status || r.muballigh || "",
+      employment: r.employment || r.pekerjaan || "",
+      phone: r.phone || r.telepon || r.hp || r.handphone || "",
+      dapukan: r.dapukan || "",
+    })).filter(m => m.full_name);
 
     if (membersRaw && membersRaw.length > 0) {
       const membersData = membersRaw.map(m => ({
