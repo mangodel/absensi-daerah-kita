@@ -22,6 +22,7 @@ export default function MemberTable({ members, onEdit, onDelete }) {
               <TableHead className="font-semibold text-xs">Desa</TableHead>
               <TableHead className="font-semibold text-xs">Kelompok</TableHead>
               <TableHead className="font-semibold text-xs">Dapukan</TableHead>
+              <TableHead className="font-semibold text-xs">Telepon</TableHead>
               <TableHead className="font-semibold text-xs">Visa</TableHead>
               <TableHead className="font-semibold text-xs">Status</TableHead>
               <TableHead className="font-semibold text-xs text-right">Aksi</TableHead>
@@ -34,12 +35,17 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                 <TableCell className="text-sm text-muted-foreground">{member.desa}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.kelompok}</TableCell>
                 <TableCell>
-                  {member.dapukan && member.dapukan !== "Anggota" && (
+                  {member.dapukan && member.dapukan !== "Anggota" ? (
                     <Badge variant="secondary" className="text-xs">{member.dapukan}</Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Jamaah</span>
                   )}
-                  {(!member.dapukan || member.dapukan === "Anggota") && (
-                    <span className="text-xs text-muted-foreground">Anggota</span>
-                  )}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {member.dapukan && member.dapukan !== "Anggota" && member.phone
+                    ? <a href={`tel:${member.phone}`} className="text-primary hover:underline">{member.phone}</a>
+                    : <span className="text-muted-foreground">-</span>
+                  }
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">{member.visa_status || "-"}</TableCell>
                 <TableCell>

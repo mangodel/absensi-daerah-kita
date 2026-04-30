@@ -76,6 +76,37 @@ export default function Structure() {
                 )}
               </div>
 
+              {/* Desa Summary */}
+              {(() => {
+                const desaMembers = members.filter(m => m.desa === desa);
+                const desaActive = desaMembers.filter(m => m.status === "Aktif").length;
+                return (
+                  <div className="bg-primary/5 border border-primary/15 rounded-2xl p-4 flex flex-wrap gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-primary">{desaMembers.length}</div>
+                      <div className="text-xs text-muted-foreground">Total Jamaah</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-accent">{desaActive}</div>
+                      <div className="text-xs text-muted-foreground">Aktif</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-destructive">{desaMembers.length - desaActive}</div>
+                      <div className="text-xs text-muted-foreground">Tidak Aktif</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-foreground">{kelompoks.length}</div>
+                      <div className="text-xs text-muted-foreground">Kelompok</div>
+                    </div>
+                    <div className="ml-auto flex flex-wrap gap-1 items-center">
+                      {kelompoks.map(k => (
+                        <Badge key={k} variant="outline" className="text-[10px] bg-background">{k}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Kelompok Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {kelompoks.map(kelompok => {
@@ -86,7 +117,10 @@ export default function Structure() {
                   return (
                     <div key={kelompok} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-sm">{kelompok}</h4>
+                        <div>
+                          <h4 className="font-semibold text-sm">{kelompok}</h4>
+                          <p className="text-[10px] text-muted-foreground">{desa}</p>
+                        </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Users className="w-3.5 h-3.5" />
                           <span>{active}/{kelompokMembers.length}</span>
@@ -105,11 +139,13 @@ export default function Structure() {
                       )}
 
                       <div className="flex gap-2 text-[10px]">
-                        {kelompokMembers.length > 0 && (
+                        {kelompokMembers.length > 0 ? (
                           <>
                             <Badge variant="outline" className="bg-accent/5 text-accent border-accent/20">{active} aktif</Badge>
                             <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20">{kelompokMembers.length - active} tidak aktif</Badge>
                           </>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">Belum ada jamaah</span>
                         )}
                       </div>
                     </div>

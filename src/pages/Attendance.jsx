@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MONTHS } from "@/lib/constants";
+import { MONTHS, VISA_STATUS_LIST, DAPUKAN_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { CalendarCheck, Save, Loader2, CalendarDays } from "lucide-react";
 import AttendanceTable from "@/components/attendance/AttendanceTable";
@@ -26,6 +26,8 @@ export default function Attendance() {
   const [selectedEventId, setSelectedEventId] = useState("none");
   const [filterDesa, setFilterDesa] = useState("all");
   const [filterKelompok, setFilterKelompok] = useState("all");
+  const [filterVisa, setFilterVisa] = useState("all");
+  const [filterDapukan, setFilterDapukan] = useState("all");
   const [attendanceData, setAttendanceData] = useState({});
   const [saving, setSaving] = useState(false);
   const [viewYear, setViewYear] = useState(String(currentYear));
@@ -82,7 +84,9 @@ export default function Attendance() {
   const filteredMembers = activeMembers.filter(m => {
     const matchDesa = filterDesa === "all" || m.desa === filterDesa;
     const matchKelompok = filterKelompok === "all" || m.kelompok === filterKelompok;
-    return matchDesa && matchKelompok;
+    const matchVisa = filterVisa === "all" || m.visa_status === filterVisa;
+    const matchDapukan = filterDapukan === "all" || m.dapukan === filterDapukan;
+    return matchDesa && matchKelompok && matchVisa && matchDapukan;
   });
 
   const handleStatusChange = (memberId, status) => {
@@ -183,22 +187,36 @@ export default function Attendance() {
           {selectedEventId !== "none" && selectedEvent && (
             <>
               {/* Filter anggota */}
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Select value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }}>
-                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Desa</SelectItem>
                     {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select value={filterKelompok} onValueChange={setFilterKelompok}>
-                  <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Kelompok</SelectItem>
                     {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <Button onClick={handleSave} disabled={saving || filledCount === 0} className="sm:ml-auto">
+                <Select value={filterVisa} onValueChange={setFilterVisa}>
+                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Visa</SelectItem>
+                    {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filterDapukan} onValueChange={setFilterDapukan}>
+                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Dapukan</SelectItem>
+                    {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleSave} disabled={saving || filledCount === 0} className="ml-auto">
                   {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Simpan ({filledCount})
                 </Button>
