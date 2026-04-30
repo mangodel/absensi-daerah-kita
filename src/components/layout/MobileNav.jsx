@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 const baseNavItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { label: "Anggota", icon: Users, path: "/members" },
+  { label: "Jamaah", icon: Users, path: "/members" },
   { label: "Kegiatan", icon: CalendarDays, path: "/events" },
   { label: "Absensi", icon: CalendarCheck, path: "/attendance" },
   { label: "Struktur", icon: Building2, path: "/structure" },

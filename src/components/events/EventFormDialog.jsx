@@ -12,7 +12,7 @@ const empty = {
   date: "", description: "", location: ""
 };
 
-export default function EventFormDialog({ open, onOpenChange, event, onSave }) {
+export default function EventFormDialog({ open, onOpenChange, event, prefilledDate, onSave }) {
   const { config } = useAppConfig();
   const desaList = config.desa_list || [];
   const desaKelompokMap = config.desa_kelompok_map || {};
@@ -21,9 +21,15 @@ export default function EventFormDialog({ open, onOpenChange, event, onSave }) {
   const isEdit = !!event;
 
   useEffect(() => {
-    if (event) setForm({ ...empty, ...event });
-    else setForm(empty);
-  }, [event, open]);
+    if (event) {
+      setForm({ ...empty, ...event });
+    } else if (prefilledDate) {
+      const iso = `${prefilledDate.getFullYear()}-${String(prefilledDate.getMonth()+1).padStart(2,"0")}-${String(prefilledDate.getDate()).padStart(2,"0")}`;
+      setForm({ ...empty, date: iso });
+    } else {
+      setForm(empty);
+    }
+  }, [event, prefilledDate, open]);
 
   const kelompokOptions = form.desa ? desaKelompokMap[form.desa] || [] : [];
 

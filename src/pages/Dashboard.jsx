@@ -53,7 +53,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Anggota" value={members.length} icon={Users} color="primary" />
+        <StatCard title="Total Jamaah" value={members.length} icon={Users} color="primary" />
         <StatCard title="Aktif" value={activeMembers} icon={UserCheck} color="accent" />
         <StatCard title="Tidak Aktif" value={inactiveMembers} icon={UserX} color="destructive" />
         <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="warning" />

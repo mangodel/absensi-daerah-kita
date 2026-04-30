@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { label: "Anggota", icon: Users, path: "/members" },
+  { label: "Jamaah", icon: Users, path: "/members" },
   { label: "Kegiatan", icon: CalendarDays, path: "/events" },
   { label: "Absensi", icon: CalendarCheck, path: "/attendance" },
   { label: "Pindah Kelompok", icon: ArrowRightLeft, path: "/transfers" },

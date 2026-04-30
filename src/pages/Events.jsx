@@ -9,12 +9,15 @@ import { EVENT_LEVEL_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import EventFormDialog from "@/components/events/EventFormDialog";
 import EventList from "@/components/events/EventList";
+import EventCalendar from "@/components/events/EventCalendar";
 import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Events() {
   const [formOpen, setFormOpen] = useState(false);
   const [editEvent, setEditEvent] = useState(null);
   const [deleteEvent, setDeleteEvent] = useState(null);
+  const [prefilledDate, setPrefilledDate] = useState(null);
   const [filterLevel, setFilterLevel] = useState("all");
   const [filterDesa, setFilterDesa] = useState("all");
   const [filterKelompok, setFilterKelompok] = useState("all");
@@ -49,6 +52,15 @@ export default function Events() {
     else createMutation.mutate(data);
   };
 
+  const handleAddOnDate = (date) => {
+    setEditEvent(null);
+    if (date) {
+      // Pre-fill date if clicked from calendar
+      setPrefilledDate(date);
+    }
+    setFormOpen(true);
+  };
+
   const handleSelectForAttendance = (event) => {
     navigate(`/attendance?event_id=${event.id}`);
   };
@@ -78,97 +90,104 @@ export default function Events() {
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">{events.length} {pt.events_subtitle || "kegiatan terdaftar"}</p>
         </div>
-        <Button onClick={() => { setEditEvent(null); setFormOpen(true); }}>
+        <Button onClick={() => { setEditEvent(null); setPrefilledDate(null); setFormOpen(true); }}>
           <Plus className="w-4 h-4 mr-2" /> Tambah Kegiatan
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <Select value={filterLevel} onValueChange={v => { setFilterLevel(v); }}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Level</SelectItem>
-            {EVENT_LEVEL_LIST.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Desa</SelectItem>
-            {(config.desa_list || []).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {filterDesa !== "all" && (
-          <Select value={filterKelompok} onValueChange={setFilterKelompok}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Kelompok</SelectItem>
-              {kelompokOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        )}
-      </div>
+      <Tabs defaultValue="calendar">
+        <TabsList>
+          <TabsTrigger value="calendar">Kalender</TabsTrigger>
+          <TabsTrigger value="list">Daftar</TabsTrigger>
+        </TabsList>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-card rounded-2xl border border-border p-12 text-center">
-          <p className="text-muted-foreground">Belum ada kegiatan. Tambahkan kegiatan baru.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {byLevel.Daerah.length > 0 && (
-            <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-primary" />
-                Tingkat Daerah
-              </h2>
-              <EventList
-                events={byLevel.Daerah}
-                onEdit={e => { setEditEvent(e); setFormOpen(true); }}
-                onDelete={setDeleteEvent}
-                onSelectForAttendance={handleSelectForAttendance}
-              />
-            </section>
+        <TabsContent value="calendar" className="mt-4">
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : (
+            <EventCalendar
+              events={events}
+              onEdit={e => { setEditEvent(e); setPrefilledDate(null); setFormOpen(true); }}
+              onDelete={setDeleteEvent}
+              onAdd={handleAddOnDate}
+            />
           )}
-          {byLevel.Desa.length > 0 && (
-            <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-accent mb-3 flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-accent" />
-                Tingkat Desa
-              </h2>
-              <EventList
-                events={byLevel.Desa}
-                onEdit={e => { setEditEvent(e); setFormOpen(true); }}
-                onDelete={setDeleteEvent}
-                onSelectForAttendance={handleSelectForAttendance}
-              />
-            </section>
+        </TabsContent>
+
+        <TabsContent value="list" className="mt-4 space-y-4">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3">
+            <Select value={filterLevel} onValueChange={v => { setFilterLevel(v); }}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Level</SelectItem>
+                {EVENT_LEVEL_LIST.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Desa</SelectItem>
+                {(config.desa_list || []).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {filterDesa !== "all" && (
+              <Select value={filterKelompok} onValueChange={setFilterKelompok}>
+                <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Kelompok</SelectItem>
+                  {kelompokOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="bg-card rounded-2xl border border-border p-12 text-center">
+              <p className="text-muted-foreground">Belum ada kegiatan. Tambahkan kegiatan baru.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {byLevel.Daerah.length > 0 && (
+                <section>
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-primary" /> Tingkat Daerah
+                  </h2>
+                  <EventList events={byLevel.Daerah} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
+                </section>
+              )}
+              {byLevel.Desa.length > 0 && (
+                <section>
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-accent mb-3 flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-accent" /> Tingkat Desa
+                  </h2>
+                  <EventList events={byLevel.Desa} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
+                </section>
+              )}
+              {byLevel.Kelompok.length > 0 && (
+                <section>
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-orange-500" /> Tingkat Kelompok
+                  </h2>
+                  <EventList events={byLevel.Kelompok} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
+                </section>
+              )}
+            </div>
           )}
-          {byLevel.Kelompok.length > 0 && (
-            <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-orange-500" />
-                Tingkat Kelompok
-              </h2>
-              <EventList
-                events={byLevel.Kelompok}
-                onEdit={e => { setEditEvent(e); setFormOpen(true); }}
-                onDelete={setDeleteEvent}
-                onSelectForAttendance={handleSelectForAttendance}
-              />
-            </section>
-          )}
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
       <EventFormDialog
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(v) => { setFormOpen(v); if (!v) setPrefilledDate(null); }}
         event={editEvent}
+        prefilledDate={prefilledDate}
         onSave={handleSave}
       />
 
