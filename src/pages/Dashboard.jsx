@@ -4,6 +4,7 @@ import { Users, UserCheck, UserX, CalendarCheck } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import DesaOverview from "@/components/dashboard/DesaOverview";
+import AustraliaMap from "@/components/dashboard/AustraliaMap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -58,6 +59,7 @@ export default function Dashboard() {
         <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="warning" />
       </div>
 
+      <AustraliaMap members={members} />
       <AttendanceChart attendances={attendances} year={Number(selectedYear)} />
       <DesaOverview members={members} />
     </div>

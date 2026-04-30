@@ -20,6 +20,25 @@ export default function CsvUploadDialog({ open, onOpenChange, onComplete }) {
   const desaKelompokMap = config.desa_kelompok_map || {};
   const kelompokOptions = desa ? desaKelompokMap[desa] || [] : [];
 
+  const parseCsvManually = (text) => {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    // Detect delimiter
+    const delimiters = [",", ";", "\t", "|"];
+    const firstLine = lines[0];
+    const delimiter = delimiters.reduce((best, d) => {
+      return (firstLine.split(d).length > firstLine.split(best).length) ? d : best;
+    }, ",");
+
+    const headers = firstLine.split(delimiter).map(h => h.trim().replace(/^["']|["']$/g, "").toLowerCase());
+    return lines.slice(1).map(line => {
+      const values = line.split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, ""));
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = values[i] || ""; });
+      return obj;
+    }).filter(row => Object.values(row).some(v => v));
+  };
+
   const handleUpload = async () => {
     if (!file || !desa || !kelompok) return;
     setLoading(true);
@@ -27,7 +46,8 @@ export default function CsvUploadDialog({ open, onOpenChange, onComplete }) {
 
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-    const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+    // Try ExtractDataFromUploadedFile first
+    let extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
         type: "object",
@@ -52,8 +72,27 @@ export default function CsvUploadDialog({ open, onOpenChange, onComplete }) {
       }
     });
 
-    if (extracted.status === "success" && extracted.output?.members) {
-      const membersData = extracted.output.members.map(m => ({
+    let membersRaw = extracted.status === "success" ? extracted.output?.members : null;
+
+    // Fallback: parse CSV manually from file
+    if (!membersRaw || membersRaw.length === 0) {
+      const text = await file.text();
+      const rows = parseCsvManually(text);
+      // Map common column name variants
+      membersRaw = rows.map(r => ({
+        full_name: r.full_name || r.nama || r.name || r["nama lengkap"] || "",
+        birth_year: r.birth_year ? Number(r.birth_year) : (r["tahun lahir"] ? Number(r["tahun lahir"]) : undefined),
+        birthplace: r.birthplace || r["tempat lahir"] || "",
+        visa_status: r.visa_status || r.visa || "",
+        muballigh_status: r.muballigh_status || r.muballigh || "",
+        employment: r.employment || r.pekerjaan || "",
+        phone: r.phone || r.telepon || r.hp || r.handphone || "",
+        dapukan: r.dapukan || "",
+      })).filter(m => m.full_name);
+    }
+
+    if (membersRaw && membersRaw.length > 0) {
+      const membersData = membersRaw.map(m => ({
         ...m,
         desa,
         kelompok,
@@ -66,7 +105,7 @@ export default function CsvUploadDialog({ open, onOpenChange, onComplete }) {
       setResult({ success: true, count: membersData.length });
       onComplete();
     } else {
-      setResult({ success: false, error: extracted.details || "Gagal mengekstrak data" });
+      setResult({ success: false, error: "Tidak ada data yang berhasil dibaca. Pastikan file memiliki kolom: full_name, birth_year, phone, dll." });
     }
 
     setLoading(false);
