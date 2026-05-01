@@ -35,10 +35,10 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                 <TableCell className="text-sm text-muted-foreground">{member.desa}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.kelompok}</TableCell>
                 <TableCell>
-                  {member.dapukan && member.dapukan !== "Anggota" ? (
+                  {member.dapukan && member.dapukan !== "Jamaah Biasa" ? (
                     <Badge variant="secondary" className="text-xs">{member.dapukan}</Badge>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Jamaah</span>
+                    <span className="text-xs text-muted-foreground">Jamaah Biasa</span>
                   )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">

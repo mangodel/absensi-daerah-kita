@@ -11,7 +11,7 @@ export const DESA_KELOMPOK_MAP = {
   "Desa 2": ["Kelompok 8", "Kelompok 9", "Kelompok 10", "Kelompok 11", "Kelompok 12", "Kelompok 13"]
 };
 
-export const DAPUKAN_LIST = ["Anggota", "Ki", "Wakil", "Penerobos", "KU", "PKU", "Aghnia", "Muballigh 4S", "PJP", "PJK"];
+export const DAPUKAN_LIST = ["Jamaah Biasa", "Ki", "Wakil", "Penerobos", "KU", "PKU", "Aghnia", "Muballigh 4S", "PJP", "PJK"];
 export const DAPUKAN_LEVEL_LIST = ["Daerah", "Desa", "Kelompok"];
 export const BIRTHPLACE_LIST = ["Indonesia", "Australia", "New Zealand", "Lainnya"];
 export const VISA_STATUS_LIST = ["PR", "Citizen", "Student", "Sponsor", "Bridging", "WHV", "Tourist", "Partner", "Lainnya"];

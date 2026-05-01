@@ -7,10 +7,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DAPUKAN_LIST, DAPUKAN_LEVEL_LIST, BIRTHPLACE_LIST, VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, EMPLOYMENT_LIST, MEMBER_STATUS_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 
+// Combobox: dropdown list + free-text fallback
+function ComboField({ value, onChange, options, placeholder }) {
+  return (
+    <div className="space-y-1">
+      <Select value={options.includes(value) ? value : "__custom__"} onValueChange={v => { if (v !== "__custom__") onChange(v); }}>
+        <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
+        <SelectContent>
+          {options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+          <SelectItem value="__custom__">Lainnya (ketik manual)</SelectItem>
+        </SelectContent>
+      </Select>
+      {(!options.includes(value) || value === "") && (
+        <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+      )}
+    </div>
+  );
+}
+
 const emptyMember = {
   full_name: "", desa: "", kelompok: "", birth_year: "",
   birthplace: "", visa_status: "", muballigh_status: "", employment: "",
-  dapukan: "Anggota", dapukan_level: "Kelompok", status: "Aktif", phone: "", notes: ""
+  dapukan: "Jamaah Biasa", dapukan_level: "Kelompok", status: "Aktif", phone: "", notes: ""
 };
 
 export default function MemberFormDialog({ open, onOpenChange, member, onSave }) {
@@ -59,20 +77,20 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
               <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
             </Field>
             <Field label="Desa *">
-              <Select value={form.desa} onValueChange={v => setForm({ ...form, desa: v, kelompok: "" })}>
-                <SelectTrigger><SelectValue placeholder="Pilih Desa" /></SelectTrigger>
-                <SelectContent>
-                  {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <ComboField
+                value={form.desa}
+                onChange={v => setForm({ ...form, desa: v, kelompok: "" })}
+                options={desaList}
+                placeholder="Pilih atau ketik Desa"
+              />
             </Field>
             <Field label="Kelompok *">
-              <Select value={form.kelompok} onValueChange={v => setForm({ ...form, kelompok: v })} disabled={!form.desa}>
-                <SelectTrigger><SelectValue placeholder="Pilih Kelompok" /></SelectTrigger>
-                <SelectContent>
-                  {kelompokOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <ComboField
+                value={form.kelompok}
+                onChange={v => setForm({ ...form, kelompok: v })}
+                options={kelompokOptions}
+                placeholder="Pilih atau ketik Kelompok"
+              />
             </Field>
             <Field label="Tahun Lahir">
               <Input type="number" value={form.birth_year} onChange={e => setForm({ ...form, birth_year: e.target.value })} placeholder="cth: 1990" />
