@@ -5,22 +5,22 @@
     "role": {
       "type": "string",
       "enum": [
-        "super_admin",
-        "admin",
-        "admin_desa",
+        "user",
         "admin_kelompok",
-        "user"
+        "admin_desa",
+        "super_admin",
+        "admin"
       ],
       "default": "user",
-      "description": "Role pengguna: super_admin=akses penuh, admin=admin umum, admin_desa=akses desa tertentu, admin_kelompok=akses kelompok tertentu"
+      "description": "Role pengguna dalam sistem"
     },
     "desa": {
       "type": "string",
-      "description": "Desa yang dikelola (untuk role admin_desa dan admin_kelompok)"
+      "description": "Desa yang dikelola (untuk admin_desa dan admin_kelompok)"
     },
     "kelompok": {
       "type": "string",
-      "description": "Kelompok yang dikelola (untuk role admin_kelompok)"
+      "description": "Kelompok yang dikelola (untuk admin_kelompok)"
     }
   }
 }
