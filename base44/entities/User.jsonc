@@ -1,0 +1,26 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "super_admin",
+        "admin",
+        "admin_desa",
+        "admin_kelompok",
+        "user"
+      ],
+      "default": "user",
+      "description": "Role pengguna: super_admin=akses penuh, admin=admin umum, admin_desa=akses desa tertentu, admin_kelompok=akses kelompok tertentu"
+    },
+    "desa": {
+      "type": "string",
+      "description": "Desa yang dikelola (untuk role admin_desa dan admin_kelompok)"
+    },
+    "kelompok": {
+      "type": "string",
+      "description": "Kelompok yang dikelola (untuk role admin_kelompok)"
+    }
+  }
+}

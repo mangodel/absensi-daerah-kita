@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, CalendarCheck, Building2, CalendarDays, Settings } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { cn } from "@/lib/utils";
+import { useUserRole } from "@/lib/useUserRole";
 
 const baseNavItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
@@ -13,9 +14,9 @@ const baseNavItems = [
 
 export default function MobileNav() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { canAccessSettings } = useUserRole();
 
-  const navItems = user?.role === "admin"
+  const navItems = canAccessSettings
     ? [...baseNavItems, { label: "Pengaturan", icon: Settings, path: "/settings" }]
     : baseNavItems;
 

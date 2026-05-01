@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useAuth } from "@/lib/AuthContext";
+import { useUserRole } from "@/lib/useUserRole";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
@@ -19,6 +20,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { config } = useAppConfig();
   const { user } = useAuth();
+  const { canAccessSettings, role, userDesa, userKelompok } = useUserRole();
 
   return (
     <aside className={cn(
@@ -70,7 +72,7 @@ export default function Sidebar() {
       </nav>
 
       <div className={cn("p-3 border-t border-border space-y-1", collapsed && "px-2")}>
-        {user?.role === "admin" && (
+        {canAccessSettings && (
           <Link
             to="/settings"
             className={cn(
@@ -85,7 +87,13 @@ export default function Sidebar() {
           </Link>
         )}
         {!collapsed && (
-          <div className="text-[11px] text-muted-foreground text-center pt-1">
+          <div className="mt-2 px-2">
+            <div className="text-[10px] text-muted-foreground font-medium truncate">{user?.full_name || user?.email}</div>
+            <div className="text-[10px] text-primary/70 font-medium capitalize">{role?.replace("_", " ")}{userDesa ? ` · ${userDesa}` : ""}{userKelompok ? ` / ${userKelompok}` : ""}</div>
+          </div>
+        )}
+        {!collapsed && (
+          <div className="text-[10px] text-muted-foreground text-center pt-1">
             © 2026 {config.org_name}
           </div>
         )}

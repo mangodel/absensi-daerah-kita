@@ -12,6 +12,7 @@ import EventList from "@/components/events/EventList";
 import EventCalendar from "@/components/events/EventCalendar";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUserRole } from "@/lib/useUserRole";
 
 export default function Events() {
   const [formOpen, setFormOpen] = useState(false);
@@ -24,13 +25,15 @@ export default function Events() {
   const navigate = useNavigate();
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
+  const { filterEvents, canManageEvents } = useUserRole();
 
   const queryClient = useQueryClient();
 
-  const { data: events = [], isLoading } = useQuery({
+  const { data: allEvents = [], isLoading } = useQuery({
     queryKey: ["events"],
     queryFn: () => base44.entities.Event.list("-date"),
   });
+  const events = filterEvents(allEvents);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Event.create(data),
@@ -90,9 +93,11 @@ export default function Events() {
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">{events.length} {pt.events_subtitle || "kegiatan terdaftar"}</p>
         </div>
-        <Button onClick={() => { setEditEvent(null); setPrefilledDate(null); setFormOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Tambah Kegiatan
-        </Button>
+        {canManageEvents && (
+          <Button onClick={() => { setEditEvent(null); setPrefilledDate(null); setFormOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" /> Tambah Kegiatan
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="calendar">

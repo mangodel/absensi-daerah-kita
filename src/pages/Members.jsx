@@ -11,12 +11,14 @@ import MemberFormDialog from "@/components/members/MemberFormDialog";
 import CsvUploadDialog from "@/components/members/CsvUploadDialog";
 import MemberTable from "@/components/members/MemberTable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useUserRole } from "@/lib/useUserRole";
 
 export default function Members() {
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
   const desaList = config.desa_list || [];
   const kelompokList = config.kelompok_list || [];
+  const { filterMembers, canManageMembers, isSuperAdmin, isAdminDesa, userDesa } = useUserRole();
   const [formOpen, setFormOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [editMember, setEditMember] = useState(null);
@@ -33,10 +35,11 @@ export default function Members() {
 
   const queryClient = useQueryClient();
 
-  const { data: members = [], isLoading } = useQuery({
+  const { data: allMembers = [], isLoading } = useQuery({
     queryKey: ["members"],
     queryFn: () => base44.entities.Member.list(),
   });
+  const members = filterMembers(allMembers);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Member.create(data),
@@ -87,14 +90,16 @@ export default function Members() {
           <h1 className="text-2xl font-bold text-foreground">{pt.members || "Data Anggota"}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{members.length} {pt.members_subtitle || "anggota terdaftar"}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCsvOpen(true)}>
-            <Upload className="w-4 h-4 mr-2" />Upload CSV
-          </Button>
-          <Button onClick={() => { setEditMember(null); setFormOpen(true); }}>
-            <Plus className="w-4 h-4 mr-2" />Tambah
-          </Button>
-        </div>
+        {canManageMembers && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setCsvOpen(true)}>
+              <Upload className="w-4 h-4 mr-2" />Upload CSV
+            </Button>
+            <Button onClick={() => { setEditMember(null); setFormOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" />Tambah
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Search + filter bar */}
@@ -176,8 +181,8 @@ export default function Members() {
       ) : (
         <MemberTable
           members={filtered}
-          onEdit={(m) => { setEditMember(m); setFormOpen(true); }}
-          onDelete={setDeleteMember}
+          onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
+          onDelete={canManageMembers ? setDeleteMember : null}
         />
       )}
 
