@@ -1,34 +1,92 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
-import { Building2, Users, Shield, Phone, Home } from "lucide-react";
+import { useUserRole } from "@/lib/useUserRole";
+import { Building2, Users, Shield, Phone, Home, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DAPUKAN_PENGURUS_ORDER } from "@/lib/constants";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Sort pengurus: Ki > Wakil > Muballigh 4S > Penerobos > lainnya
-function sortPengurus(list) {
-  return [...list].sort((a, b) => {
-    const ai = DAPUKAN_PENGURUS_ORDER.indexOf(a.dapukan);
-    const bi = DAPUKAN_PENGURUS_ORDER.indexOf(b.dapukan);
-    const av = ai === -1 ? 999 : ai;
-    const bv = bi === -1 ? 999 : bi;
-    return av - bv;
+// Kategori 4S dan urutan tampil
+const KATEGORI_4S = [
+  {
+    label: "Keimaman",
+    color: "bg-primary/5 border-primary/20",
+    badgeClass: "bg-primary/10 text-primary border-primary/20",
+    dapukan: ["Ki", "Wakil"],
+  },
+  {
+    label: "KU & PKU",
+    color: "bg-accent/5 border-accent/20",
+    badgeClass: "bg-accent/10 text-accent border-accent/20",
+    dapukan: ["KU", "PKU"],
+  },
+  {
+    label: "Penerobos",
+    color: "bg-orange-50 border-orange-200",
+    badgeClass: "bg-orange-100 text-orange-700 border-orange-200",
+    dapukan: ["Penerobos"],
+  },
+  {
+    label: "Aghnia",
+    color: "bg-pink-50 border-pink-200",
+    badgeClass: "bg-pink-100 text-pink-700 border-pink-200",
+    dapukan: ["Aghnia"],
+  },
+  {
+    label: "Mubaligh / Mubalighot",
+    color: "bg-violet-50 border-violet-200",
+    badgeClass: "bg-violet-100 text-violet-700 border-violet-200",
+    dapukan: ["Muballigh 4S", "Muballigh Daerah", "Muballigh Desa", "Muballigh Kelompok", "Mubaligh Daerah", "Mubaligh Desa", "Mubaligh Kelompok"],
+    isMubaligh: true,
+  },
+  {
+    label: "Tim & Pengurus Lainnya",
+    color: "bg-slate-50 border-slate-200",
+    badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+    dapukan: [], // catch-all
+    isOther: true,
+  },
+];
+
+const KNOWN_DAPUKAN = KATEGORI_4S.flatMap(k => k.dapukan);
+
+function getPengurusKategori(pengurusList) {
+  const result = [];
+  KATEGORI_4S.forEach(kat => {
+    let members;
+    if (kat.isOther) {
+      members = pengurusList.filter(m =>
+        !KNOWN_DAPUKAN.includes(m.dapukan) && m.dapukan !== "Jamaah Biasa"
+      );
+    } else if (kat.isMubaligh) {
+      members = pengurusList.filter(m =>
+        kat.dapukan.includes(m.dapukan) ||
+        m.dapukan?.toLowerCase().includes("muball") ||
+        m.dapukan?.toLowerCase().includes("mubaligh")
+      );
+    } else {
+      members = pengurusList.filter(m => kat.dapukan.includes(m.dapukan));
+    }
+    if (members.length > 0) {
+      result.push({ ...kat, members });
+    }
   });
+  return result;
 }
 
-// Only show pengurus (bukan Jamaah Biasa)
 function isPengurus(m) {
   return m.dapukan && m.dapukan !== "Jamaah Biasa";
 }
 
-function PengurusCard({ member, colorClass }) {
+function PengurusCard({ member, badgeClass, borderClass }) {
   return (
-    <div className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border ${colorClass}`}>
+    <div className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border ${borderClass}`}>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium text-sm">{member.full_name}</span>
-          <Badge className="text-[10px] shrink-0">{member.dapukan}</Badge>
+          <Badge className={`text-[10px] shrink-0 ${badgeClass}`}>{member.dapukan}</Badge>
         </div>
         {member.phone && (
           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
@@ -41,131 +99,189 @@ function PengurusCard({ member, colorClass }) {
   );
 }
 
+function KategoriSection({ kategoriList, title, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  if (kategoriList.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      {kategoriList.map(kat => (
+        <div key={kat.label} className={`rounded-xl border ${kat.color} overflow-hidden`}>
+          <div className="px-4 py-2.5 flex items-center justify-between">
+            <span className="text-xs font-semibold text-foreground">{kat.label}</span>
+            <Badge variant="outline" className="text-[10px]">{kat.members.length}</Badge>
+          </div>
+          <div className="px-4 pb-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {kat.members.map(m => (
+              <PengurusCard key={m.id} member={m} badgeClass={kat.badgeClass} borderClass={`bg-white/60 ${kat.color}`} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Structure() {
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
   const desaKelompokMap = config.desa_kelompok_map || {};
+  const { isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
+
+  const [filterMubaligh, setFilterMubaligh] = useState("all"); // "all" | "mubaligh" | "mubalighot"
+
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => base44.entities.Member.list(),
   });
 
-  const daerahLeaders = sortPengurus(
-    members.filter(m => m.dapukan_level === "Daerah" && isPengurus(m))
-  );
+  // Scope filter based on role
+  const scopedDesa = isSuperAdmin
+    ? Object.keys(desaKelompokMap)
+    : isAdminDesa && userDesa
+    ? [userDesa]
+    : isAdminKelompok && userDesa
+    ? [userDesa]
+    : Object.keys(desaKelompokMap);
+
+  const daerahLeaders = members.filter(m => m.dapukan_level === "Daerah" && isPengurus(m));
+  const daerahKategori = getPengurusKategori(daerahLeaders);
+
+  // Filter jamaah biasa with mubaligh filter
+  function applyMubalighFilter(memberList) {
+    if (filterMubaligh === "mubaligh") return memberList.filter(m => m.muballigh_status === "Muballigh");
+    if (filterMubaligh === "mubalighot") return memberList.filter(m => m.muballigh_status === "Muballighot");
+    if (filterMubaligh === "both") return memberList.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot");
+    return memberList;
+  }
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Building2 className="w-6 h-6 text-primary" /> {pt.structure || "Struktur Organisasi"}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{pt.structure_subtitle || "Daerah → Desa → Kelompok"}</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Building2 className="w-6 h-6 text-primary" /> {pt.structure || "Struktur Organisasi"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{pt.structure_subtitle || "Daerah → Desa → Kelompok"}</p>
+        </div>
+        {/* Filter Mubaligh */}
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <Select value={filterMubaligh} onValueChange={setFilterMubaligh}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Jamaah</SelectItem>
+              <SelectItem value="both">Mubaligh &amp; Mubalighot</SelectItem>
+              <SelectItem value="mubaligh">Mubaligh Saja</SelectItem>
+              <SelectItem value="mubalighot">Mubalighot Saja</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Daerah Level */}
-      <div className="bg-card rounded-2xl border border-border p-6">
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-4">
-          <Shield className="w-4 h-4 text-primary" /> Tingkat Daerah
-        </h2>
-        {daerahLeaders.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-            {daerahLeaders.map(m => (
-              <PengurusCard key={m.id} member={m} colorClass="bg-primary/5 border-primary/10" />
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">Belum ada pengurus tingkat daerah.</p>
-        )}
-      </div>
+      {/* Daerah Level — only show if not kelompok-level user */}
+      {(isSuperAdmin || isAdminDesa) && (
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Shield className="w-4 h-4 text-primary" /> Tingkat Daerah
+          </h2>
+          {daerahKategori.length > 0 ? (
+            <KategoriSection kategoriList={daerahKategori} title="Daerah" defaultOpen />
+          ) : (
+            <p className="text-xs text-muted-foreground">Belum ada pengurus tingkat daerah.</p>
+          )}
+        </div>
+      )}
 
       {/* Desa Level */}
-      <Tabs defaultValue={Object.keys(desaKelompokMap)[0] || ""}>
+      <Tabs defaultValue={scopedDesa[0] || ""}>
         <TabsList className="flex-wrap h-auto gap-1">
-          {Object.keys(desaKelompokMap).map(desa => (
+          {scopedDesa.map(desa => (
             <TabsTrigger key={desa} value={desa}>{desa}</TabsTrigger>
           ))}
         </TabsList>
 
-        {Object.entries(desaKelompokMap).map(([desa, kelompoks]) => {
-          const desaLeaders = sortPengurus(
-            members.filter(m => m.desa === desa && m.dapukan_level === "Desa" && isPengurus(m))
+        {scopedDesa.map(desa => {
+          const kelompoks = (desaKelompokMap[desa] || []).filter(k =>
+            isAdminKelompok ? k === userKelompok : true
           );
+          const desaLeaders = members.filter(m => m.desa === desa && m.dapukan_level === "Desa" && isPengurus(m));
+          const desaKategori = getPengurusKategori(desaLeaders);
           const desaMembers = members.filter(m => m.desa === desa);
           const desaActive = desaMembers.filter(m => m.status === "Aktif").length;
-
-          // KK count per desa
           const desaKKSet = new Set(desaMembers.filter(m => m.family_group).map(m => m.family_group));
           const desaKKCount = desaKKSet.size;
 
           return (
             <TabsContent key={desa} value={desa} className="space-y-4 mt-4">
               {/* Desa Leaders */}
-              <div className="bg-card rounded-2xl border border-border p-5">
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-accent" /> Pengurus {desa}
-                </h3>
-                {desaLeaders.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                    {desaLeaders.map(m => (
-                      <PengurusCard key={m.id} member={m} colorClass="bg-accent/5 border-accent/10" />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Belum ada pengurus desa.</p>
-                )}
-              </div>
+              {!isAdminKelompok && (
+                <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-accent" /> Pengurus {desa}
+                  </h3>
+                  {desaKategori.length > 0 ? (
+                    <KategoriSection kategoriList={desaKategori} title={desa} defaultOpen />
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Belum ada pengurus desa.</p>
+                  )}
+                </div>
+              )}
 
               {/* Desa Summary */}
-              <div className="bg-primary/5 border border-primary/15 rounded-2xl p-4 flex flex-wrap gap-6 items-center">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{desaMembers.length}</div>
-                  <div className="text-xs text-muted-foreground">Total Jamaah</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-accent">{desaActive}</div>
-                  <div className="text-xs text-muted-foreground">Aktif</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-destructive">{desaMembers.length - desaActive}</div>
-                  <div className="text-xs text-muted-foreground">Tidak Aktif</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground">{kelompoks.length}</div>
-                  <div className="text-xs text-muted-foreground">Kelompok</div>
-                </div>
-                {desaKKCount > 0 && (
+              {!isAdminKelompok && (
+                <div className="bg-primary/5 border border-primary/15 rounded-2xl p-4 flex flex-wrap gap-6 items-center">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground flex items-center gap-1 justify-center">
-                      <Home className="w-4 h-4 text-muted-foreground" />{desaKKCount}
-                    </div>
-                    <div className="text-xs text-muted-foreground">Kepala Keluarga</div>
+                    <div className="text-2xl font-bold text-primary">{desaMembers.length}</div>
+                    <div className="text-xs text-muted-foreground">Total Jamaah</div>
                   </div>
-                )}
-                <div className="ml-auto flex flex-wrap gap-1 items-center">
-                  {kelompoks.map(k => (
-                    <Badge key={k} variant="outline" className="text-[10px] bg-background">{k}</Badge>
-                  ))}
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-accent">{desaActive}</div>
+                    <div className="text-xs text-muted-foreground">Aktif</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-destructive">{desaMembers.length - desaActive}</div>
+                    <div className="text-xs text-muted-foreground">Tidak Aktif</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-foreground">{kelompoks.length}</div>
+                    <div className="text-xs text-muted-foreground">Kelompok</div>
+                  </div>
+                  {desaKKCount > 0 && (
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-foreground flex items-center gap-1 justify-center">
+                        <Home className="w-4 h-4 text-muted-foreground" />{desaKKCount}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Kepala Keluarga</div>
+                    </div>
+                  )}
+                  <div className="ml-auto flex flex-wrap gap-1 items-center">
+                    {kelompoks.map(k => (
+                      <Badge key={k} variant="outline" className="text-[10px] bg-background">{k}</Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Kelompok Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {kelompoks.map(kelompok => {
                   const kelompokMembers = members.filter(m => m.desa === desa && m.kelompok === kelompok);
                   const active = kelompokMembers.filter(m => m.status === "Aktif").length;
-                  const leaders = sortPengurus(
-                    kelompokMembers.filter(m => isPengurus(m) && m.dapukan_level === "Kelompok")
-                  );
-                  // KK count
+                  const leaders = kelompokMembers.filter(m => isPengurus(m) && m.dapukan_level === "Kelompok");
+                  const kelompokKategori = getPengurusKategori(leaders);
                   const kkSet = new Set(kelompokMembers.filter(m => m.family_group).map(m => m.family_group));
                   const kkCount = kkSet.size;
-                  // Sub kelompok
                   const subKelompoks = [...new Set(kelompokMembers.filter(m => m.sub_kelompok).map(m => m.sub_kelompok))];
 
+                  // Jamaah biasa with mubaligh filter
+                  const jamaahBiasa = applyMubalighFilter(kelompokMembers.filter(m => !isPengurus(m)));
+
                   return (
-                    <div key={kelompok} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-3">
+                    <div key={kelompok} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow space-y-3">
+                      {/* Header */}
+                      <div className="flex items-start justify-between">
                         <div>
                           <h4 className="font-semibold text-sm">{kelompok}</h4>
                           <p className="text-[10px] text-muted-foreground">{desa}</p>
@@ -184,29 +300,52 @@ export default function Structure() {
                         </div>
                       </div>
 
-                      {leaders.length > 0 && (
-                        <div className="space-y-1.5 mb-3">
-                          {leaders.map(l => (
-                            <div key={l.id} className="space-y-0.5">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-foreground font-medium">{l.full_name}</span>
-                                <Badge variant="secondary" className="text-[10px]">{l.dapukan}</Badge>
-                              </div>
-                              {l.phone && (
-                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground ml-0">
-                                  <Phone className="w-2.5 h-2.5" />{l.phone}
+                      {/* Pengurus per kategori 4S */}
+                      {kelompokKategori.length > 0 && (
+                        <div className="space-y-2">
+                          {kelompokKategori.map(kat => (
+                            <div key={kat.label} className={`rounded-lg border ${kat.color} px-3 py-2`}>
+                              <div className="text-[10px] font-semibold text-muted-foreground mb-1.5">{kat.label}</div>
+                              {kat.members.map(l => (
+                                <div key={l.id} className="flex items-center justify-between text-xs mb-1">
+                                  <span className="font-medium text-foreground">{l.full_name}</span>
+                                  <Badge className={`text-[9px] ${kat.badgeClass}`}>{l.dapukan}</Badge>
                                 </div>
-                              )}
+                              ))}
+                              {/* Phone numbers */}
+                              {kat.members.filter(l => l.phone).map(l => (
+                                <div key={l.id + "_phone"} className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                  <Phone className="w-2.5 h-2.5" />{l.full_name}: {l.phone}
+                                </div>
+                              ))}
                             </div>
                           ))}
                         </div>
                       )}
 
                       {subKelompoks.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-2">
+                        <div className="flex flex-wrap gap-1">
                           {subKelompoks.map(sk => (
                             <Badge key={sk} variant="outline" className="text-[9px] bg-secondary/50">{sk}</Badge>
                           ))}
+                        </div>
+                      )}
+
+                      {/* Jamaah Biasa — hanya tampil jika filter mubaligh aktif */}
+                      {filterMubaligh !== "all" && jamaahBiasa.length > 0 && (
+                        <div className="border-t border-border pt-2">
+                          <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">
+                            {filterMubaligh === "mubaligh" ? "Mubaligh" : filterMubaligh === "mubalighot" ? "Mubalighot" : "Mubaligh & Mubalighot"}
+                            <span className="ml-1 text-primary">({jamaahBiasa.length})</span>
+                          </p>
+                          <div className="space-y-1">
+                            {jamaahBiasa.map(m => (
+                              <div key={m.id} className="text-xs flex items-center justify-between">
+                                <span>{m.full_name}</span>
+                                {m.phone && <span className="text-muted-foreground text-[10px]">{m.phone}</span>}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
 
@@ -215,6 +354,11 @@ export default function Structure() {
                           <>
                             <Badge variant="outline" className="bg-accent/5 text-accent border-accent/20">{active} aktif</Badge>
                             <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20">{kelompokMembers.length - active} tidak aktif</Badge>
+                            {kelompokMembers.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot").length > 0 && (
+                              <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200">
+                                {kelompokMembers.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot").length} mubaligh
+                              </Badge>
+                            )}
                           </>
                         ) : (
                           <span className="text-muted-foreground text-[10px]">Belum ada jamaah</span>
