@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MONTHS, VISA_STATUS_LIST, DAPUKAN_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
+import { useUserRole } from "@/lib/useUserRole";
 import { CalendarCheck, Save, Loader2, CalendarDays } from "lucide-react";
 import AttendanceTable from "@/components/attendance/AttendanceTable";
 import AttendanceHistory from "@/components/attendance/AttendanceHistory";
@@ -37,6 +38,7 @@ export default function Attendance() {
   const pt = config.page_titles || {};
   const desaList = config.desa_list || [];
   const kelompokList = config.kelompok_list || [];
+  const { filterMembers, filterEvents, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
 
   const queryClient = useQueryClient();
 
@@ -57,12 +59,18 @@ export default function Attendance() {
     queryFn: () => base44.entities.Attendance.list(),
   });
 
-  const { data: events = [] } = useQuery({
+  const { data: allEvents = [] } = useQuery({
     queryKey: ["events"],
     queryFn: () => base44.entities.Event.list("-date"),
   });
 
-  const selectedEvent = events.find(e => e.id === selectedEventId);
+  // Admin kelompok: only see events for their kelompok or Daerah level
+  const events = filterEvents(allEvents).filter(e => {
+    if (isAdminKelompok) return e.level === "Kelompok" && e.kelompok === userKelompok;
+    return true;
+  });
+
+  const selectedEvent = allEvents.find(e => e.id === selectedEventId);
 
   // Auto-set filters based on selected event
   useEffect(() => {
@@ -80,7 +88,8 @@ export default function Attendance() {
     }
   }, [selectedEventId, events.length]);
 
-  const activeMembers = members.filter(m => m.status === "Aktif");
+  const scopedMembers = filterMembers(members);
+  const activeMembers = scopedMembers.filter(m => m.status === "Aktif");
   const filteredMembers = activeMembers.filter(m => {
     const matchDesa = filterDesa === "all" || m.desa === filterDesa;
     const matchKelompok = filterKelompok === "all" || m.kelompok === filterKelompok;

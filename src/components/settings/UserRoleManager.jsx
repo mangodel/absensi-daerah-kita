@@ -3,9 +3,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, Loader2, User } from "lucide-react";
+import { ShieldCheck, Loader2, User, UserPlus, Mail } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 
 const ROLE_OPTIONS = [
@@ -14,6 +17,13 @@ const ROLE_OPTIONS = [
   { value: "admin_desa", label: "Admin Desa", color: "bg-accent/10 text-accent border-accent/20" },
   { value: "super_admin", label: "Super Admin", color: "bg-primary/10 text-primary border-primary/20" },
 ];
+
+const ROLE_DESC = {
+  user: "Tidak ada akses khusus",
+  admin_kelompok: "Lihat & kelola anggota kelompoknya, absensi, event kelompok",
+  admin_desa: "Lihat semua kelompok di desanya, kelola event desa",
+  super_admin: "Akses penuh ke semua data daerah + pengaturan",
+};
 
 export default function UserRoleManager() {
   const { config } = useAppConfig();
@@ -24,6 +34,9 @@ export default function UserRoleManager() {
 
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ role: "user", desa: "", kelompok: "" });
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: "", role: "admin_kelompok", desa: "", kelompok: "" });
+  const [inviting, setInviting] = useState(false);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users_list"],
@@ -45,35 +58,64 @@ export default function UserRoleManager() {
   };
 
   const handleSave = (id) => {
-    const data = { role: editForm.role, desa: editForm.desa, kelompok: editForm.kelompok };
-    updateMutation.mutate({ id, data });
+    updateMutation.mutate({ id, data: { role: editForm.role, desa: editForm.desa, kelompok: editForm.kelompok } });
+  };
+
+  const handleInvite = async (e) => {
+    e.preventDefault();
+    if (!inviteForm.email) return;
+    setInviting(true);
+    // Map our roles to base44 roles (base44 only supports "user" | "admin")
+    const base44Role = (inviteForm.role === "super_admin") ? "admin" : "user";
+    await base44.users.inviteUser(inviteForm.email, base44Role);
+    // After invite, find newly created user and update their extended role
+    // (user may not exist yet — they need to accept invite first)
+    // Store intended role in config as pending, or just toast instructions
+    toast({ title: `Undangan dikirim ke ${inviteForm.email}`, description: "Setelah pengguna menerima undangan, atur role-nya di daftar di bawah." });
+    setInviting(false);
+    setInviteOpen(false);
+    setInviteForm({ email: "", role: "admin_kelompok", desa: "", kelompok: "" });
   };
 
   const getRoleStyle = (role) => ROLE_OPTIONS.find(r => r.value === role)?.color || "bg-secondary text-secondary-foreground";
   const getRoleLabel = (role) => ROLE_OPTIONS.find(r => r.value === role)?.label || role || "User Biasa";
 
   const kelompokOptions = editForm.desa ? desaKelompokMap[editForm.desa] || [] : [];
+  const inviteKelompokOptions = inviteForm.desa ? desaKelompokMap[inviteForm.desa] || [] : [];
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-4">
       <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
-        <div className="flex items-center gap-2 mb-2">
-          <ShieldCheck className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold text-sm text-foreground">Manajemen Akses Pengguna</h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-primary" />
+            <h2 className="font-semibold text-sm text-foreground">Manajemen Akses Pengguna</h2>
+          </div>
+          <Button size="sm" onClick={() => setInviteOpen(true)}>
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Undang Pengguna
+          </Button>
         </div>
-        <p className="text-xs text-muted-foreground">Atur role dan scope akses tiap pengguna. Admin Desa hanya bisa melihat data desanya, Admin Kelompok hanya kelompoknya.</p>
+
+        {/* Role legend */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {ROLE_OPTIONS.map(r => (
+            <div key={r.value} className="flex items-start gap-2 p-2.5 rounded-lg bg-secondary/40 text-xs">
+              <Badge variant="outline" className={`text-[10px] shrink-0 ${r.color}`}>{r.label}</Badge>
+              <span className="text-muted-foreground">{ROLE_DESC[r.value]}</span>
+            </div>
+          ))}
+        </div>
 
         <div className="space-y-3">
           {users.map(u => (
             <div key={u.id} className="border border-border rounded-xl p-4">
               {editingId === u.id ? (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-1">
                     <User className="w-4 h-4 text-muted-foreground" />
                     <span className="font-medium text-sm">{u.full_name || u.email}</span>
-                    <span className="text-xs text-muted-foreground">{u.email}</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="space-y-1">
@@ -90,9 +132,7 @@ export default function UserRoleManager() {
                         <label className="text-xs text-muted-foreground font-medium">Desa</label>
                         <Select value={editForm.desa} onValueChange={v => setEditForm(f => ({ ...f, desa: v, kelompok: "" }))}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih Desa" /></SelectTrigger>
-                          <SelectContent>
-                            {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                          </SelectContent>
+                          <SelectContent>{desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
                     )}
@@ -101,17 +141,14 @@ export default function UserRoleManager() {
                         <label className="text-xs text-muted-foreground font-medium">Kelompok</label>
                         <Select value={editForm.kelompok} onValueChange={v => setEditForm(f => ({ ...f, kelompok: v }))} disabled={!editForm.desa}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih Kelompok" /></SelectTrigger>
-                          <SelectContent>
-                            {kelompokOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                          </SelectContent>
+                          <SelectContent>{kelompokOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
                     )}
                   </div>
                   <div className="flex gap-2 pt-1">
                     <Button size="sm" onClick={() => handleSave(u.id)} disabled={updateMutation.isPending}>
-                      {updateMutation.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
-                      Simpan
+                      {updateMutation.isPending && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />} Simpan
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>Batal</Button>
                   </div>
@@ -138,11 +175,72 @@ export default function UserRoleManager() {
               )}
             </div>
           ))}
-          {users.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-6">Belum ada pengguna terdaftar.</p>
-          )}
+          {users.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Belum ada pengguna terdaftar.</p>}
         </div>
       </div>
+
+      {/* Invite Dialog */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><UserPlus className="w-4 h-4 text-primary" /> Undang Pengguna Baru</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleInvite} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Email *</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="email"
+                  className="pl-9"
+                  value={inviteForm.email}
+                  onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))}
+                  required
+                  placeholder="email@contoh.com"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Role yang akan diberikan</Label>
+              <Select value={inviteForm.role} onValueChange={v => setInviteForm(f => ({ ...f, role: v, desa: "", kelompok: "" }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{ROLE_DESC[inviteForm.role]}</p>
+            </div>
+            {(inviteForm.role === "admin_desa" || inviteForm.role === "admin_kelompok") && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Desa</Label>
+                <Select value={inviteForm.desa} onValueChange={v => setInviteForm(f => ({ ...f, desa: v, kelompok: "" }))}>
+                  <SelectTrigger><SelectValue placeholder="Pilih Desa" /></SelectTrigger>
+                  <SelectContent>{desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
+            {inviteForm.role === "admin_kelompok" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">Kelompok</Label>
+                <Select value={inviteForm.kelompok} onValueChange={v => setInviteForm(f => ({ ...f, kelompok: v }))} disabled={!inviteForm.desa}>
+                  <SelectTrigger><SelectValue placeholder="Pilih Kelompok" /></SelectTrigger>
+                  <SelectContent>{inviteKelompokOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="bg-secondary/40 rounded-lg p-3 text-xs text-muted-foreground">
+              <p>📧 Undangan akan dikirim ke email tersebut. Setelah pengguna mendaftar, atur role-nya di daftar pengguna.</p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>Batal</Button>
+              <Button type="submit" disabled={inviting}>
+                {inviting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Kirim Undangan
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

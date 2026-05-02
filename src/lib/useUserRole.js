@@ -2,12 +2,12 @@ import { useAuth } from "@/lib/AuthContext";
 
 /**
  * Hook untuk mendapatkan role dan scope akses user saat ini.
- * 
+ *
  * Roles:
- *   super_admin / admin -> akses semua data
- *   admin_desa          -> akses semua kelompok dalam desanya
- *   admin_kelompok      -> akses kelompoknya saja
- *   user                -> sama dengan admin_kelompok (akses kelompok)
+ *   super_admin / admin -> akses penuh semua data Daerah
+ *   admin_desa          -> akses semua kelompok dalam desanya (view terbatas)
+ *   admin_kelompok      -> akses kelompoknya saja (view sangat terbatas)
+ *   user                -> sama dengan admin_kelompok
  */
 export function useUserRole() {
   const { user } = useAuth();
@@ -19,21 +19,19 @@ export function useUserRole() {
   const isAdminDesa = role === "admin_desa";
   const isAdminKelompok = role === "admin_kelompok" || role === "user";
 
-  /**
-   * Filter members berdasarkan role
-   */
+  /** Filter members berdasarkan role */
   const filterMembers = (members) => {
     if (isSuperAdmin) return members;
     if (isAdminDesa && userDesa) return members.filter(m => m.desa === userDesa);
     if (isAdminKelompok && userKelompok) return members.filter(m => m.kelompok === userKelompok);
-    return members;
+    return [];
   };
 
   /**
    * Filter events berdasarkan role:
    * - super_admin: semua
    * - admin_desa: Daerah + Desa desanya + Kelompok se-desanya
-   * - admin_kelompok: Daerah + Desa desanya + Kelompok miliknya
+   * - admin_kelompok: Daerah + Desa desanya + Kelompok miliknya saja
    */
   const filterEvents = (events) => {
     if (isSuperAdmin) return events;
@@ -51,17 +49,33 @@ export function useUserRole() {
         (e.level === "Kelompok" && e.kelompok === userKelompok)
       );
     }
-    return events;
+    return [];
   };
 
-  /**
-   * Apakah user boleh edit/hapus data
-   */
+  // Permissions
   const canEdit = isSuperAdmin || isAdminDesa;
   const canEditKelompok = isSuperAdmin || isAdminDesa || isAdminKelompok;
   const canManageMembers = isSuperAdmin || isAdminDesa || isAdminKelompok;
-  const canManageEvents = isSuperAdmin || isAdminDesa;
   const canAccessSettings = isSuperAdmin;
+
+  // Event management: admin_kelompok hanya bisa buat/edit event Kelompok
+  const canManageEvents = isSuperAdmin || isAdminDesa || isAdminKelompok;
+  const canManageOnlyKelompokEvents = isAdminKelompok && !isSuperAdmin && !isAdminDesa;
+
+  // Attendance: semua bisa absen, tapi scope terbatas
+  const canInputAttendance = true;
+
+  // Reports: semua bisa lihat, scope sesuai role
+  const canViewReports = true;
+
+  // Reminders: super_admin & admin_desa bisa manage
+  const canManageReminders = isSuperAdmin || isAdminDesa;
+
+  // Transfers: hanya super_admin & admin_desa
+  const canManageTransfers = isSuperAdmin || isAdminDesa;
+
+  // Invite users: hanya super_admin
+  const canInviteUsers = isSuperAdmin;
 
   return {
     role,
@@ -76,6 +90,12 @@ export function useUserRole() {
     canEditKelompok,
     canManageMembers,
     canManageEvents,
+    canManageOnlyKelompokEvents,
+    canInputAttendance,
+    canViewReports,
+    canManageReminders,
+    canManageTransfers,
+    canInviteUsers,
     canAccessSettings,
   };
 }

@@ -1,0 +1,59 @@
+{
+  "name": "Reminder",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Judul pengingat"
+    },
+    "message": {
+      "type": "string",
+      "description": "Pesan pengingat"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal jatuh tempo"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "Daerah",
+        "Desa",
+        "Kelompok"
+      ],
+      "default": "Daerah",
+      "description": "Scope pengingat"
+    },
+    "desa": {
+      "type": "string",
+      "description": "Desa target (jika scope Desa/Kelompok)"
+    },
+    "kelompok": {
+      "type": "string",
+      "description": "Kelompok target (jika scope Kelompok)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Aktif",
+        "Selesai"
+      ],
+      "default": "Aktif",
+      "description": "Status pengingat"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "Rendah",
+        "Sedang",
+        "Tinggi"
+      ],
+      "default": "Sedang"
+    }
+  },
+  "required": [
+    "title",
+    "due_date"
+  ]
+}
