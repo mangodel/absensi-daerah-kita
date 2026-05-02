@@ -14,6 +14,14 @@
       "type": "string",
       "description": "Kelompok anggota"
     },
+    "sub_kelompok": {
+      "type": "string",
+      "description": "Sub Kelompok anggota"
+    },
+    "family_group": {
+      "type": "string",
+      "description": "Nama grup keluarga / kepala keluarga"
+    },
     "birth_year": {
       "type": "number",
       "description": "Tahun lahir"
@@ -63,20 +71,8 @@
     },
     "dapukan": {
       "type": "string",
-      "enum": [
-        "Jamaah Biasa",
-        "Ki",
-        "Wakil",
-        "Penerobos",
-        "KU",
-        "PKU",
-        "Aghnia",
-        "Muballigh 4S",
-        "PJP",
-        "PJK"
-      ],
       "default": "Jamaah Biasa",
-      "description": "Dapukan/role"
+      "description": "Dapukan/role (bisa diisi manual)"
     },
     "dapukan_level": {
       "type": "string",

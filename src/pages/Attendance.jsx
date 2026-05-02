@@ -28,6 +28,7 @@ export default function Attendance() {
   const [filterDesa, setFilterDesa] = useState("all");
   const [filterKelompok, setFilterKelompok] = useState("all");
   const [filterVisa, setFilterVisa] = useState("all");
+  const [filterMuballigh, setFilterMuballigh] = useState("all"); // "all" | "muballigh_only" | "muballighot_only" | "muballigh_both"
   const [filterDapukan, setFilterDapukan] = useState("all");
   const [attendanceData, setAttendanceData] = useState({});
   const [saving, setSaving] = useState(false);
@@ -95,7 +96,11 @@ export default function Attendance() {
     const matchKelompok = filterKelompok === "all" || m.kelompok === filterKelompok;
     const matchVisa = filterVisa === "all" || m.visa_status === filterVisa;
     const matchDapukan = filterDapukan === "all" || m.dapukan === filterDapukan;
-    return matchDesa && matchKelompok && matchVisa && matchDapukan;
+    let matchMuballigh = true;
+    if (filterMuballigh === "muballigh_only") matchMuballigh = m.muballigh_status === "Muballigh";
+    else if (filterMuballigh === "muballighot_only") matchMuballigh = m.muballigh_status === "Muballighot";
+    else if (filterMuballigh === "muballigh_both") matchMuballigh = m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot";
+    return matchDesa && matchKelompok && matchVisa && matchDapukan && matchMuballigh;
   });
 
   const handleStatusChange = (memberId, status) => {
@@ -216,6 +221,15 @@ export default function Attendance() {
                   <SelectContent>
                     <SelectItem value="all">Semua Visa</SelectItem>
                     {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
+                  <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Seluruh Jamaah</SelectItem>
+                    <SelectItem value="muballigh_both">Muballigh &amp; Muballighot</SelectItem>
+                    <SelectItem value="muballigh_only">Muballigh Saja</SelectItem>
+                    <SelectItem value="muballighot_only">Muballighot Saja</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={filterDapukan} onValueChange={setFilterDapukan}>

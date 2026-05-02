@@ -26,7 +26,7 @@ function ComboField({ value, onChange, options, placeholder }) {
 }
 
 const emptyMember = {
-  full_name: "", desa: "", kelompok: "", birth_year: "",
+  full_name: "", desa: "", kelompok: "", sub_kelompok: "", family_group: "", birth_year: "",
   birthplace: "", visa_status: "", muballigh_status: "", employment: "",
   dapukan: "Jamaah Biasa", dapukan_level: "Kelompok", status: "Aktif", phone: "", notes: ""
 };
@@ -128,12 +128,12 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
               </Select>
             </Field>
             <Field label="Dapukan">
-              <Select value={form.dapukan} onValueChange={v => setForm({ ...form, dapukan: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <ComboField
+                value={form.dapukan}
+                onChange={v => setForm({ ...form, dapukan: v })}
+                options={DAPUKAN_LIST}
+                placeholder="Pilih atau ketik dapukan"
+              />
             </Field>
             <Field label="Tingkat Dapukan">
               <Select value={form.dapukan_level} onValueChange={v => setForm({ ...form, dapukan_level: v })}>
@@ -150,6 +150,14 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
                   {MEMBER_STATUS_LIST.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Grup Keluarga (KK)">
+              <Input value={form.family_group} onChange={e => setForm({ ...form, family_group: e.target.value })} placeholder="Nama kepala keluarga / grup" />
+            </Field>
+            <Field label="Sub Kelompok">
+              <Input value={form.sub_kelompok} onChange={e => setForm({ ...form, sub_kelompok: e.target.value })} placeholder="Sub kelompok (opsional)" />
             </Field>
           </div>
           <Field label="Catatan">

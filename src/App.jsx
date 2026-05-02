@@ -10,7 +10,7 @@ import Dashboard from '@/pages/Dashboard';
 import Members from '@/pages/Members';
 import Attendance from '@/pages/Attendance';
 import Transfers from '@/pages/Transfers';
-import Structure from '@/pages/Structure';
+import Structure from '@/pages/Structure.jsx';
 import Events from '@/pages/Events';
 import Settings from '@/pages/Settings';
 import MonthlyReport from '@/pages/MonthlyReport';

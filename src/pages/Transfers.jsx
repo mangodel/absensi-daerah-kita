@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRightLeft, ArrowRight, Plus } from "lucide-react";
+import { ArrowRightLeft, ArrowRight, Plus, Search } from "lucide-react";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { format } from "date-fns";
 
@@ -18,6 +18,8 @@ export default function Transfers() {
   const [toDesa, setToDesa] = useState("");
   const [toKelompok, setToKelompok] = useState("");
   const [reason, setReason] = useState("");
+  const [searchTransfer, setSearchTransfer] = useState("");
+  const [searchHistory, setSearchHistory] = useState("");
 
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
@@ -35,6 +37,20 @@ export default function Transfers() {
 
   const toKelompokOptions = toDesa ? (config.desa_kelompok_map || {})[toDesa] || [] : [];
   const member = members.find(m => m.id === selectedMember);
+
+  // Filter members for the dialog search
+  const filteredMembersForTransfer = members.filter(m => {
+    if (!searchTransfer) return true;
+    const q = searchTransfer.toLowerCase();
+    return m.full_name?.toLowerCase().includes(q) || m.kelompok?.toLowerCase().includes(q) || m.desa?.toLowerCase().includes(q);
+  });
+
+  // Filter history
+  const filteredTransfers = transfers.filter(t => {
+    if (!searchHistory) return true;
+    const q = searchHistory.toLowerCase();
+    return t.member_name?.toLowerCase().includes(q) || t.from_kelompok?.toLowerCase().includes(q) || t.to_kelompok?.toLowerCase().includes(q) || t.from_desa?.toLowerCase().includes(q) || t.to_desa?.toLowerCase().includes(q);
+  });
 
   const handleTransfer = async () => {
     if (!member || !toDesa || !toKelompok) return;
@@ -75,6 +91,17 @@ export default function Transfers() {
         </Button>
       </div>
 
+      {/* Search history */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Cari nama, desa, atau kelompok..."
+          className="pl-10"
+          value={searchHistory}
+          onChange={e => setSearchHistory(e.target.value)}
+        />
+      </div>
+
       {transfers.length === 0 ? (
         <div className="bg-card rounded-2xl border border-border p-12 text-center">
           <p className="text-muted-foreground">Belum ada riwayat perpindahan.</p>
@@ -94,7 +121,7 @@ export default function Transfers() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transfers.map(t => (
+                {filteredTransfers.map(t => (
                   <TableRow key={t.id} className="hover:bg-secondary/30">
                     <TableCell className="font-medium">{t.member_name}</TableCell>
                     <TableCell>
@@ -134,11 +161,20 @@ export default function Transfers() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Pilih Anggota *</Label>
+              <div className="relative mb-1.5">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Cari nama, desa, kelompok..."
+                  className="pl-8 h-8 text-xs"
+                  value={searchTransfer}
+                  onChange={e => setSearchTransfer(e.target.value)}
+                />
+              </div>
               <Select value={selectedMember} onValueChange={setSelectedMember}>
                 <SelectTrigger><SelectValue placeholder="Pilih anggota" /></SelectTrigger>
                 <SelectContent>
-                  {members.map(m => (
-                    <SelectItem key={m.id} value={m.id}>{m.full_name} — {m.kelompok}</SelectItem>
+                  {filteredMembersForTransfer.map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.full_name} — {m.desa} / {m.kelompok}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
