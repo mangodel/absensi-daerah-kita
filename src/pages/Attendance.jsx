@@ -9,6 +9,7 @@ import { useUserRole } from "@/lib/useUserRole";
 import { CalendarCheck, Save, Loader2, CalendarDays } from "lucide-react";
 import AttendanceTable from "@/components/attendance/AttendanceTable";
 import AttendanceHistory from "@/components/attendance/AttendanceHistory";
+import AttendanceChart from "@/components/attendance/AttendanceChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -168,6 +169,7 @@ export default function Attendance() {
         <TabsList>
           <TabsTrigger value="input">Input Absensi</TabsTrigger>
           <TabsTrigger value="history">Riwayat</TabsTrigger>
+          <TabsTrigger value="chart">Grafik</TabsTrigger>
         </TabsList>
 
         <TabsContent value="input" className="space-y-4 mt-4">
@@ -304,6 +306,26 @@ export default function Attendance() {
             members={members}
             month={Number(viewMonth)}
             year={Number(viewYear)}
+          />
+        </TabsContent>
+
+        <TabsContent value="chart" className="space-y-4 mt-4">
+          <div className="flex flex-wrap gap-3 mb-2">
+            <Select value={viewYear} onValueChange={setViewYear}>
+              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[currentYear, currentYear - 1, currentYear - 2].map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <AttendanceChart
+            attendances={attendances}
+            members={members}
+            year={Number(viewYear)}
+            filterDesa={isAdminDesa ? userDesa : isAdminKelompok ? userDesa : undefined}
+            filterKelompok={isAdminKelompok ? userKelompok : undefined}
           />
         </TabsContent>
       </Tabs>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -15,6 +15,7 @@ const navItems = [
   { label: "Kegiatan", icon: CalendarDays, path: "/events" },
   { label: "Absensi", icon: CalendarCheck, path: "/attendance" },
   { label: "Laporan Bulanan", icon: FileBarChart, path: "/reports" },
+  { label: "Dokumen", icon: FolderOpen, path: "/documents" },
   { label: "Pindah Kelompok", icon: ArrowRightLeft, path: "/transfers" },
   { label: "Struktur Organisasi", icon: Building2, path: "/structure" },
 ];

@@ -1,0 +1,38 @@
+{
+  "name": "DocumentDownload",
+  "type": "object",
+  "properties": {
+    "document_id": {
+      "type": "string",
+      "description": "ID dokumen yang didownload"
+    },
+    "document_title": {
+      "type": "string",
+      "description": "Judul dokumen"
+    },
+    "downloaded_by": {
+      "type": "string",
+      "description": "Email yang mendownload"
+    },
+    "downloaded_by_name": {
+      "type": "string",
+      "description": "Nama yang mendownload"
+    },
+    "downloaded_at": {
+      "type": "string",
+      "description": "Waktu download (ISO string)"
+    },
+    "desa": {
+      "type": "string",
+      "description": "Desa downloader"
+    },
+    "kelompok": {
+      "type": "string",
+      "description": "Kelompok downloader"
+    }
+  },
+  "required": [
+    "document_id",
+    "downloaded_by"
+  ]
+}

@@ -15,6 +15,7 @@ import Events from '@/pages/Events';
 import Settings from '@/pages/Settings';
 import MonthlyReport from '@/pages/MonthlyReport';
 import Reminders from '@/pages/Reminders';
+import Documents from '@/pages/Documents';
 import { AppConfigProvider } from '@/lib/AppConfigContext';
 
 const AuthenticatedApp = () => {
@@ -53,6 +54,7 @@ const AuthenticatedApp = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/reports" element={<MonthlyReport />} />
         <Route path="/reminders" element={<Reminders />} />
+        <Route path="/documents" element={<Documents />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

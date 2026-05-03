@@ -1,0 +1,65 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Judul dokumen"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi dokumen"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL file yang diupload"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Nama file asli"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "Ukuran file dalam bytes"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Umum",
+        "Kegiatan",
+        "Laporan",
+        "Surat",
+        "Panduan",
+        "Lainnya"
+      ],
+      "default": "Umum",
+      "description": "Kategori dokumen"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "Semua",
+        "Desa",
+        "Kelompok"
+      ],
+      "default": "Semua",
+      "description": "Siapa yang bisa mengakses"
+    },
+    "target_desa": {
+      "type": "string",
+      "description": "Desa target jika scope Desa/Kelompok"
+    },
+    "uploaded_by": {
+      "type": "string",
+      "description": "Email uploader"
+    },
+    "uploaded_by_name": {
+      "type": "string",
+      "description": "Nama uploader"
+    }
+  },
+  "required": [
+    "title",
+    "file_url"
+  ]
+}
