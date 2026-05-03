@@ -35,7 +35,7 @@ const KATEGORI_4S = [
     dapukan: ["Aghnia"],
   },
   {
-    label: "Mubaligh / Mubalighot",
+    label: "Mubaligh",
     color: "bg-violet-50 border-violet-200",
     badgeClass: "bg-violet-100 text-violet-700 border-violet-200",
     dapukan: ["Muballigh 4S", "Muballigh Daerah", "Muballigh Desa", "Muballigh Kelompok", "Mubaligh Daerah", "Mubaligh Desa", "Mubaligh Kelompok"],
@@ -82,19 +82,15 @@ function isPengurus(m) {
 
 function PengurusCard({ member, badgeClass, borderClass }) {
   return (
-    <div className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border ${borderClass}`}>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-sm">{member.full_name}</span>
-          <Badge className={`text-[10px] shrink-0 ${badgeClass}`}>{member.dapukan}</Badge>
+    <div className={`px-3 py-2.5 rounded-xl border ${borderClass}`}>
+      <span className="font-medium text-sm block">{member.full_name}</span>
+      <Badge className={`text-[10px] mt-1 ${badgeClass}`}>{member.dapukan}</Badge>
+      {member.phone && (
+        <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+          <Phone className="w-3 h-3" />
+          <span>{member.phone}</span>
         </div>
-        {member.phone && (
-          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-            <Phone className="w-3 h-3" />
-            <span>{member.phone}</span>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -307,15 +303,14 @@ export default function Structure() {
                             <div key={kat.label} className={`rounded-lg border ${kat.color} px-3 py-2`}>
                               <div className="text-[10px] font-semibold text-muted-foreground mb-1.5">{kat.label}</div>
                               {kat.members.map(l => (
-                                <div key={l.id} className="flex items-center justify-between text-xs mb-1">
-                                  <span className="font-medium text-foreground">{l.full_name}</span>
-                                  <Badge className={`text-[9px] ${kat.badgeClass}`}>{l.dapukan}</Badge>
-                                </div>
-                              ))}
-                              {/* Phone numbers */}
-                              {kat.members.filter(l => l.phone).map(l => (
-                                <div key={l.id + "_phone"} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                  <Phone className="w-2.5 h-2.5" />{l.full_name}: {l.phone}
+                                <div key={l.id} className="mb-1.5">
+                                  <span className="text-xs font-medium text-foreground block">{l.full_name}</span>
+                                  <Badge className={`text-[9px] mt-0.5 ${kat.badgeClass}`}>{l.dapukan}</Badge>
+                                  {l.phone && (
+                                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                                      <Phone className="w-2.5 h-2.5" />{l.phone}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>

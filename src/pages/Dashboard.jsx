@@ -1,18 +1,110 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Users, UserCheck, UserX, CalendarCheck, Bell } from "lucide-react";
+import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import DesaOverview from "@/components/dashboard/DesaOverview";
 import AustraliaMap from "@/components/dashboard/AustraliaMap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
 import { Link } from "react-router-dom";
 import { isToday, isPast, format } from "date-fns";
 import { id } from "date-fns/locale";
+import { MONTHS } from "@/lib/constants";
+
+function pct(val, total) {
+  if (!total) return "0%";
+  return `${Math.round((val / total) * 100)}%`;
+}
+
+function MiniMonthlyReport({ attendances, members, isAdminDesa, isAdminKelompok, userDesa, userKelompok, desaKelompokMap }) {
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  const [month, setMonth] = useState(String(currentMonth));
+  const [year, setYear] = useState(String(currentYear));
+
+  const monthAtts = attendances.filter(a => a.month === Number(month) && a.year === Number(year));
+
+  const stats = useMemo(() => {
+    if (isAdminKelompok && userKelompok) {
+      const atts = monthAtts.filter(a => a.kelompok === userKelompok && a.event_level !== "Daerah");
+      const hadir = atts.filter(a => a.status === "Hadir").length;
+      return [{ label: userKelompok, hadir, total: atts.length, rate: pct(hadir, atts.length) }];
+    }
+    if (isAdminDesa && userDesa) {
+      const kelompoks = desaKelompokMap[userDesa] || [];
+      return kelompoks.map(k => {
+        const atts = monthAtts.filter(a => a.kelompok === k && a.desa === userDesa);
+        const hadir = atts.filter(a => a.status === "Hadir").length;
+        return { label: k, hadir, total: atts.length, rate: pct(hadir, atts.length) };
+      }).filter(s => s.total > 0);
+    }
+    return [];
+  }, [monthAtts, isAdminDesa, isAdminKelompok, userDesa, userKelompok, desaKelompokMap]);
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+          <FileBarChart className="w-4 h-4 text-primary" />
+          Laporan Bulanan
+        </h3>
+        <div className="flex gap-2">
+          <Select value={month} onValueChange={setMonth}>
+            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {MONTHS.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={year} onValueChange={setYear}>
+            <SelectTrigger className="w-20 h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[currentYear, currentYear - 1].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {stats.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">Belum ada data absensi bulan ini.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-secondary/50">
+                <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                  {isAdminKelompok ? "Kelompok" : "Kelompok"}
+                </th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground">Hadir</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground">Total Absen</th>
+                <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground">% Hadir</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.map(s => (
+                <tr key={s.label} className="border-t border-border">
+                  <td className="px-3 py-2 font-medium text-xs">{s.label}</td>
+                  <td className="px-3 py-2 text-center text-accent font-medium text-xs">{s.hadir}</td>
+                  <td className="px-3 py-2 text-center text-muted-foreground text-xs">{s.total}</td>
+                  <td className="px-3 py-2 text-center">
+                    <Badge variant="outline" className={`text-[10px] ${s.total > 0 ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground"}`}>
+                      {s.rate}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className="text-right">
+        <Link to="/reports" className="text-xs text-primary hover:underline">Lihat laporan lengkap →</Link>
+      </div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { config } = useAppConfig();
@@ -32,8 +124,9 @@ export default function Dashboard() {
   const activeMembers = members.filter(m => m.status === "Aktif").length;
   const inactiveMembers = members.filter(m => m.status === "Tidak Aktif").length;
   const yearAttendances = attendances.filter(a => a.year === Number(selectedYear));
+  // Admin kelompok: only kelompok-level events attendance (exclude Daerah events)
   const scopedAttendances = isAdminKelompok && userKelompok
-    ? yearAttendances.filter(a => a.kelompok === userKelompok)
+    ? yearAttendances.filter(a => a.kelompok === userKelompok && a.event_level !== "Daerah")
     : isAdminDesa && userDesa
     ? yearAttendances.filter(a => a.desa === userDesa)
     : yearAttendances;
@@ -125,10 +218,10 @@ export default function Dashboard() {
       {isAdminKelompok && (
         <div className="bg-card border border-border rounded-2xl p-5">
           <h3 className="font-semibold text-sm text-foreground mb-3">Ringkasan Kelompok {userKelompok}</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-secondary/40 rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-primary">{members.filter(m => m.status === "Aktif").length}</p>
-              <p className="text-xs text-muted-foreground mt-1">Anggota Aktif</p>
+              <p className="text-xs text-muted-foreground mt-1">Jamaah Aktif</p>
             </div>
             <div className="bg-secondary/40 rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-accent">{attendanceRate}%</p>
@@ -137,6 +230,19 @@ export default function Dashboard() {
           </div>
           <AttendanceChart attendances={scopedAttendances} year={Number(selectedYear)} />
         </div>
+      )}
+
+      {/* Mini Laporan Bulanan — untuk admin desa & kelompok */}
+      {(isAdminDesa || isAdminKelompok) && (
+        <MiniMonthlyReport
+          attendances={attendances}
+          members={members}
+          isAdminDesa={isAdminDesa}
+          isAdminKelompok={isAdminKelompok}
+          userDesa={userDesa}
+          userKelompok={userKelompok}
+          desaKelompokMap={config.desa_kelompok_map || {}}
+        />
       )}
     </div>
   );

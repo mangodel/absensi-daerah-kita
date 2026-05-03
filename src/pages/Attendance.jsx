@@ -91,7 +91,17 @@ export default function Attendance() {
 
   const scopedMembers = filterMembers(members);
   const activeMembers = scopedMembers.filter(m => m.status === "Aktif");
-  const filteredMembers = activeMembers.filter(m => {
+
+  // Auto-filter base member pool berdasarkan level event yang dipilih
+  const eventBasedMembers = activeMembers.filter(m => {
+    if (!selectedEvent) return true;
+    if (selectedEvent.level === "Daerah") return true; // semua jamaah
+    if (selectedEvent.level === "Desa") return m.desa === selectedEvent.desa;
+    if (selectedEvent.level === "Kelompok") return m.kelompok === selectedEvent.kelompok && m.desa === (selectedEvent.desa || m.desa);
+    return true;
+  });
+
+  const filteredMembers = eventBasedMembers.filter(m => {
     const matchDesa = filterDesa === "all" || m.desa === filterDesa;
     const matchKelompok = filterKelompok === "all" || m.kelompok === filterKelompok;
     const matchVisa = filterVisa === "all" || m.visa_status === filterVisa;
