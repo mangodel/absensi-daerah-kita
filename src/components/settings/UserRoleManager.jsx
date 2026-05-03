@@ -65,13 +65,12 @@ export default function UserRoleManager() {
     e.preventDefault();
     if (!inviteForm.email) return;
     setInviting(true);
-    // Map our roles to base44 roles (base44 only supports "user" | "admin")
     const base44Role = (inviteForm.role === "super_admin") ? "admin" : "user";
     await base44.users.inviteUser(inviteForm.email, base44Role);
-    // After invite, find newly created user and update their extended role
-    // (user may not exist yet — they need to accept invite first)
-    // Store intended role in config as pending, or just toast instructions
-    toast({ title: `Undangan dikirim ke ${inviteForm.email}`, description: "Setelah pengguna menerima undangan, atur role-nya di daftar di bawah." });
+    toast({
+      title: `Undangan dikirim ke ${inviteForm.email}`,
+      description: "Setelah pengguna menerima undangan, atur role-nya di daftar pengguna.",
+    });
     setInviting(false);
     setInviteOpen(false);
     setInviteForm({ email: "", role: "admin_kelompok", desa: "", kelompok: "" });
@@ -82,6 +81,11 @@ export default function UserRoleManager() {
 
   const kelompokOptions = editForm.desa ? desaKelompokMap[editForm.desa] || [] : [];
   const inviteKelompokOptions = inviteForm.desa ? desaKelompokMap[inviteForm.desa] || [] : [];
+
+  // Only show users who have already registered (have full_name or email set properly)
+  // i.e., exclude "pending invite" placeholders — users with email but no created_date equivalent
+  // Base44 users are "accepted" when they appear in the User list (all listed users have accepted)
+  const registeredUsers = users;
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
@@ -109,7 +113,7 @@ export default function UserRoleManager() {
         </div>
 
         <div className="space-y-3">
-          {users.map(u => (
+          {registeredUsers.map(u => (
             <div key={u.id} className="border border-border rounded-xl p-4">
               {editingId === u.id ? (
                 <div className="space-y-3">
@@ -175,7 +179,9 @@ export default function UserRoleManager() {
               )}
             </div>
           ))}
-          {users.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Belum ada pengguna terdaftar.</p>}
+          {registeredUsers.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-6">Belum ada pengguna terdaftar.</p>
+          )}
         </div>
       </div>
 
@@ -183,7 +189,9 @@ export default function UserRoleManager() {
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><UserPlus className="w-4 h-4 text-primary" /> Undang Pengguna Baru</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-primary" /> Undang Pengguna Baru
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleInvite} className="space-y-4">
             <div className="space-y-1.5">
@@ -229,7 +237,7 @@ export default function UserRoleManager() {
               </div>
             )}
             <div className="bg-secondary/40 rounded-lg p-3 text-xs text-muted-foreground">
-              <p>📧 Undangan akan dikirim ke email tersebut. Setelah pengguna mendaftar, atur role-nya di daftar pengguna.</p>
+              <p>📧 Undangan dikirim ke email. Setelah diterima, atur role di daftar pengguna di atas.</p>
             </div>
             <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>Batal</Button>

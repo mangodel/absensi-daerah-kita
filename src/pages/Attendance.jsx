@@ -212,20 +212,25 @@ export default function Attendance() {
             <>
               {/* Filter anggota */}
               <div className="flex flex-wrap gap-3">
-                <Select value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }}>
-                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Desa</SelectItem>
-                    {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={filterKelompok} onValueChange={setFilterKelompok}>
-                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Kelompok</SelectItem>
-                    {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                {/* Filter Desa & Kelompok hanya tampil untuk event Daerah */}
+                {selectedEvent.level === "Daerah" && (
+                  <>
+                    <Select value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }}>
+                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Semua Desa</SelectItem>
+                        {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterKelompok} onValueChange={setFilterKelompok}>
+                      <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Semua Kelompok</SelectItem>
+                        {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
                 <Select value={filterVisa} onValueChange={setFilterVisa}>
                   <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -233,22 +238,27 @@ export default function Attendance() {
                     {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
-                  <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Seluruh Jamaah</SelectItem>
-                    <SelectItem value="muballigh_both">Muballigh &amp; Muballighot</SelectItem>
-                    <SelectItem value="muballigh_only">Muballigh Saja</SelectItem>
-                    <SelectItem value="muballighot_only">Muballighot Saja</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={filterDapukan} onValueChange={setFilterDapukan}>
-                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Dapukan</SelectItem>
-                    {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                {/* Filter Mubaligh & Dapukan hanya untuk event Daerah */}
+                {selectedEvent.level === "Daerah" && (
+                  <>
+                    <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
+                      <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Seluruh Jamaah</SelectItem>
+                        <SelectItem value="muballigh_both">Muballigh &amp; Muballighot</SelectItem>
+                        <SelectItem value="muballigh_only">Muballigh Saja</SelectItem>
+                        <SelectItem value="muballighot_only">Muballighot Saja</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterDapukan} onValueChange={setFilterDapukan}>
+                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Semua Dapukan</SelectItem>
+                        {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
                 <Button onClick={handleSave} disabled={saving || filledCount === 0} className="ml-auto">
                   {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Simpan ({filledCount})

@@ -251,57 +251,53 @@ export default function AustraliaMap({ members }) {
 
   return (
     <div className="bg-card rounded-2xl border border-border p-5">
-      <h3 className="font-semibold text-sm text-foreground mb-1">Sebaran Jamaah</h3>
-      <p className="text-xs text-muted-foreground mb-4">Australia, New Zealand & Rarotonga</p>
+      <h3 className="font-semibold text-sm text-foreground mb-0.5">Sebaran Jamaah</h3>
+      <p className="text-xs text-muted-foreground mb-3">Australia &amp; New Zealand</p>
 
-      <div className="relative w-full overflow-x-auto">
-        <svg viewBox="30 0 780 470" className="w-full" style={{ minHeight: 240 }}>
-          {/* Ocean */}
-          <rect x="30" y="0" width="780" height="470" fill="#dbeafe" rx="10" />
+      <div className="w-full rounded-xl overflow-hidden bg-[#dbeafe]">
+        <svg viewBox="50 10 710 450" className="w-full" style={{ display: "block" }}>
+          {/* Ocean background */}
+          <rect x="50" y="10" width="710" height="450" fill="#dbeafe" />
 
-          {/* Australia */}
-          <path d={AUSTRALIA} fill="#d1fae5" stroke="#34d399" strokeWidth="1.2" />
-          {/* Tasmania */}
-          <path d={TASMANIA} fill="#d1fae5" stroke="#34d399" strokeWidth="1.2" />
-          {/* NZ North Island */}
-          <path d={NZ_NORTH} fill="#d1fae5" stroke="#34d399" strokeWidth="1.2" />
-          {/* NZ South Island */}
-          <path d={NZ_SOUTH} fill="#d1fae5" stroke="#34d399" strokeWidth="1.2" />
+          {/* Land masses */}
+          <path d={AUSTRALIA} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
+          <path d={TASMANIA} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
+          <path d={NZ_NORTH} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
+          <path d={NZ_SOUTH} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
 
-          {/* Rarotonga dot */}
-          <circle cx={730} cy={220} r={5} fill="#d1fae5" stroke="#34d399" strokeWidth="1.2" />
+          {/* Rarotonga island dot */}
+          <circle cx={730} cy={220} r={4} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
 
-          {/* Labels */}
-          <text x={lngToX(134)} y={latToY(-27)} textAnchor="middle" fontSize="11" fill="#065f46" fontWeight="600" opacity="0.45" fontFamily="Inter,sans-serif">Australia</text>
-          <text x={lngToX(172.5)} y={latToY(-42.5)} textAnchor="middle" fontSize="7.5" fill="#065f46" fontWeight="600" opacity="0.6" fontFamily="Inter,sans-serif">NZ</text>
-          <text x={730} y={209} textAnchor="middle" fontSize="6.5" fill="#065f46" opacity="0.7" fontFamily="Inter,sans-serif">Rarotonga</text>
+          {/* Country labels */}
+          <text x={lngToX(134)} y={latToY(-26)} textAnchor="middle" fontSize="10" fill="#15803d" fontWeight="700" opacity="0.4" fontFamily="Inter,sans-serif" letterSpacing="2">AUSTRALIA</text>
+          <text x={lngToX(172.5)} y={latToY(-42)} textAnchor="middle" fontSize="7" fill="#15803d" fontWeight="600" opacity="0.5" fontFamily="Inter,sans-serif">NZ</text>
 
           {/* City markers */}
           {Object.entries(CITY_COORDS).map(([city, pos]) => {
             const count = cityData[city] || 0;
             const isActive = count > 0;
             const ratio = normalize(count, maxCount);
-            const r = isActive ? Math.max(7, Math.min(20, 7 + ratio * 16)) : 3;
+            const r = isActive ? Math.max(8, Math.min(22, 8 + ratio * 16)) : 3;
 
             return (
               <g key={city}>
                 {isActive && (
-                  <circle cx={pos.x} cy={pos.y} r={r + 5} fill="hsl(243,75%,59%)" opacity="0.15" />
+                  <circle cx={pos.x} cy={pos.y} r={r + 6} fill="hsl(243,75%,59%)" opacity="0.12" />
                 )}
                 <circle
                   cx={pos.x} cy={pos.y} r={r}
-                  fill={isActive ? "hsl(243,75%,59%)" : "#94a3b8"}
-                  stroke={isActive ? "white" : "#cbd5e1"}
-                  strokeWidth="1.5"
-                  opacity={isActive ? 1 : 0.4}
+                  fill={isActive ? "hsl(243,75%,59%)" : "#cbd5e1"}
+                  stroke={isActive ? "white" : "#e2e8f0"}
+                  strokeWidth={isActive ? "1.5" : "1"}
+                  opacity={isActive ? 1 : 0.5}
                 />
                 {isActive && (
                   <text x={pos.x} y={pos.y + 0.5} textAnchor="middle" dominantBaseline="middle"
-                    fontSize={count >= 100 ? "5.5" : "7"} fill="white" fontWeight="700" fontFamily="Inter,sans-serif">
+                    fontSize={count >= 100 ? "5.5" : "6.5"} fill="white" fontWeight="800" fontFamily="Inter,sans-serif">
                     {count}
                   </text>
                 )}
-                <text x={pos.x} y={pos.y - r - 3.5} textAnchor="middle" fontSize="7"
+                <text x={pos.x} y={pos.y - r - 4} textAnchor="middle" fontSize="6.5"
                   fill={isActive ? "#1e293b" : "#94a3b8"}
                   fontWeight={isActive ? "600" : "400"} fontFamily="Inter,sans-serif">
                   {city}

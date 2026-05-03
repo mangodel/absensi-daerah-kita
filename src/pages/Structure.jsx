@@ -1,12 +1,15 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
-import { Building2, Users, Shield, Phone, Home, Filter } from "lucide-react";
+import { Building2, Users, Shield, Phone, Home, Filter, GripVertical, Pencil, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 // Kategori 4S dan urutan tampil
 const KATEGORI_4S = [
@@ -123,12 +126,52 @@ export default function Structure() {
   const desaKelompokMap = config.desa_kelompok_map || {};
   const { isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
 
-  const [filterMubaligh, setFilterMubaligh] = useState("all"); // "all" | "mubaligh" | "mubalighot"
+  const [filterMubaligh, setFilterMubaligh] = useState("all");
+  const [editingMemberId, setEditingMemberId] = useState(null);
+  const [editDapukan, setEditDapukan] = useState("");
+  // memberOrder: { [kelompok]: [member_id, ...] }
+  const [memberOrder, setMemberOrder] = useState({});
+
+  const queryClient = useQueryClient();
 
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => base44.entities.Member.list(),
   });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Member.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["members"] }),
+  });
+
+  const handleSaveDapukan = (memberId) => {
+    updateMutation.mutate({ id: memberId, data: { dapukan: editDapukan } });
+    setEditingMemberId(null);
+  };
+
+  const onDragEnd = (result) => {
+    const { source, destination, draggableId } = result;
+    if (!destination || source.index === destination.index) return;
+    const scopeKey = source.droppableId;
+    const currentIds = memberOrder[scopeKey] || [];
+    const newOrder = [...currentIds];
+    const [removed] = newOrder.splice(source.index, 1);
+    newOrder.splice(destination.index, 0, removed);
+    setMemberOrder(prev => ({ ...prev, [scopeKey]: newOrder }));
+  };
+
+  const getSortedMembers = (memberList, scopeKey) => {
+    const order = memberOrder[scopeKey];
+    if (!order || order.length === 0) return memberList;
+    return [...memberList].sort((a, b) => {
+      const ai = order.indexOf(a.id);
+      const bi = order.indexOf(b.id);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  };
 
   // Scope filter based on role
   const scopedDesa = isSuperAdmin
@@ -261,17 +304,18 @@ export default function Structure() {
               )}
 
               {/* Kelompok Cards */}
+              <DragDropContext onDragEnd={onDragEnd}>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {kelompoks.map(kelompok => {
                   const kelompokMembers = members.filter(m => m.desa === desa && m.kelompok === kelompok);
                   const active = kelompokMembers.filter(m => m.status === "Aktif").length;
-                  const leaders = kelompokMembers.filter(m => isPengurus(m) && m.dapukan_level === "Kelompok");
+                  const rawLeaders = kelompokMembers.filter(m => isPengurus(m) && m.dapukan_level === "Kelompok");
+                  const scopeKey = `${desa}-${kelompok}`;
+                  const leaders = getSortedMembers(rawLeaders, scopeKey);
                   const kelompokKategori = getPengurusKategori(leaders);
                   const kkSet = new Set(kelompokMembers.filter(m => m.family_group).map(m => m.family_group));
                   const kkCount = kkSet.size;
                   const subKelompoks = [...new Set(kelompokMembers.filter(m => m.sub_kelompok).map(m => m.sub_kelompok))];
-
-                  // Jamaah biasa with mubaligh filter
                   const jamaahBiasa = applyMubalighFilter(kelompokMembers.filter(m => !isPengurus(m)));
 
                   return (
@@ -296,8 +340,68 @@ export default function Structure() {
                         </div>
                       </div>
 
-                      {/* Pengurus per kategori 4S */}
-                      {kelompokKategori.length > 0 && (
+                      {/* Pengurus per kategori 4S — drag to reorder */}
+                      {isSuperAdmin && leaders.length > 0 && (
+                        <Droppable droppableId={scopeKey} type="PENGURUS">
+                          {(provided) => (
+                            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                              {kelompokKategori.map(kat => (
+                                <div key={kat.label} className={`rounded-lg border ${kat.color} px-3 py-2`}>
+                                  <div className="text-[10px] font-semibold text-muted-foreground mb-1.5">{kat.label}</div>
+                                  {kat.members.map((l, lIdx) => (
+                                    <Draggable key={l.id} draggableId={l.id} index={leaders.indexOf(l)}>
+                                      {(drag, snap) => (
+                                        <div
+                                          ref={drag.innerRef}
+                                          {...drag.draggableProps}
+                                          className={`mb-1.5 ${snap.isDragging ? "opacity-80" : ""}`}
+                                        >
+                                          <div className="flex items-start gap-1">
+                                            <div {...drag.dragHandleProps} className="text-muted-foreground cursor-grab mt-0.5 shrink-0">
+                                              <GripVertical className="w-3 h-3" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <span className="text-xs font-medium text-foreground block">{l.full_name}</span>
+                                              {editingMemberId === l.id ? (
+                                                <div className="flex items-center gap-1 mt-0.5">
+                                                  <Input
+                                                    className="h-5 text-[10px] px-1 py-0"
+                                                    value={editDapukan}
+                                                    onChange={e => setEditDapukan(e.target.value)}
+                                                    autoFocus
+                                                  />
+                                                  <button onClick={() => handleSaveDapukan(l.id)} className="text-accent"><Check className="w-3 h-3" /></button>
+                                                  <button onClick={() => setEditingMemberId(null)} className="text-muted-foreground"><X className="w-3 h-3" /></button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center gap-1 mt-0.5">
+                                                  <Badge className={`text-[9px] ${kat.badgeClass}`}>{l.dapukan}</Badge>
+                                                  <button onClick={() => { setEditingMemberId(l.id); setEditDapukan(l.dapukan); }} className="text-muted-foreground hover:text-primary">
+                                                    <Pencil className="w-2.5 h-2.5" />
+                                                  </button>
+                                                </div>
+                                              )}
+                                              {l.phone && (
+                                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                                                  <Phone className="w-2.5 h-2.5" />{l.phone}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                </div>
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      )}
+
+                      {/* Non-admin: view only */}
+                      {!isSuperAdmin && kelompokKategori.length > 0 && (
                         <div className="space-y-2">
                           {kelompokKategori.map(kat => (
                             <div key={kat.label} className={`rounded-lg border ${kat.color} px-3 py-2`}>
@@ -326,7 +430,6 @@ export default function Structure() {
                         </div>
                       )}
 
-                      {/* Jamaah Biasa — hanya tampil jika filter mubaligh aktif */}
                       {filterMubaligh !== "all" && jamaahBiasa.length > 0 && (
                         <div className="border-t border-border pt-2">
                           <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">
@@ -363,6 +466,7 @@ export default function Structure() {
                   );
                 })}
               </div>
+              </DragDropContext>
             </TabsContent>
           );
         })}

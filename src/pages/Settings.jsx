@@ -6,11 +6,12 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, Save, Loader2, Plus, Trash2, Upload, Image, Users, ShieldCheck } from "lucide-react";
+import { Settings as SettingsIcon, Save, Loader2, Plus, Trash2, Upload, Image, Users, ShieldCheck, GripVertical } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserRoleManager from "@/components/settings/UserRoleManager";
 import GoogleSheetSync from "@/components/settings/GoogleSheetSync";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const PAGE_TITLE_FIELDS = [
   { key: "dashboard", label: "Dashboard — Judul" },
@@ -123,6 +124,24 @@ export default function Settings() {
     });
   };
 
+  const onDragEnd = (result) => {
+    const { source, destination, type } = result;
+    if (!destination) return;
+
+    if (type === "DESA") {
+      const entries = Object.entries(desaKelompokMap);
+      const [removed] = entries.splice(source.index, 1);
+      entries.splice(destination.index, 0, removed);
+      setDesaKelompokMap(Object.fromEntries(entries));
+    } else if (type === "KELOMPOK") {
+      const desa = source.droppableId.replace("kelompok-", "");
+      const list = [...(desaKelompokMap[desa] || [])];
+      const [removed] = list.splice(source.index, 1);
+      list.splice(destination.index, 0, removed);
+      setDesaKelompokMap(prev => ({ ...prev, [desa]: list }));
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-3xl pb-20 md:pb-0">
       <div className="flex items-center gap-2">
@@ -182,29 +201,68 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* Desa & Kelompok */}
+          {/* Desa & Kelompok — drag to reorder */}
           <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-sm text-foreground">Desa &amp; Kelompok</h2>
+              <div>
+                <h2 className="font-semibold text-sm text-foreground">Desa &amp; Kelompok</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Seret <GripVertical className="inline w-3 h-3" /> untuk mengubah urutan</p>
+              </div>
               <Button size="sm" variant="outline" onClick={addDesa}><Plus className="w-3.5 h-3.5 mr-1" /> Tambah Desa</Button>
             </div>
-            {Object.entries(desaKelompokMap).map(([desa, kelompoks]) => (
-              <div key={desa} className="border border-border rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Input className="font-semibold" defaultValue={desa} onBlur={e => renameDesa(desa, e.target.value)} />
-                  <Button size="icon" variant="ghost" className="text-destructive shrink-0" onClick={() => removeDesa(desa)}><Trash2 className="w-4 h-4" /></Button>
-                </div>
-                <div className="space-y-2 ml-2">
-                  {kelompoks.map((k, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <Input className="text-sm" defaultValue={k} onBlur={e => renameKelompok(desa, idx, e.target.value)} />
-                      <Button size="icon" variant="ghost" className="text-destructive shrink-0" onClick={() => removeKelompok(desa, idx)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                    </div>
-                  ))}
-                  <Button size="sm" variant="outline" className="w-full" onClick={() => addKelompok(desa)}><Plus className="w-3.5 h-3.5 mr-1" /> Tambah Kelompok</Button>
-                </div>
-              </div>
-            ))}
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId="desa-list" type="DESA">
+                {(provided) => (
+                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                    {Object.entries(desaKelompokMap).map(([desa, kelompoks], desaIdx) => (
+                      <Draggable key={desa} draggableId={`desa-${desa}`} index={desaIdx}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`border border-border rounded-xl p-4 space-y-3 bg-card ${snapshot.isDragging ? "shadow-lg ring-2 ring-primary/20" : ""}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div {...provided.dragHandleProps} className="text-muted-foreground cursor-grab hover:text-foreground">
+                                <GripVertical className="w-4 h-4" />
+                              </div>
+                              <Input className="font-semibold" defaultValue={desa} key={desa} onBlur={e => renameDesa(desa, e.target.value)} />
+                              <Button size="icon" variant="ghost" className="text-destructive shrink-0" onClick={() => removeDesa(desa)}><Trash2 className="w-4 h-4" /></Button>
+                            </div>
+                            <Droppable droppableId={`kelompok-${desa}`} type="KELOMPOK">
+                              {(kProvided) => (
+                                <div {...kProvided.droppableProps} ref={kProvided.innerRef} className="space-y-2 ml-6">
+                                  {kelompoks.map((k, idx) => (
+                                    <Draggable key={`${desa}-${idx}`} draggableId={`kelompok-${desa}-${idx}`} index={idx}>
+                                      {(kDrag, kSnap) => (
+                                        <div
+                                          ref={kDrag.innerRef}
+                                          {...kDrag.draggableProps}
+                                          className={`flex items-center gap-2 ${kSnap.isDragging ? "shadow-md" : ""}`}
+                                        >
+                                          <div {...kDrag.dragHandleProps} className="text-muted-foreground cursor-grab hover:text-foreground">
+                                            <GripVertical className="w-3.5 h-3.5" />
+                                          </div>
+                                          <Input className="text-sm" defaultValue={k} key={`${desa}-${idx}-${k}`} onBlur={e => renameKelompok(desa, idx, e.target.value)} />
+                                          <Button size="icon" variant="ghost" className="text-destructive shrink-0" onClick={() => removeKelompok(desa, idx)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {kProvided.placeholder}
+                                  <Button size="sm" variant="outline" className="w-full" onClick={() => addKelompok(desa)}><Plus className="w-3.5 h-3.5 mr-1" /> Tambah Kelompok</Button>
+                                </div>
+                              )}
+                            </Droppable>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           </div>
 
           <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
