@@ -57,7 +57,15 @@ export default function MonthlyReport() {
   const month = Number(selectedMonth);
   const year = Number(selectedYear);
 
-  const monthAttendances = allAttendances.filter(a => a.month === month && a.year === year);
+  // Scope attendances by role
+  const allMonthAttendances = allAttendances.filter(a => a.month === month && a.year === year);
+  const monthAttendances = useMemo(() => {
+    if (isSuperAdmin) return allMonthAttendances;
+    if (isAdminDesa && userDesa) return allMonthAttendances.filter(a => a.desa === userDesa);
+    if (isAdminKelompok && userKelompok) return allMonthAttendances.filter(a => a.kelompok === userKelompok);
+    return [];
+  }, [allMonthAttendances, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok]);
+
   const monthEvents = events.filter(e => e.month === month && e.year === year);
 
   // Per-desa stats
@@ -74,20 +82,29 @@ export default function MonthlyReport() {
 
       const kelompokStats = kelompoks.map(kelompok => {
         const km = desaMembers.filter(m => m.kelompok === kelompok);
-        const kAtts = monthAttendances.filter(a => a.kelompok === kelompok);
+        // Attendance for this kelompok: all events that belong to this kelompok
+        const kAtts = allMonthAttendances.filter(a => a.kelompok === kelompok);
         const hadir = kAtts.filter(a => a.status === "Hadir").length;
         const total = kAtts.length;
-        const kEvents = monthEvents.filter(e => e.kelompok === kelompok || e.level !== "Kelompok");
+        // Count events relevant to this kelompok: Daerah + Desa (same desa) + Kelompok (same kelompok)
+        const kEvents = allEvents.filter(e =>
+          e.month === month && e.year === year && (
+            e.level === "Daerah" ||
+            (e.level === "Desa" && e.desa === desa) ||
+            (e.level === "Kelompok" && e.kelompok === kelompok)
+          )
+        );
         return { kelompok, memberCount: km.length, hadir, total, events: kEvents.length, rate: pct(hadir, total) };
       });
 
-      const desaAtts = monthAttendances.filter(a => a.desa === desa);
+      // Desa attendance = all kelompoks in desa
+      const desaAtts = allMonthAttendances.filter(a => a.desa === desa);
       const totalHadir = desaAtts.filter(a => a.status === "Hadir").length;
       const totalAtt = desaAtts.length;
 
       return { desa, memberCount: desaMembers.length, totalHadir, totalAtt, kelompokStats, rate: pct(totalHadir, totalAtt) };
     });
-  }, [members, monthAttendances, monthEvents, desaKelompokMap, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok]);
+  }, [members, allMonthAttendances, allEvents, desaKelompokMap, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok, month, year]);
 
   const totalActiveMembers = members.filter(m => m.status === "Aktif").length;
   const totalHadir = monthAttendances.filter(a => a.status === "Hadir").length;
@@ -218,7 +235,7 @@ export default function MonthlyReport() {
           </div>
         );
 
-        const kelompokAtts = monthAttendances.filter(a => a.kelompok === userKelompok);
+        const kelompokAtts = allMonthAttendances.filter(a => a.kelompok === userKelompok);
         const byStatus = {};
         kelompokAtts.forEach(a => { byStatus[a.status] = (byStatus[a.status] || 0) + 1; });
 

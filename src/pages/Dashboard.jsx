@@ -30,7 +30,7 @@ function MiniMonthlyReport({ attendances, members, isAdminDesa, isAdminKelompok,
 
   const stats = useMemo(() => {
     if (isAdminKelompok && userKelompok) {
-      const atts = monthAtts.filter(a => a.kelompok === userKelompok && a.event_level !== "Daerah");
+      const atts = monthAtts.filter(a => a.kelompok === userKelompok);
       const hadir = atts.filter(a => a.status === "Hadir").length;
       return [{ label: userKelompok, hadir, total: atts.length, rate: pct(hadir, atts.length) }];
     }
@@ -125,8 +125,9 @@ export default function Dashboard() {
   const inactiveMembers = members.filter(m => m.status === "Tidak Aktif").length;
   const yearAttendances = attendances.filter(a => a.year === Number(selectedYear));
   // Admin kelompok: only kelompok-level events attendance (exclude Daerah events)
+  // Kelompok: all attendance for their kelompok (including Daerah/Desa events they attend)
   const scopedAttendances = isAdminKelompok && userKelompok
-    ? yearAttendances.filter(a => a.kelompok === userKelompok && a.event_level !== "Daerah")
+    ? yearAttendances.filter(a => a.kelompok === userKelompok)
     : isAdminDesa && userDesa
     ? yearAttendances.filter(a => a.desa === userDesa)
     : yearAttendances;

@@ -33,6 +33,12 @@ export function useUserRole() {
    * - admin_desa: Daerah + Desa desanya + Kelompok se-desanya
    * - admin_kelompok: Daerah + Desa desanya + Kelompok miliknya saja
    */
+  /**
+   * Aturan visibilitas event:
+   * - Daerah: tampil untuk semua level
+   * - Desa: tampil untuk admin_desa desanya & semua kelompok dalam desa tsb
+   * - Kelompok: hanya tampil untuk kelompok ybs
+   */
   const filterEvents = (events) => {
     if (isSuperAdmin) return events;
     if (isAdminDesa && userDesa) {
