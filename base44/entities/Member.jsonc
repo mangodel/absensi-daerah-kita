@@ -6,6 +6,24 @@
       "type": "string",
       "description": "Nama lengkap anggota"
     },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "Laki-laki",
+        "Perempuan"
+      ],
+      "description": "Jenis kelamin"
+    },
+    "marital_status": {
+      "type": "string",
+      "enum": [
+        "Menikah",
+        "Belum Menikah",
+        "Cerai",
+        "Janda/Duda"
+      ],
+      "description": "Status pernikahan"
+    },
     "desa": {
       "type": "string",
       "description": "Desa anggota"

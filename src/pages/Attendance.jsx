@@ -66,9 +66,13 @@ export default function Attendance() {
     queryFn: () => base44.entities.Event.list("-date"),
   });
 
-  // Admin kelompok: only see events for their kelompok or Daerah level
+  // Admin kelompok: show their kelompok events + Daerah + Desa of their desa
   const events = filterEvents(allEvents).filter(e => {
-    if (isAdminKelompok) return e.level === "Kelompok" && e.kelompok === userKelompok;
+    if (isAdminKelompok) {
+      return e.level === "Daerah" ||
+        (e.level === "Desa" && e.desa === userDesa) ||
+        (e.level === "Kelompok" && e.kelompok === userKelompok);
+    }
     return true;
   });
 
@@ -93,15 +97,22 @@ export default function Attendance() {
   const scopedMembers = filterMembers(members);
   const activeMembers = scopedMembers.filter(m => m.status === "Aktif");
 
-  // Auto-filter base member pool berdasarkan level event yang dipilih
+  // Auto-filter base member pool berdasarkan event config
   const eventBasedMembers = activeMembers.filter(m => {
     if (!selectedEvent) return true;
-    if (selectedEvent.level === "Daerah") return true; // semua jamaah
-    if (selectedEvent.level === "Desa") return m.desa === selectedEvent.desa;
-    if (selectedEvent.level === "Kelompok") return m.kelompok === selectedEvent.kelompok && m.desa === (selectedEvent.desa || m.desa);
+    // Scope by event level
+    if (selectedEvent.level === "Desa" && selectedEvent.desa && m.desa !== selectedEvent.desa) return false;
+    if (selectedEvent.level === "Kelompok") {
+      if (selectedEvent.desa && m.desa !== selectedEvent.desa) return false;
+      if (selectedEvent.kelompok && m.kelompok !== selectedEvent.kelompok) return false;
+    }
+    // Filter by participant_dapukan if set
+    const pDap = selectedEvent.participant_dapukan;
+    if (pDap && pDap.length > 0) return pDap.includes(m.dapukan);
     return true;
   });
 
+  // Additional manual filters (still available for extra refinement)
   const filteredMembers = eventBasedMembers.filter(m => {
     const matchDesa = filterDesa === "all" || m.desa === filterDesa;
     const matchKelompok = filterKelompok === "all" || m.kelompok === filterKelompok;
@@ -195,16 +206,27 @@ export default function Attendance() {
             </Select>
 
             {selectedEvent && (
-              <div className="flex flex-wrap items-center gap-2 p-3 bg-secondary/50 rounded-xl">
-                <Badge variant="outline" className={`text-xs ${levelColors[selectedEvent.level]}`}>
-                  {selectedEvent.level}
-                </Badge>
-                <span className="font-semibold text-sm">{selectedEvent.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {selectedEvent.date ? format(new Date(selectedEvent.date), "EEEE, dd MMMM yyyy", { locale: id }) : ""}
-                </span>
-                {selectedEvent.location && (
-                  <span className="text-xs text-muted-foreground">· {selectedEvent.location}</span>
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2 p-3 bg-secondary/50 rounded-xl">
+                  <Badge variant="outline" className={`text-xs ${levelColors[selectedEvent.level]}`}>
+                    {selectedEvent.level}
+                  </Badge>
+                  <span className="font-semibold text-sm">{selectedEvent.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {selectedEvent.date ? format(new Date(selectedEvent.date), "EEEE, dd MMMM yyyy", { locale: id }) : ""}
+                  </span>
+                  {selectedEvent.location && (
+                    <span className="text-xs text-muted-foreground">· {selectedEvent.location}</span>
+                  )}
+                </div>
+                {selectedEvent.participant_dapukan && selectedEvent.participant_dapukan.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-primary/5 border border-primary/15 rounded-xl">
+                    <span className="text-xs text-primary font-medium">Peserta terdaftar:</span>
+                    {selectedEvent.participant_dapukan.map(d => (
+                      <Badge key={d} className="text-[10px] bg-primary/10 text-primary border-primary/20">{d}</Badge>
+                    ))}
+                    <span className="text-xs text-muted-foreground ml-1">({filteredMembers.length} anggota)</span>
+                  </div>
                 )}
               </div>
             )}

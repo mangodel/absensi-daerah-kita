@@ -10,12 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Upload, Download, Trash2, Loader2, Eye, Clock, User, FileUp } from "lucide-react";
+import { FileText, Upload, Download, Trash2, Loader2, Eye, Clock, User, FileUp, FolderOpen, Folder, FolderPlus, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
 
 const CATEGORIES = ["Umum", "Kegiatan", "Laporan", "Surat", "Panduan", "Lainnya"];
+const DEFAULT_FOLDERS = ["Umum", "Kegiatan", "Laporan", "Surat", "Panduan"];
 
 const categoryColors = {
   Umum: "bg-slate-100 text-slate-700",
@@ -35,15 +36,21 @@ function formatBytes(bytes) {
 
 export default function Documents() {
   const { user } = useAuth();
-  const { isSuperAdmin, isAdminDesa, userDesa, userKelompok } = useUserRole();
+  const { isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa } = useUserRole();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Only admin daerah (super_admin/admin) and admin_desa can upload
+  const canUpload = isSuperAdmin || isAdminDesa;
 
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [filterCategory, setFilterCategory] = useState("all");
-  const [form, setForm] = useState({ title: "", description: "", category: "Umum", scope: "Semua", target_desa: "" });
+  const [activeFolder, setActiveFolder] = useState("__all__"); // "__all__" or folder name
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [form, setForm] = useState({ title: "", description: "", category: "Umum", folder: "Umum", scope: "Semua", target_desa: "" });
   const [file, setFile] = useState(null);
 
   const { data: documents = [] } = useQuery({
@@ -54,13 +61,16 @@ export default function Documents() {
   const { data: downloads = [] } = useQuery({
     queryKey: ["document_downloads"],
     queryFn: () => base44.entities.DocumentDownload.list("-downloaded_at"),
-    enabled: isSuperAdmin,
+    enabled: canUpload,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Document.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
   });
+
+  // Derive all folders from documents + defaults
+  const allFolders = [...new Set([...DEFAULT_FOLDERS, ...documents.map(d => d.folder || "Umum")])].sort();
 
   const handleUpload = async () => {
     if (!file || !form.title) return;
@@ -76,21 +86,28 @@ export default function Documents() {
     });
     queryClient.invalidateQueries({ queryKey: ["documents"] });
     setShowUpload(false);
-    setForm({ title: "", description: "", category: "Umum", scope: "Semua", target_desa: "" });
+    setForm({ title: "", description: "", category: "Umum", folder: "Umum", scope: "Semua", target_desa: "" });
     setFile(null);
     setUploading(false);
     toast({ title: "Dokumen berhasil diupload!" });
   };
 
+  const handleAddFolder = () => {
+    if (!newFolderName.trim()) return;
+    // Folder exists in docs by uploading a doc to it; we just set active folder
+    setActiveFolder(newFolderName.trim());
+    setShowNewFolder(false);
+    setNewFolderName("");
+  };
+
   const handleDownload = async (doc) => {
-    // Track download
     await base44.entities.DocumentDownload.create({
       document_id: doc.id,
       document_title: doc.title,
       downloaded_by: user?.email || "",
       downloaded_by_name: user?.full_name || user?.email || "",
       downloaded_at: new Date().toISOString(),
-      desa: user?.desa || "",
+      desa: user?.desa || userDesa || "",
       kelompok: user?.kelompok || "",
     });
     queryClient.invalidateQueries({ queryKey: ["document_downloads"] });
@@ -100,11 +117,22 @@ export default function Documents() {
   // Filter documents by role
   const visibleDocs = documents.filter(doc => {
     if (isSuperAdmin) return true;
+    if (isAdminDesa && userDesa) {
+      if (doc.scope === "Semua") return true;
+      if (doc.target_desa === userDesa) return true;
+      return false;
+    }
+    // admin_kelompok / user: only see Semua or their desa
     if (doc.scope === "Semua") return true;
-    if (doc.scope === "Desa" && userDesa && doc.target_desa === userDesa) return true;
-    if (doc.scope === "Kelompok" && userDesa && doc.target_desa === userDesa) return true;
+    if (doc.target_desa === userDesa) return true;
     return false;
-  }).filter(doc => filterCategory === "all" || doc.category === filterCategory);
+  });
+
+  const folderDocs = visibleDocs.filter(doc => {
+    const matchFolder = activeFolder === "__all__" || (doc.folder || "Umum") === activeFolder;
+    const matchCategory = filterCategory === "all" || doc.category === filterCategory;
+    return matchFolder && matchCategory;
+  });
 
   const docDownloads = (docId) => downloads.filter(d => d.document_id === docId);
 
@@ -117,7 +145,7 @@ export default function Documents() {
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">Dokumen & arsip organisasi</p>
         </div>
-        {isSuperAdmin && (
+        {canUpload && (
           <Button onClick={() => setShowUpload(true)}>
             <FileUp className="w-4 h-4 mr-2" /> Upload Dokumen
           </Button>
@@ -127,81 +155,143 @@ export default function Documents() {
       <Tabs defaultValue="documents">
         <TabsList>
           <TabsTrigger value="documents">Dokumen</TabsTrigger>
-          {isSuperAdmin && <TabsTrigger value="tracking">Riwayat Download</TabsTrigger>}
+          {canUpload && <TabsTrigger value="tracking">Riwayat Download</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="documents" className="space-y-4 mt-4">
-          {/* Filter */}
-          <div className="flex flex-wrap gap-2">
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Kategori</SelectItem>
-                {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {visibleDocs.length === 0 ? (
-            <div className="bg-card rounded-2xl border border-dashed border-border p-12 text-center">
-              <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground text-sm">Belum ada dokumen.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {visibleDocs.map(doc => {
-                const dlCount = downloads.filter(d => d.document_id === doc.id).length;
+          <div className="flex gap-4 flex-col md:flex-row">
+            {/* Folder sidebar */}
+            <div className="w-full md:w-48 shrink-0 space-y-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Folder</span>
+                {canUpload && (
+                  <button onClick={() => setShowNewFolder(true)} className="text-muted-foreground hover:text-primary">
+                    <FolderPlus className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {showNewFolder && (
+                <div className="flex gap-1 mb-2">
+                  <Input
+                    className="h-7 text-xs"
+                    placeholder="Nama folder..."
+                    value={newFolderName}
+                    onChange={e => setNewFolderName(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleAddFolder()}
+                    autoFocus
+                  />
+                  <Button size="sm" className="h-7 px-2" onClick={handleAddFolder}>+</Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setShowNewFolder(false)}>×</Button>
+                </div>
+              )}
+              <button
+                onClick={() => setActiveFolder("__all__")}
+                className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors ${activeFolder === "__all__" ? "bg-primary text-primary-foreground" : "hover:bg-secondary text-foreground"}`}
+              >
+                <FolderOpen className="w-4 h-4 shrink-0" /> Semua
+                <span className={`ml-auto text-xs ${activeFolder === "__all__" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{visibleDocs.length}</span>
+              </button>
+              {allFolders.map(folder => {
+                const count = visibleDocs.filter(d => (d.folder || "Umum") === folder).length;
+                const isActive = activeFolder === folder;
                 return (
-                  <div key={doc.id} className="bg-card rounded-2xl border border-border p-5 space-y-3 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <FileText className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{doc.title}</p>
-                        {doc.description && <p className="text-xs text-muted-foreground truncate">{doc.description}</p>}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5">
-                      <Badge className={`text-[10px] border-0 ${categoryColors[doc.category] || "bg-slate-100 text-slate-700"}`}>
-                        {doc.category}
-                      </Badge>
-                      {doc.scope !== "Semua" && (
-                        <Badge variant="outline" className="text-[10px]">{doc.scope}: {doc.target_desa}</Badge>
-                      )}
-                    </div>
-
-                    <div className="text-[10px] text-muted-foreground space-y-0.5">
-                      {doc.file_name && <p>📄 {doc.file_name} {doc.file_size ? `(${formatBytes(doc.file_size)})` : ""}</p>}
-                      <p>📅 {doc.created_date ? format(new Date(doc.created_date), "dd MMM yyyy", { locale: id }) : ""}</p>
-                      <p>👤 {doc.uploaded_by_name || doc.uploaded_by}</p>
-                      {isSuperAdmin && dlCount > 0 && <p>⬇️ {dlCount}x didownload</p>}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button size="sm" className="flex-1" onClick={() => handleDownload(doc)}>
-                        <Download className="w-3.5 h-3.5 mr-1" /> Download
-                      </Button>
-                      {isSuperAdmin && (
-                        <>
-                          <Button size="sm" variant="outline" onClick={() => setSelectedDoc(doc)}>
-                            <Eye className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteMutation.mutate(doc.id)}>
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  <button
+                    key={folder}
+                    onClick={() => setActiveFolder(folder)}
+                    className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-secondary text-foreground"}`}
+                  >
+                    <Folder className="w-4 h-4 shrink-0" />
+                    <span className="truncate">{folder}</span>
+                    <span className={`ml-auto text-xs shrink-0 ${isActive ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{count}</span>
+                  </button>
                 );
               })}
             </div>
-          )}
+
+            {/* Main document area */}
+            <div className="flex-1 space-y-3">
+              {/* Breadcrumb + filter */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <span>Dokumen</span>
+                  {activeFolder !== "__all__" && (
+                    <><ChevronRight className="w-3.5 h-3.5" /><span className="text-foreground font-medium">{activeFolder}</span></>
+                  )}
+                </div>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Kategori</SelectItem>
+                    {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {folderDocs.length === 0 ? (
+                <div className="bg-card rounded-2xl border border-dashed border-border p-12 text-center">
+                  <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">Belum ada dokumen di folder ini.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {folderDocs.map(doc => {
+                    const dlCount = downloads.filter(d => d.document_id === doc.id).length;
+                    return (
+                      <div key={doc.id} className="bg-card rounded-2xl border border-border p-5 space-y-3 hover:shadow-md transition-shadow">
+                        <div className="flex items-start gap-2">
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm truncate">{doc.title}</p>
+                            {doc.description && <p className="text-xs text-muted-foreground truncate">{doc.description}</p>}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5">
+                          <Badge className={`text-[10px] border-0 ${categoryColors[doc.category] || "bg-slate-100 text-slate-700"}`}>
+                            {doc.category}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            <Folder className="w-2.5 h-2.5 mr-0.5" />{doc.folder || "Umum"}
+                          </Badge>
+                          {doc.scope !== "Semua" && (
+                            <Badge variant="outline" className="text-[10px]">{doc.scope}: {doc.target_desa}</Badge>
+                          )}
+                        </div>
+
+                        <div className="text-[10px] text-muted-foreground space-y-0.5">
+                          {doc.file_name && <p>📄 {doc.file_name} {doc.file_size ? `(${formatBytes(doc.file_size)})` : ""}</p>}
+                          <p>📅 {doc.created_date ? format(new Date(doc.created_date), "dd MMM yyyy", { locale: id }) : ""}</p>
+                          <p>👤 {doc.uploaded_by_name || doc.uploaded_by}</p>
+                          {canUpload && dlCount > 0 && <p>⬇️ {dlCount}x didownload</p>}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button size="sm" className="flex-1" onClick={() => handleDownload(doc)}>
+                            <Download className="w-3.5 h-3.5 mr-1" /> Download
+                          </Button>
+                          {canUpload && (
+                            <>
+                              <Button size="sm" variant="outline" onClick={() => setSelectedDoc(doc)}>
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteMutation.mutate(doc.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </TabsContent>
 
-        {isSuperAdmin && (
+        {canUpload && (
           <TabsContent value="tracking" className="space-y-4 mt-4">
             <div className="bg-card rounded-2xl border border-border overflow-hidden">
               <div className="p-4 border-b border-border">
@@ -259,23 +349,37 @@ export default function Documents() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
+                <Label className="text-xs">Folder</Label>
+                <Select value={allFolders.includes(form.folder) ? form.folder : "__custom__"}
+                  onValueChange={v => { if (v !== "__custom__") setForm(p => ({ ...p, folder: v })); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {allFolders.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                    <SelectItem value="__custom__">+ Folder Baru</SelectItem>
+                  </SelectContent>
+                </Select>
+                {!allFolders.includes(form.folder) && (
+                  <Input value={form.folder} onChange={e => setForm(p => ({ ...p, folder: e.target.value }))} placeholder="Nama folder baru..." />
+                )}
+              </div>
+              <div className="space-y-1.5">
                 <Label className="text-xs">Kategori</Label>
                 <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Akses</Label>
-                <Select value={form.scope} onValueChange={v => setForm(p => ({ ...p, scope: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Semua">Semua</SelectItem>
-                    <SelectItem value="Desa">Desa Tertentu</SelectItem>
-                    <SelectItem value="Kelompok">Kelompok Tertentu</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Akses</Label>
+              <Select value={form.scope} onValueChange={v => setForm(p => ({ ...p, scope: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Semua">Semua</SelectItem>
+                  <SelectItem value="Desa">Desa Tertentu</SelectItem>
+                  <SelectItem value="Kelompok">Kelompok Tertentu</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {form.scope !== "Semua" && (
               <div className="space-y-1.5">
@@ -303,12 +407,12 @@ export default function Documents() {
         </DialogContent>
       </Dialog>
 
-      {/* Detail / Download Tracking Dialog */}
+      {/* Detail Download Dialog */}
       {selectedDoc && (
         <Dialog open={!!selectedDoc} onOpenChange={() => setSelectedDoc(null)}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Detail Download — {selectedDoc.title}</DialogTitle>
+              <DialogTitle>Riwayat Download — {selectedDoc.title}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {docDownloads(selectedDoc.id).length === 0 ? (

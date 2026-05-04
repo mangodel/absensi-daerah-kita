@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DAPUKAN_LIST, DAPUKAN_LEVEL_LIST, BIRTHPLACE_LIST, VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, EMPLOYMENT_LIST, MEMBER_STATUS_LIST } from "@/lib/constants";
+import { DAPUKAN_LIST, DAPUKAN_LEVEL_LIST, BIRTHPLACE_LIST, VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, EMPLOYMENT_LIST, MEMBER_STATUS_LIST, GENDER_LIST, MARITAL_STATUS_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 
 // Combobox: dropdown list + free-text fallback
@@ -26,9 +26,10 @@ function ComboField({ value, onChange, options, placeholder }) {
 }
 
 const emptyMember = {
-  full_name: "", desa: "", kelompok: "", sub_kelompok: "", family_group: "", birth_year: "",
-  birthplace: "", visa_status: "", muballigh_status: "", employment: "",
-  dapukan: "Jamaah Biasa", dapukan_level: "Kelompok", status: "Aktif", phone: "", notes: ""
+  full_name: "", gender: "", marital_status: "", desa: "", kelompok: "", sub_kelompok: "",
+  family_group: "", birth_year: "", birthplace: "", visa_status: "", muballigh_status: "",
+  employment: "", dapukan: "Jamaah Biasa", dapukan_level: "Kelompok", status: "Aktif",
+  phone: "", notes: ""
 };
 
 export default function MemberFormDialog({ open, onOpenChange, member, onSave }) {
@@ -69,6 +70,8 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
           <DialogTitle>{isEdit ? "Edit Anggota" : "Tambah Anggota Baru"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Section: Data Pribadi */}
+          <div className="text-xs font-semibold text-primary uppercase tracking-wider pt-1">Data Pribadi</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Nama Lengkap *">
               <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} required />
@@ -76,21 +79,21 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
             <Field label="No. Telepon">
               <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
             </Field>
-            <Field label="Desa *">
-              <ComboField
-                value={form.desa}
-                onChange={v => setForm({ ...form, desa: v, kelompok: "" })}
-                options={desaList}
-                placeholder="Pilih atau ketik Desa"
-              />
+            <Field label="Jenis Kelamin">
+              <Select value={form.gender} onValueChange={v => setForm({ ...form, gender: v })}>
+                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {GENDER_LIST.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
-            <Field label="Kelompok *">
-              <ComboField
-                value={form.kelompok}
-                onChange={v => setForm({ ...form, kelompok: v })}
-                options={kelompokOptions}
-                placeholder="Pilih atau ketik Kelompok"
-              />
+            <Field label="Status Pernikahan">
+              <Select value={form.marital_status} onValueChange={v => setForm({ ...form, marital_status: v })}>
+                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {MARITAL_STATUS_LIST.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Tahun Lahir">
               <Input type="number" value={form.birth_year} onChange={e => setForm({ ...form, birth_year: e.target.value })} placeholder="cth: 1990" />
@@ -111,14 +114,6 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Muballigh / Muballighot">
-              <Select value={form.muballigh_status} onValueChange={v => setForm({ ...form, muballigh_status: v })}>
-                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
-                <SelectContent>
-                  {MUBALLIGH_STATUS_LIST.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
             <Field label="Pekerjaan">
               <Select value={form.employment} onValueChange={v => setForm({ ...form, employment: v })}>
                 <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
@@ -127,6 +122,19 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
                 </SelectContent>
               </Select>
             </Field>
+            <Field label="Muballigh / Muballighot">
+              <Select value={form.muballigh_status} onValueChange={v => setForm({ ...form, muballigh_status: v })}>
+                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {MUBALLIGH_STATUS_LIST.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+
+          {/* Section: Dapukan & Status */}
+          <div className="text-xs font-semibold text-primary uppercase tracking-wider pt-1">Dapukan & Status</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Dapukan">
               <ComboField
                 value={form.dapukan}
@@ -143,7 +151,7 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Status">
+            <Field label="Status Keanggotaan">
               <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -152,17 +160,38 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
               </Select>
             </Field>
           </div>
+
+          {/* Section: Lokasi */}
+          <div className="text-xs font-semibold text-primary uppercase tracking-wider pt-1">Lokasi / Kelompok</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Grup Keluarga (KK)">
-              <Input value={form.family_group} onChange={e => setForm({ ...form, family_group: e.target.value })} placeholder="Nama kepala keluarga / grup" />
+            <Field label="Desa *">
+              <ComboField
+                value={form.desa}
+                onChange={v => setForm({ ...form, desa: v, kelompok: "" })}
+                options={desaList}
+                placeholder="Pilih atau ketik Desa"
+              />
+            </Field>
+            <Field label="Kelompok *">
+              <ComboField
+                value={form.kelompok}
+                onChange={v => setForm({ ...form, kelompok: v })}
+                options={kelompokOptions}
+                placeholder="Pilih atau ketik Kelompok"
+              />
             </Field>
             <Field label="Sub Kelompok">
               <Input value={form.sub_kelompok} onChange={e => setForm({ ...form, sub_kelompok: e.target.value })} placeholder="Sub kelompok (opsional)" />
             </Field>
+            <Field label="Grup Keluarga (KK)">
+              <Input value={form.family_group} onChange={e => setForm({ ...form, family_group: e.target.value })} placeholder="Nama kepala keluarga / grup" />
+            </Field>
           </div>
+
           <Field label="Catatan">
             <Input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
           </Field>
+
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
             <Button type="submit">{isEdit ? "Simpan Perubahan" : "Tambah Anggota"}</Button>

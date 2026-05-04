@@ -36,6 +36,8 @@ export const DAPUKAN_PENGURUS_ORDER = [
   "PJP", "PJK",
 ];
 export const DAPUKAN_LEVEL_LIST = ["Daerah", "Desa", "Kelompok"];
+export const GENDER_LIST = ["Laki-laki", "Perempuan"];
+export const MARITAL_STATUS_LIST = ["Menikah", "Belum Menikah", "Cerai", "Janda/Duda"];
 export const BIRTHPLACE_LIST = ["Indonesia", "Australia", "New Zealand", "Lainnya"];
 export const VISA_STATUS_LIST = ["PR", "Citizen", "Student", "Sponsor", "Bridging", "WHV", "Tourist", "Partner", "Lainnya"];
 export const MUBALLIGH_STATUS_LIST = ["Muballigh", "Muballighot", "Bukan Muballigh"];

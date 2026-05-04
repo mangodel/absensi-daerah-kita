@@ -35,6 +35,11 @@
       "default": "Umum",
       "description": "Kategori dokumen"
     },
+    "folder": {
+      "type": "string",
+      "default": "Umum",
+      "description": "Nama folder dokumen"
+    },
     "scope": {
       "type": "string",
       "enum": [

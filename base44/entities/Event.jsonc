@@ -43,6 +43,17 @@
     "location": {
       "type": "string",
       "description": "Lokasi kegiatan"
+    },
+    "participant_dapukan": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Daftar dapukan peserta (kosong = semua jamaah)"
+    },
+    "participant_filter": {
+      "type": "string",
+      "description": "Filter peserta legacy (all/muballigh/dapukan/smp/sma/muda_mudi)"
     }
   },
   "required": [

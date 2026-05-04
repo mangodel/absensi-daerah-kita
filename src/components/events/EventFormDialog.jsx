@@ -7,40 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { EVENT_LEVEL_LIST } from "@/lib/constants";
+import { EVENT_LEVEL_LIST, DAPUKAN_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
-import { Users } from "lucide-react";
+import { Users, X, CheckSquare } from "lucide-react";
 
 const empty = {
   name: "", level: "Kelompok", desa: "", kelompok: "",
   date: "", description: "", location: "",
-  participant_filter: "all",
+  participant_dapukan: [], // [] = semua jamaah
 };
 
-// Participant filter options
-const PARTICIPANT_FILTERS = [
-  { value: "all", label: "Seluruh Jamaah", desc: "Semua anggota aktif" },
-  { value: "muballigh", label: "Muballigh / Muballighot", desc: "Hanya yang berstatus Muballigh atau Muballighot" },
-  { value: "dapukan", label: "Yang Memiliki Dapukan", desc: "Semua kecuali Jamaah Biasa" },
-  { value: "smp", label: "Usia SMP", desc: "Lahir tahun " + (new Date().getFullYear() - 15) + "–" + (new Date().getFullYear() - 12) },
-  { value: "sma", label: "Usia SMA", desc: "Lahir tahun " + (new Date().getFullYear() - 18) + "–" + (new Date().getFullYear() - 15) },
-  { value: "muda_mudi", label: "Muda Mudi", desc: "Lahir tahun " + (new Date().getFullYear() - 30) + "–" + (new Date().getFullYear() - 18) },
-];
-
-function getEligibleCount(members, filter, desa, kelompok, level) {
+function getEligibleCount(members, dapukanList, desa, kelompok, level) {
   let pool = members.filter(m => m.status === "Aktif");
   if (level === "Desa" && desa) pool = pool.filter(m => m.desa === desa);
-  if (level === "Kelompok" && kelompok) pool = pool.filter(m => m.kelompok === kelompok);
-
-  const year = new Date().getFullYear();
-  switch (filter) {
-    case "muballigh": return pool.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot").length;
-    case "dapukan": return pool.filter(m => m.dapukan && m.dapukan !== "Jamaah Biasa").length;
-    case "smp": return pool.filter(m => m.birth_year && m.birth_year >= year - 15 && m.birth_year <= year - 12).length;
-    case "sma": return pool.filter(m => m.birth_year && m.birth_year >= year - 18 && m.birth_year < year - 15).length;
-    case "muda_mudi": return pool.filter(m => m.birth_year && m.birth_year >= year - 30 && m.birth_year < year - 18).length;
-    default: return pool.length;
-  }
+  if (level === "Kelompok" && kelompok) pool = pool.filter(m => m.kelompok === kelompok && (!desa || m.desa === desa));
+  if (!dapukanList || dapukanList.length === 0) return pool.length;
+  return pool.filter(m => dapukanList.includes(m.dapukan)).length;
 }
 
 export default function EventFormDialog({ open, onOpenChange, event, prefilledDate, onSave }) {
@@ -59,7 +41,7 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
 
   useEffect(() => {
     if (event) {
-      setForm({ ...empty, ...event });
+      setForm({ ...empty, ...event, participant_dapukan: event.participant_dapukan || [] });
     } else if (prefilledDate) {
       const iso = `${prefilledDate.getFullYear()}-${String(prefilledDate.getMonth()+1).padStart(2,"0")}-${String(prefilledDate.getDate()).padStart(2,"0")}`;
       setForm({ ...empty, date: iso });
@@ -69,9 +51,15 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
   }, [event, prefilledDate, open]);
 
   const kelompokOptions = form.desa ? desaKelompokMap[form.desa] || [] : [];
+  const eligibleCount = getEligibleCount(members, form.participant_dapukan, form.desa, form.kelompok, form.level);
 
-  const eligibleCount = getEligibleCount(members, form.participant_filter, form.desa, form.kelompok, form.level);
-  const selectedFilter = PARTICIPANT_FILTERS.find(f => f.value === form.participant_filter);
+  const toggleDapukan = (d) => {
+    setForm(prev => {
+      const cur = prev.participant_dapukan || [];
+      if (cur.includes(d)) return { ...prev, participant_dapukan: cur.filter(x => x !== d) };
+      return { ...prev, participant_dapukan: [...cur, d] };
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -84,6 +72,11 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
       kelompok: form.level !== "Kelompok" ? "" : form.kelompok,
     });
   };
+
+  // All dapukan options except "Jamaah Biasa"
+  const dapukanOptions = DAPUKAN_LIST.filter(d => d !== "Jamaah Biasa");
+  const selectedDapukan = form.participant_dapukan || [];
+  const allSelected = selectedDapukan.length === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -146,32 +139,48 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
             <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Opsional" />
           </div>
 
-          {/* Participant Filter */}
-          <div className="space-y-2 border border-border rounded-xl p-4 bg-secondary/20">
+          {/* Multi-dapukan participant selector */}
+          <div className="space-y-3 border border-border rounded-xl p-4 bg-secondary/20">
             <Label className="text-xs font-medium flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-primary" /> Peserta Kegiatan
             </Label>
-            <Select value={form.participant_filter} onValueChange={v => setForm({ ...form, participant_filter: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {PARTICIPANT_FILTERS.map(f => (
-                  <SelectItem key={f.value} value={f.value}>
-                    <div>
-                      <span className="font-medium">{f.label}</span>
-                      <span className="text-muted-foreground text-xs ml-2">— {f.desc}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedFilter && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                <Badge variant="outline" className="text-[10px] bg-primary/5 border-primary/20 text-primary">
-                  {eligibleCount} anggota eligible
-                </Badge>
-                <span>{selectedFilter.desc}</span>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground">Pilih dapukan yang hadir. Kosongkan = <strong>semua jamaah aktif</strong>.</p>
+
+            {/* Quick: pilih semua / kosongkan */}
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setForm(f => ({ ...f, participant_dapukan: [] }))}
+                className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${allSelected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary"}`}>
+                Semua Jamaah
+              </button>
+              <button type="button" onClick={() => setForm(f => ({ ...f, participant_dapukan: [...dapukanOptions] }))}
+                className="text-xs px-2.5 py-1 rounded-lg border border-border hover:bg-secondary">
+                Pilih Semua Dapukan
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              {dapukanOptions.map(d => {
+                const selected = selectedDapukan.includes(d);
+                return (
+                  <button
+                    key={d} type="button"
+                    onClick={() => toggleDapukan(d)}
+                    className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card hover:bg-secondary"}`}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+              <Badge variant="outline" className="text-[10px] bg-primary/5 border-primary/20 text-primary">
+                {eligibleCount} anggota eligible
+              </Badge>
+              {selectedDapukan.length > 0 && (
+                <span>{selectedDapukan.length} dapukan dipilih</span>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-1">

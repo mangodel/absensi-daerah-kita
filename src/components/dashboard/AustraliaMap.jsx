@@ -2,212 +2,81 @@ import { useMemo } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
 
 /**
- * SVG Map of Australia & New Zealand
- * ViewBox: 0 0 800 600
- * Projection: Simple equirectangular
- *   lng 110..180 => x 0..700  (10 px/deg)
- *   lat -10..-55 => y 0..450  (10 px/deg)
+ * Australia & New Zealand SVG Map
+ * ViewBox: 0 0 760 520
+ * Simple equirectangular: lng 112..180 -> x 0..680, lat -10..-55 -> y 0..450
  */
-const lngToX = (lng) => (lng - 110) * 10;
-const latToY = (lat) => (-lat - 10) * 10;
+const lx = (lng) => ((lng - 112) / 68) * 680;
+const ly = (lat) => ((-lat - 10) / 45) * 450;
 
-// Key city coordinates
-const CITY_COORDS = {
-  "Perth":        { x: lngToX(115.86), y: latToY(-31.95) },
-  "Darwin":       { x: lngToX(130.84), y: latToY(-12.46) },
-  "Adelaide":     { x: lngToX(138.60), y: latToY(-34.93) },
-  "Brisbane":     { x: lngToX(153.02), y: latToY(-27.47) },
-  "Sydney":       { x: lngToX(151.21), y: latToY(-33.87) },
-  "Canberra":     { x: lngToX(149.13), y: latToY(-35.28) },
-  "Melbourne":    { x: lngToX(144.96), y: latToY(-37.81) },
-  "Hobart":       { x: lngToX(147.33), y: latToY(-42.88) },
-  "Gold Coast":   { x: lngToX(153.43), y: latToY(-28.02) },
-  "Cairns":       { x: lngToX(145.77), y: latToY(-16.92) },
-  "Auckland":     { x: lngToX(174.76), y: latToY(-36.86) },
-  "Wellington":   { x: lngToX(174.78), y: latToY(-41.29) },
-  "Christchurch": { x: lngToX(172.62), y: latToY(-43.53) },
-  "Rarotonga":    { x: 730, y: 220 }, // Cook Islands, manual
+// City pin coordinates (lat, lng)
+const CITIES = {
+  "Perth":        { lat: -31.95, lng: 115.86 },
+  "Darwin":       { lat: -12.46, lng: 130.84 },
+  "Adelaide":     { lat: -34.93, lng: 138.60 },
+  "Brisbane":     { lat: -27.47, lng: 153.02 },
+  "Sydney":       { lat: -33.87, lng: 151.21 },
+  "Canberra":     { lat: -35.28, lng: 149.13 },
+  "Melbourne":    { lat: -37.81, lng: 144.96 },
+  "Hobart":       { lat: -42.88, lng: 147.33 },
+  "Gold Coast":   { lat: -28.02, lng: 153.43 },
+  "Cairns":       { lat: -16.92, lng: 145.77 },
+  "Auckland":     { lat: -36.86, lng: 174.76 },
+  "Wellington":   { lat: -41.29, lng: 174.78 },
+  "Christchurch": { lat: -43.53, lng: 172.62 },
 };
 
-// Australia outline (simplified but geographically correct)
-// Going clockwise from SW corner
-const AUSTRALIA = `
-M ${lngToX(114)} ${latToY(-22)}
-L ${lngToX(113.5)} ${latToY(-24)}
-L ${lngToX(113.8)} ${latToY(-26)}
-L ${lngToX(114.2)} ${latToY(-28)}
-L ${lngToX(114.9)} ${latToY(-29)}
-L ${lngToX(114.6)} ${latToY(-30)}
-L ${lngToX(115)} ${latToY(-31)}
-L ${lngToX(115.7)} ${latToY(-32)}
-L ${lngToX(115.6)} ${latToY(-33)}
-L ${lngToX(116.7)} ${latToY(-35)}
-L ${lngToX(118.5)} ${latToY(-35)}
-L ${lngToX(121.8)} ${latToY(-34)}
-L ${lngToX(124)} ${latToY(-34)}
-L ${lngToX(126.1)} ${latToY(-34)}
-L ${lngToX(127.5)} ${latToY(-34)}
-L ${lngToX(129)} ${latToY(-34.5)}
-L ${lngToX(130.2)} ${latToY(-33.6)}
-L ${lngToX(131)} ${latToY(-31.5)}
-L ${lngToX(131.5)} ${latToY(-32)}
-L ${lngToX(133)} ${latToY(-32.5)}
-L ${lngToX(134)} ${latToY(-33)}
-L ${lngToX(135.5)} ${latToY(-34.7)}
-L ${lngToX(136.5)} ${latToY(-35.2)}
-L ${lngToX(137.8)} ${latToY(-35.6)}
-L ${lngToX(138.5)} ${latToY(-35.7)}
-L ${lngToX(139.8)} ${latToY(-35.6)}
-L ${lngToX(140.7)} ${latToY(-38)}
-L ${lngToX(142)} ${latToY(-38.5)}
-L ${lngToX(143.5)} ${latToY(-38.7)}
-L ${lngToX(144.7)} ${latToY(-38.5)}
-L ${lngToX(145.8)} ${latToY(-39)}
-L ${lngToX(146.8)} ${latToY(-39)}
-L ${lngToX(147.8)} ${latToY(-38)}
-L ${lngToX(148.3)} ${latToY(-37.8)}
-L ${lngToX(150)} ${latToY(-37.5)}
-L ${lngToX(150.5)} ${latToY(-36.3)}
-L ${lngToX(151)} ${latToY(-34.5)}
-L ${lngToX(151.3)} ${latToY(-33.5)}
-L ${lngToX(153.2)} ${latToY(-28.2)}
-L ${lngToX(153.6)} ${latToY(-27.4)}
-L ${lngToX(153.5)} ${latToY(-25.5)}
-L ${lngToX(152.5)} ${latToY(-24.7)}
-L ${lngToX(151.5)} ${latToY(-23.5)}
-L ${lngToX(150.5)} ${latToY(-22.5)}
-L ${lngToX(149.5)} ${latToY(-22.2)}
-L ${lngToX(148)} ${latToY(-20.5)}
-L ${lngToX(146.8)} ${latToY(-19.3)}
-L ${lngToX(147.4)} ${latToY(-18.9)}
-L ${lngToX(147.5)} ${latToY(-18.3)}
-L ${lngToX(146.3)} ${latToY(-18.5)}
-L ${lngToX(145.5)} ${latToY(-17.5)}
-L ${lngToX(145.4)} ${latToY(-16.5)}
-L ${lngToX(144.8)} ${latToY(-14.8)}
-L ${lngToX(145.3)} ${latToY(-14.2)}
-L ${lngToX(144.8)} ${latToY(-13.5)}
-L ${lngToX(144.3)} ${latToY(-14)}
-L ${lngToX(143.8)} ${latToY(-14.3)}
-L ${lngToX(143.5)} ${latToY(-14.8)}
-L ${lngToX(142.5)} ${latToY(-10.7)}
-L ${lngToX(141.5)} ${latToY(-11.5)}
-L ${lngToX(140.9)} ${latToY(-11.8)}
-L ${lngToX(140)} ${latToY(-12.5)}
-L ${lngToX(139.5)} ${latToY(-12.8)}
-L ${lngToX(138.8)} ${latToY(-13.5)}
-L ${lngToX(136.2)} ${latToY(-14)}
-L ${lngToX(136.8)} ${latToY(-12)}
-L ${lngToX(135.5)} ${latToY(-12)}
-L ${lngToX(135.9)} ${latToY(-14.5)}
-L ${lngToX(135.8)} ${latToY(-15)}
-L ${lngToX(134)} ${latToY(-14)}
-L ${lngToX(133)} ${latToY(-12.8)}
-L ${lngToX(131.5)} ${latToY(-11.5)}
-L ${lngToX(130.5)} ${latToY(-11)}
-L ${lngToX(130.8)} ${latToY(-12)}
-L ${lngToX(132.7)} ${latToY(-14.3)}
-L ${lngToX(132.3)} ${latToY(-14.5)}
-L ${lngToX(131.5)} ${latToY(-13.5)}
-L ${lngToX(130.5)} ${latToY(-12.5)}
-L ${lngToX(130.2)} ${latToY(-12.2)}
-L ${lngToX(130)} ${latToY(-11.7)}
-L ${lngToX(129.5)} ${latToY(-12.2)}
-L ${lngToX(128.5)} ${latToY(-13.6)}
-L ${lngToX(127.5)} ${latToY(-14)}
-L ${lngToX(126.5)} ${latToY(-14.5)}
-L ${lngToX(125.5)} ${latToY(-14)}
-L ${lngToX(124)} ${latToY(-15.5)}
-L ${lngToX(123.3)} ${latToY(-16)}
-L ${lngToX(122.5)} ${latToY(-17.5)}
-L ${lngToX(122)} ${latToY(-18)}
-L ${lngToX(121.5)} ${latToY(-19)}
-L ${lngToX(121)} ${latToY(-19.5)}
-L ${lngToX(119.5)} ${latToY(-20.5)}
-L ${lngToX(118.5)} ${latToY(-20.5)}
-L ${lngToX(118)} ${latToY(-21.2)}
-L ${lngToX(116.5)} ${latToY(-21)}
-L ${lngToX(115.5)} ${latToY(-21)}
-L ${lngToX(114.5)} ${latToY(-21.8)}
-Z
-`.trim();
+// City coordinates as {x, y}
+const CITY_COORDS = Object.fromEntries(
+  Object.entries(CITIES).map(([name, { lat, lng }]) => [name, { x: lx(lng), y: ly(lat) }])
+);
+
+// Australia mainland outline
+const AU_PATH = [
+  [114.1,-21.7],[114.5,-21.9],[114.6,-22.4],[113.9,-24.0],[113.7,-25.0],
+  [113.9,-26.5],[114.2,-28.0],[114.9,-28.9],[114.7,-30.0],[115.0,-30.9],
+  [115.6,-31.6],[115.7,-33.6],[116.5,-35.0],[118.4,-35.0],[121.8,-33.9],
+  [124.0,-33.7],[126.5,-33.9],[129.0,-34.7],[130.1,-33.7],[131.0,-31.6],
+  [132.4,-33.0],[135.5,-34.9],[137.8,-35.7],[138.8,-35.6],[139.7,-35.6],
+  [140.5,-38.0],[141.9,-38.5],[143.4,-38.7],[144.8,-38.4],[145.7,-38.9],
+  [147.0,-38.9],[148.3,-37.8],[150.1,-37.5],[150.5,-36.3],[151.1,-34.5],
+  [151.3,-33.4],[153.2,-28.1],[153.6,-27.3],[153.5,-25.5],[152.5,-24.7],
+  [151.3,-23.5],[150.5,-22.5],[149.5,-22.2],[148.1,-20.5],[147.5,-19.3],
+  [146.3,-18.5],[145.5,-17.5],[145.4,-16.4],[144.9,-14.9],[145.3,-14.3],
+  [144.9,-13.5],[144.3,-14.0],[143.8,-14.4],[143.5,-14.8],[142.5,-10.7],
+  [141.5,-11.5],[141.0,-11.8],[140.0,-12.5],[139.3,-12.8],[138.7,-13.5],
+  [136.1,-14.0],[136.8,-12.1],[135.5,-12.0],[135.9,-14.5],[135.8,-15.1],
+  [134.0,-13.9],[133.0,-12.8],[131.5,-11.5],[130.5,-11.0],[130.8,-12.0],
+  [131.5,-13.5],[130.5,-12.5],[130.2,-12.2],[129.5,-12.2],[128.5,-13.6],
+  [127.5,-14.0],[126.5,-14.5],[125.5,-14.0],[124.0,-15.6],[123.3,-16.0],
+  [122.4,-17.5],[122.0,-18.0],[121.3,-19.0],[120.9,-19.7],[119.5,-20.5],
+  [118.5,-20.5],[118.0,-21.1],[116.6,-21.0],[115.5,-21.0],[114.5,-21.7],
+].map(([lng, lat]) => `${lx(lng).toFixed(1)},${ly(lat).toFixed(1)}`).join(" L ");
 
 // Tasmania
-const TASMANIA = `
-M ${lngToX(144.6)} ${latToY(-40.6)}
-L ${lngToX(145)} ${latToY(-40.7)}
-L ${lngToX(145.8)} ${latToY(-41)}
-L ${lngToX(148)} ${latToY(-41.5)}
-L ${lngToX(148.3)} ${latToY(-42.5)}
-L ${lngToX(148.2)} ${latToY(-43.2)}
-L ${lngToX(147.5)} ${latToY(-43.5)}
-L ${lngToX(146.8)} ${latToY(-43.7)}
-L ${lngToX(145.8)} ${latToY(-43.6)}
-L ${lngToX(145)} ${latToY(-43.2)}
-L ${lngToX(144.7)} ${latToY(-42.8)}
-L ${lngToX(144.5)} ${latToY(-41.5)}
-Z
-`.trim();
+const TAS_PATH = [
+  [144.6,-40.6],[145.1,-40.7],[146.0,-41.0],[148.0,-41.5],[148.3,-42.5],
+  [148.1,-43.2],[147.5,-43.6],[146.8,-43.7],[145.8,-43.6],[145.0,-43.2],
+  [144.7,-42.8],[144.5,-41.5],[144.6,-40.6],
+].map(([lng, lat]) => `${lx(lng).toFixed(1)},${ly(lat).toFixed(1)}`).join(" L ");
 
-// New Zealand North Island
-const NZ_NORTH = `
-M ${lngToX(172.6)} ${latToY(-34.4)}
-L ${lngToX(173.1)} ${latToY(-35)}
-L ${lngToX(174.4)} ${latToY(-36)}
-L ${lngToX(175)} ${latToY(-36.5)}
-L ${lngToX(175.5)} ${latToY(-37.1)}
-L ${lngToX(175.6)} ${latToY(-37.5)}
-L ${lngToX(176.2)} ${latToY(-37.6)}
-L ${lngToX(177.9)} ${latToY(-38.7)}
-L ${lngToX(178.5)} ${latToY(-38.8)}
-L ${lngToX(177.8)} ${latToY(-39.1)}
-L ${lngToX(176.9)} ${latToY(-40)}
-L ${lngToX(175.7)} ${latToY(-40.6)}
-L ${lngToX(175.3)} ${latToY(-41.3)}
-L ${lngToX(174.8)} ${latToY(-41.3)}
-L ${lngToX(174.2)} ${latToY(-41)}
-L ${lngToX(173.7)} ${latToY(-40)}
-L ${lngToX(173.2)} ${latToY(-39)}
-L ${lngToX(173.8)} ${latToY(-37.5)}
-L ${lngToX(174.5)} ${latToY(-36.8)}
-L ${lngToX(174.8)} ${latToY(-36.9)}
-L ${lngToX(174.5)} ${latToY(-36.2)}
-L ${lngToX(173.8)} ${latToY(-35.5)}
-L ${lngToX(173.3)} ${latToY(-35)}
-L ${lngToX(172.7)} ${latToY(-34.5)}
-Z
-`.trim();
+// NZ North Island
+const NZ_NORTH_PATH = [
+  [172.6,-34.4],[173.1,-35.0],[174.4,-36.0],[175.0,-36.5],[175.6,-37.1],
+  [176.2,-37.6],[177.9,-38.7],[178.5,-38.8],[177.8,-39.1],[176.9,-40.0],
+  [175.7,-40.6],[175.3,-41.3],[174.8,-41.3],[174.2,-41.0],[173.7,-40.0],
+  [173.2,-39.0],[173.8,-37.5],[174.5,-36.8],[174.8,-36.9],[174.5,-36.2],
+  [173.8,-35.5],[173.3,-35.0],[172.7,-34.5],[172.6,-34.4],
+].map(([lng, lat]) => `${lx(lng).toFixed(1)},${ly(lat).toFixed(1)}`).join(" L ");
 
-// New Zealand South Island
-const NZ_SOUTH = `
-M ${lngToX(172.6)} ${latToY(-40.5)}
-L ${lngToX(173.9)} ${latToY(-41.3)}
-L ${lngToX(174.2)} ${latToY(-41.6)}
-L ${lngToX(174.2)} ${latToY(-42)}
-L ${lngToX(173.5)} ${latToY(-42.5)}
-L ${lngToX(172.7)} ${latToY(-43.5)}
-L ${lngToX(171.9)} ${latToY(-44)}
-L ${lngToX(171.1)} ${latToY(-44.3)}
-L ${lngToX(170.4)} ${latToY(-44.5)}
-L ${lngToX(169.5)} ${latToY(-45)}
-L ${lngToX(168.3)} ${latToY(-45.5)}
-L ${lngToX(167.5)} ${latToY(-46.5)}
-L ${lngToX(168.3)} ${latToY(-46.6)}
-L ${lngToX(169.8)} ${latToY(-46.5)}
-L ${lngToX(170.7)} ${latToY(-45.8)}
-L ${lngToX(171.5)} ${latToY(-45.5)}
-L ${lngToX(172.5)} ${latToY(-43.8)}
-L ${lngToX(173.4)} ${latToY(-43.2)}
-L ${lngToX(173.9)} ${latToY(-42.5)}
-L ${lngToX(173.8)} ${latToY(-41.5)}
-L ${lngToX(172.9)} ${latToY(-41)}
-Z
-`.trim();
-
-function normalize(value, max) {
-  if (max === 0) return 0;
-  return value / max;
-}
+// NZ South Island
+const NZ_SOUTH_PATH = [
+  [172.6,-40.5],[173.9,-41.3],[174.2,-41.6],[174.2,-42.0],[173.5,-42.5],
+  [172.7,-43.5],[171.9,-44.0],[171.1,-44.3],[170.4,-44.5],[169.5,-45.0],
+  [168.3,-45.5],[167.5,-46.5],[168.3,-46.6],[169.8,-46.5],[170.7,-45.8],
+  [171.5,-45.5],[172.5,-43.8],[173.4,-43.2],[173.8,-42.5],[173.8,-41.5],
+  [172.9,-41.0],[172.6,-40.5],
+].map(([lng, lat]) => `${lx(lng).toFixed(1)},${ly(lat).toFixed(1)}`).join(" L ");
 
 export default function AustraliaMap({ members }) {
   const { config } = useAppConfig();
@@ -217,89 +86,109 @@ export default function AustraliaMap({ members }) {
     const counts = {};
     Object.entries(desaKelompokMap).forEach(([desa, kelompoks]) => {
       kelompoks.forEach(kelompok => {
-        const cityKey = Object.keys(CITY_COORDS).find(city =>
+        const key = Object.keys(CITIES).find(city =>
           kelompok.toLowerCase().includes(city.toLowerCase()) ||
           desa.toLowerCase().includes(city.toLowerCase())
         );
-        if (cityKey) {
+        if (key) {
           const count = members.filter(m => m.kelompok === kelompok).length;
-          counts[cityKey] = (counts[cityKey] || 0) + count;
+          counts[key] = (counts[key] || 0) + count;
         }
       });
-      const desaCityKey = Object.keys(CITY_COORDS).find(city =>
-        desa.toLowerCase().includes(city.toLowerCase())
-      );
-      if (desaCityKey && !counts[desaCityKey]) {
-        counts[desaCityKey] = members.filter(m => m.desa === desa).length;
+      const desaKey = Object.keys(CITIES).find(city => desa.toLowerCase().includes(city.toLowerCase()));
+      if (desaKey && !counts[desaKey]) {
+        counts[desaKey] = members.filter(m => m.desa === desa).length;
       }
     });
-
+    // Fallback: distribute members across known cities
     if (Object.keys(counts).length === 0 && members.length > 0) {
       const desaNames = Object.keys(desaKelompokMap);
-      desaNames.forEach((desa, idx) => {
-        const cityKeys = Object.keys(CITY_COORDS);
-        const city = cityKeys[idx % cityKeys.length];
+      const cityKeys = Object.keys(CITIES);
+      desaNames.forEach((desa, i) => {
+        const city = cityKeys[i % cityKeys.length];
         counts[city] = (counts[city] || 0) + members.filter(m => m.desa === desa).length;
       });
     }
-
     return counts;
   }, [members, desaKelompokMap]);
 
   const maxCount = Math.max(...Object.values(cityData), 1);
-  const activeCities = Object.entries(cityData).filter(([, count]) => count > 0);
+  const activeCities = Object.entries(cityData).filter(([, c]) => c > 0);
 
   return (
     <div className="bg-card rounded-2xl border border-border p-5">
       <h3 className="font-semibold text-sm text-foreground mb-0.5">Sebaran Jamaah</h3>
-      <p className="text-xs text-muted-foreground mb-3">Australia &amp; New Zealand</p>
+      <p className="text-xs text-muted-foreground mb-4">Australia &amp; New Zealand</p>
 
-      <div className="w-full rounded-xl overflow-hidden bg-[#dbeafe]">
-        <svg viewBox="50 10 710 450" className="w-full" style={{ display: "block" }}>
-          {/* Ocean background */}
-          <rect x="50" y="10" width="710" height="450" fill="#dbeafe" />
+      <div className="w-full rounded-xl overflow-hidden bg-[#bfdbfe] flex items-center justify-center">
+        <svg viewBox="0 0 760 480" className="w-full max-w-3xl" style={{ display: "block" }}>
+          {/* Ocean */}
+          <rect x="0" y="0" width="760" height="480" fill="#bfdbfe" />
 
-          {/* Land masses */}
-          <path d={AUSTRALIA} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
-          <path d={TASMANIA} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
-          <path d={NZ_NORTH} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
-          <path d={NZ_SOUTH} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
+          {/* Grid lines */}
+          {[120, 130, 140, 150, 160, 170].map(lng => (
+            <line key={lng} x1={lx(lng)} y1="0" x2={lx(lng)} y2="480" stroke="#93c5fd" strokeWidth="0.5" opacity="0.5" />
+          ))}
+          {[-15, -20, -25, -30, -35, -40, -45].map(lat => (
+            <line key={lat} x1="0" y1={ly(lat)} x2="760" y2={ly(lat)} stroke="#93c5fd" strokeWidth="0.5" opacity="0.5" />
+          ))}
 
-          {/* Rarotonga island dot */}
-          <circle cx={730} cy={220} r={4} fill="#dcfce7" stroke="#4ade80" strokeWidth="1" />
+          {/* Australia mainland */}
+          <polygon points={AU_PATH} fill="#d1fae5" stroke="#4ade80" strokeWidth="1.2" />
+          {/* Tasmania */}
+          <polygon points={TAS_PATH} fill="#d1fae5" stroke="#4ade80" strokeWidth="1" />
+          {/* NZ North */}
+          <polygon points={NZ_NORTH_PATH} fill="#d1fae5" stroke="#4ade80" strokeWidth="1" />
+          {/* NZ South */}
+          <polygon points={NZ_SOUTH_PATH} fill="#d1fae5" stroke="#4ade80" strokeWidth="1" />
+
+          {/* State borders (simplified) */}
+          {/* WA/SA border ~129°E */}
+          <line x1={lx(129)} y1={ly(-14)} x2={lx(129)} y2={ly(-35.5)} stroke="#86efac" strokeWidth="0.8" strokeDasharray="4,3" />
+          {/* SA/VIC/NSW border ~141°E */}
+          <line x1={lx(141)} y1={ly(-26)} x2={lx(141)} y2={ly(-38)} stroke="#86efac" strokeWidth="0.8" strokeDasharray="4,3" />
+          {/* QLD/NSW border ~29°S */}
+          <line x1={lx(141)} y1={ly(-29)} x2={lx(153.5)} y2={ly(-29)} stroke="#86efac" strokeWidth="0.8" strokeDasharray="4,3" />
 
           {/* Country labels */}
-          <text x={lngToX(134)} y={latToY(-26)} textAnchor="middle" fontSize="10" fill="#15803d" fontWeight="700" opacity="0.4" fontFamily="Inter,sans-serif" letterSpacing="2">AUSTRALIA</text>
-          <text x={lngToX(172.5)} y={latToY(-42)} textAnchor="middle" fontSize="7" fill="#15803d" fontWeight="600" opacity="0.5" fontFamily="Inter,sans-serif">NZ</text>
+          <text x={lx(134)} y={ly(-27)} textAnchor="middle" fontSize="13" fill="#166534" fontWeight="800"
+            opacity="0.25" fontFamily="Inter,sans-serif" letterSpacing="3">AUSTRALIA</text>
+          <text x={lx(173)} y={ly(-43)} textAnchor="middle" fontSize="8" fill="#166534" fontWeight="700"
+            opacity="0.4" fontFamily="Inter,sans-serif">NEW ZEALAND</text>
 
           {/* City markers */}
           {Object.entries(CITY_COORDS).map(([city, pos]) => {
             const count = cityData[city] || 0;
             const isActive = count > 0;
-            const ratio = normalize(count, maxCount);
-            const r = isActive ? Math.max(8, Math.min(22, 8 + ratio * 16)) : 3;
+            const ratio = count / maxCount;
+            const r = isActive ? Math.max(10, Math.min(26, 10 + ratio * 18)) : 4;
 
             return (
               <g key={city}>
                 {isActive && (
-                  <circle cx={pos.x} cy={pos.y} r={r + 6} fill="hsl(243,75%,59%)" opacity="0.12" />
+                  <circle cx={pos.x} cy={pos.y} r={r + 8} fill="hsl(243,75%,59%)" opacity="0.15" />
                 )}
                 <circle
                   cx={pos.x} cy={pos.y} r={r}
-                  fill={isActive ? "hsl(243,75%,59%)" : "#cbd5e1"}
-                  stroke={isActive ? "white" : "#e2e8f0"}
-                  strokeWidth={isActive ? "1.5" : "1"}
+                  fill={isActive ? "hsl(243,75%,59%)" : "#94a3b8"}
+                  stroke="white" strokeWidth={isActive ? 2 : 1}
                   opacity={isActive ? 1 : 0.5}
                 />
                 {isActive && (
-                  <text x={pos.x} y={pos.y + 0.5} textAnchor="middle" dominantBaseline="middle"
-                    fontSize={count >= 100 ? "5.5" : "6.5"} fill="white" fontWeight="800" fontFamily="Inter,sans-serif">
+                  <text x={pos.x} y={pos.y + 1} textAnchor="middle" dominantBaseline="middle"
+                    fontSize={count >= 100 ? "6" : "7"} fill="white" fontWeight="900" fontFamily="Inter,sans-serif">
                     {count}
                   </text>
                 )}
-                <text x={pos.x} y={pos.y - r - 4} textAnchor="middle" fontSize="6.5"
-                  fill={isActive ? "#1e293b" : "#94a3b8"}
-                  fontWeight={isActive ? "600" : "400"} fontFamily="Inter,sans-serif">
+                {/* City label */}
+                <text
+                  x={pos.x} y={pos.y - r - 5}
+                  textAnchor="middle" fontSize="7.5"
+                  fill={isActive ? "#1e3a5f" : "#64748b"}
+                  fontWeight={isActive ? "700" : "400"}
+                  fontFamily="Inter,sans-serif"
+                  stroke="white" strokeWidth="2" paintOrder="stroke"
+                >
                   {city}
                 </text>
               </g>
@@ -309,7 +198,7 @@ export default function AustraliaMap({ members }) {
       </div>
 
       {activeCities.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {activeCities.sort((a, b) => b[1] - a[1]).map(([city, count]) => (
             <div key={city} className="flex items-center gap-1.5 bg-primary/5 rounded-lg px-2.5 py-1">
               <div className="w-2 h-2 rounded-full bg-primary" />
@@ -321,7 +210,7 @@ export default function AustraliaMap({ members }) {
       )}
 
       {activeCities.length === 0 && (
-        <p className="text-xs text-muted-foreground text-center mt-2">
+        <p className="text-xs text-muted-foreground text-center mt-3">
           Tambahkan nama kota pada nama Desa/Kelompok di Pengaturan untuk menampilkan sebaran.
         </p>
       )}
