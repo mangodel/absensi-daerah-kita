@@ -31,7 +31,12 @@ export default function MemberTable({ members, onEdit, onDelete }) {
           <TableBody>
             {members.map(member => (
               <TableRow key={member.id} className="hover:bg-secondary/30 transition-colors">
-                <TableCell className="font-medium">{member.full_name}</TableCell>
+                <TableCell className="font-medium">
+                  <div>{member.full_name}</div>
+                  {member.birth_year && (
+                    <div className="text-[10px] text-muted-foreground">{new Date().getFullYear() - member.birth_year} th ({member.birth_year})</div>
+                  )}
+                </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.desa}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.kelompok}</TableCell>
                 <TableCell>
@@ -42,7 +47,7 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                   )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {member.dapukan && member.dapukan !== "Anggota" && member.phone
+                  {member.phone
                     ? <a href={`tel:${member.phone}`} className="text-primary hover:underline">{member.phone}</a>
                     : <span className="text-muted-foreground">-</span>
                   }

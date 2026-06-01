@@ -217,9 +217,9 @@ export default function Dashboard() {
       {(isSuperAdmin || isAdminDesa) && <DesaOverview members={members} />}
 
       {isAdminKelompok && (
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <h3 className="font-semibold text-sm text-foreground mb-3">Ringkasan Kelompok {userKelompok}</h3>
-          <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <h3 className="font-semibold text-sm text-foreground">Ringkasan Kelompok {userKelompok}</h3>
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-secondary/40 rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-primary">{members.filter(m => m.status === "Aktif").length}</p>
               <p className="text-xs text-muted-foreground mt-1">Jamaah Aktif</p>
@@ -230,6 +230,28 @@ export default function Dashboard() {
             </div>
           </div>
           <AttendanceChart attendances={scopedAttendances} year={Number(selectedYear)} />
+          {upcomingEvents.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-2">Kegiatan Mendatang</h4>
+              <div className="space-y-2">
+                {upcomingEvents.map(e => (
+                  <div key={e.id} className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl">
+                    <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
+                      <CalendarCheck className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium truncate">{e.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {format(new Date(e.date), "dd MMM yyyy", { locale: id })}
+                        {e.location ? ` · ${e.location}` : ""}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] shrink-0">{e.level}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

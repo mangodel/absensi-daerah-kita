@@ -20,6 +20,8 @@ export default function Transfers() {
   const [reason, setReason] = useState("");
   const [searchTransfer, setSearchTransfer] = useState("");
   const [searchHistory, setSearchHistory] = useState("");
+  const [filterHistoryDesa, setFilterHistoryDesa] = useState("all");
+  const [filterHistoryKelompok, setFilterHistoryKelompok] = useState("all");
 
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
@@ -45,11 +47,23 @@ export default function Transfers() {
     return m.full_name?.toLowerCase().includes(q) || m.kelompok?.toLowerCase().includes(q) || m.desa?.toLowerCase().includes(q);
   });
 
+  // All unique desa/kelompok from history
+  const historyDesaList = [...new Set([...transfers.map(t => t.from_desa), ...transfers.map(t => t.to_desa)].filter(Boolean))].sort();
+  const historyKelompokList = [...new Set([...transfers.map(t => t.from_kelompok), ...transfers.map(t => t.to_kelompok)].filter(Boolean))].sort();
+
   // Filter history
   const filteredTransfers = transfers.filter(t => {
-    if (!searchHistory) return true;
-    const q = searchHistory.toLowerCase();
-    return t.member_name?.toLowerCase().includes(q) || t.from_kelompok?.toLowerCase().includes(q) || t.to_kelompok?.toLowerCase().includes(q) || t.from_desa?.toLowerCase().includes(q) || t.to_desa?.toLowerCase().includes(q);
+    if (searchHistory) {
+      const q = searchHistory.toLowerCase();
+      if (!t.member_name?.toLowerCase().includes(q) && !t.from_kelompok?.toLowerCase().includes(q) && !t.to_kelompok?.toLowerCase().includes(q) && !t.from_desa?.toLowerCase().includes(q) && !t.to_desa?.toLowerCase().includes(q)) return false;
+    }
+    if (filterHistoryDesa !== "all") {
+      if (t.from_desa !== filterHistoryDesa && t.to_desa !== filterHistoryDesa) return false;
+    }
+    if (filterHistoryKelompok !== "all") {
+      if (t.from_kelompok !== filterHistoryKelompok && t.to_kelompok !== filterHistoryKelompok) return false;
+    }
+    return true;
   });
 
   const handleTransfer = async () => {
@@ -91,15 +105,31 @@ export default function Transfers() {
         </Button>
       </div>
 
-      {/* Search history */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Cari nama, desa, atau kelompok..."
-          className="pl-10"
-          value={searchHistory}
-          onChange={e => setSearchHistory(e.target.value)}
-        />
+      {/* Search + filter history */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari nama, desa, atau kelompok..."
+            className="pl-10"
+            value={searchHistory}
+            onChange={e => setSearchHistory(e.target.value)}
+          />
+        </div>
+        <Select value={filterHistoryDesa} onValueChange={v => { setFilterHistoryDesa(v); setFilterHistoryKelompok("all"); }}>
+          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Filter Desa" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Desa</SelectItem>
+            {historyDesaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterHistoryKelompok} onValueChange={setFilterHistoryKelompok}>
+          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="Filter Kelompok" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Kelompok</SelectItem>
+            {historyKelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {transfers.length === 0 ? (

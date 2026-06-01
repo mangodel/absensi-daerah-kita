@@ -114,17 +114,11 @@ export default function Documents() {
     window.open(doc.file_url, "_blank");
   };
 
-  // Filter documents by role
+  // Filter documents by role — all roles can see and download docs
   const visibleDocs = documents.filter(doc => {
     if (isSuperAdmin) return true;
-    if (isAdminDesa && userDesa) {
-      if (doc.scope === "Semua") return true;
-      if (doc.target_desa === userDesa) return true;
-      return false;
-    }
-    // admin_kelompok / user: only see Semua or their desa
     if (doc.scope === "Semua") return true;
-    if (doc.target_desa === userDesa) return true;
+    if (userDesa && doc.target_desa === userDesa) return true;
     return false;
   });
 

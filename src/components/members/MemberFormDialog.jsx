@@ -7,19 +7,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DAPUKAN_LIST, DAPUKAN_LEVEL_LIST, BIRTHPLACE_LIST, VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, EMPLOYMENT_LIST, MEMBER_STATUS_LIST, GENDER_LIST, MARITAL_STATUS_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 
-// Combobox: dropdown list + free-text fallback
+// Combobox: dropdown list + free-text input
 function ComboField({ value, onChange, options, placeholder }) {
+  const isCustom = value && !options.includes(value);
+  const [showCustom, setShowCustom] = useState(isCustom);
+
   return (
     <div className="space-y-1">
-      <Select value={options.includes(value) ? value : "__custom__"} onValueChange={v => { if (v !== "__custom__") onChange(v); }}>
+      <Select
+        value={showCustom ? "__custom__" : (options.includes(value) ? value : "")}
+        onValueChange={v => {
+          if (v === "__custom__") {
+            setShowCustom(true);
+            onChange("");
+          } else {
+            setShowCustom(false);
+            onChange(v);
+          }
+        }}
+      >
         <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
         <SelectContent>
           {options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
           <SelectItem value="__custom__">Lainnya (ketik manual)</SelectItem>
         </SelectContent>
       </Select>
-      {(!options.includes(value) || value === "") && (
-        <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+      {showCustom && (
+        <Input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={`Ketik ${placeholder}...`}
+          autoFocus
+        />
       )}
     </div>
   );

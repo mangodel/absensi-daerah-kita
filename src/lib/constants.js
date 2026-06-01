@@ -41,7 +41,7 @@ export const MARITAL_STATUS_LIST = ["Menikah", "Belum Menikah", "Cerai", "Janda/
 export const BIRTHPLACE_LIST = ["Indonesia", "Australia", "New Zealand", "Lainnya"];
 export const VISA_STATUS_LIST = ["PR", "Citizen", "Student", "Sponsor", "Bridging", "WHV", "Tourist", "Partner", "Lainnya"];
 export const MUBALLIGH_STATUS_LIST = ["Muballigh", "Muballighot", "Bukan Muballigh"];
-export const EMPLOYMENT_LIST = ["Bekerja", "Tidak Bekerja", "Retired"];
+export const EMPLOYMENT_LIST = ["Bekerja", "Tidak Bekerja", "Belum Bekerja", "Student", "Retired"];
 export const ATTENDANCE_STATUS_LIST = ["Hadir", "Izin Sekolah", "Izin Kerja", "Alpa"];
 export const MEMBER_STATUS_LIST = ["Aktif", "Tidak Aktif"];
 
