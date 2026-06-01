@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell, FolderOpen } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell, FolderOpen, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -8,6 +8,17 @@ import { useUserRole } from "@/lib/useUserRole";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { isToday, isPast } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
@@ -112,6 +123,37 @@ export default function Sidebar() {
             <div className="text-[10px] text-primary/70 font-medium capitalize">{role?.replace(/_/g, " ")}{userDesa ? ` · ${userDesa}` : ""}{userKelompok ? ` / ${userKelompok}` : ""}</div>
           </div>
         )}
+
+        {/* Logout button */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full text-destructive hover:bg-destructive/10",
+              collapsed && "justify-center"
+            )}>
+              <LogOut className="w-[18px] h-[18px] shrink-0" />
+              {!collapsed && <span>Keluar</span>}
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Konfirmasi Keluar</AlertDialogTitle>
+              <AlertDialogDescription>
+                Apakah Anda yakin ingin keluar dari aplikasi? Anda perlu login kembali untuk mengakses aplikasi.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => base44.auth.logout()}
+              >
+                Ya, Keluar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {!collapsed && <div className="text-[10px] text-muted-foreground text-center pt-1">© 2026 {config.org_name}</div>}
       </div>
     </aside>
