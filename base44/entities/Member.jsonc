@@ -91,7 +91,7 @@
     },
     "dapukan": {
       "type": "string",
-      "default": "Jamaah Biasa",
+      "default": "Jamaah",
       "description": "Dapukan/role (bisa diisi manual)"
     },
     "dapukan_level": {

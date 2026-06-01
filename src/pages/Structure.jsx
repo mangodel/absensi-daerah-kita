@@ -62,6 +62,7 @@ function getPengurusKategori(pengurusList) {
       members = pengurusList.filter(m =>
         !KNOWN_DAPUKAN.includes(m.dapukan) &&
         m.dapukan !== "Jamaah Biasa" &&
+        m.dapukan !== "Jamaah" &&
         !m.dapukan?.toLowerCase().includes("muball") &&
         !m.dapukan?.toLowerCase().includes("mubaligh")
       );
@@ -82,7 +83,7 @@ function getPengurusKategori(pengurusList) {
 }
 
 function isPengurus(m) {
-  return m.dapukan && m.dapukan !== "Jamaah Biasa";
+  return m.dapukan && m.dapukan !== "Jamaah Biasa" && m.dapukan !== "Jamaah";
 }
 
 // Keimaman section: Ki kiri, Wakil numbered + editable
@@ -90,9 +91,8 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
   const ki = members.filter(m => m.dapukan === "Ki");
   const wakil = members.filter(m => m.dapukan !== "Ki");
 
-  const renderMember = (m, label) => (
+  const renderMember = (m) => (
     <div key={m.id} className="px-3 py-2.5 rounded-xl border bg-white/70 border-primary/20">
-      <span className="text-xs font-bold text-primary block mb-0.5">{label}</span>
       <span className="font-medium text-sm block">{m.full_name}</span>
       {isSuperAdmin && (
         editingId === m.id ? (
@@ -119,8 +119,8 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
     <div className="rounded-xl border bg-primary/5 border-primary/20 px-3 py-2">
       <div className="text-[10px] font-semibold text-muted-foreground mb-2">Keimaman</div>
       <div className="flex flex-wrap gap-2">
-        {ki.map(m => renderMember(m, "Ki"))}
-        {wakil.map((m, i) => renderMember(m, wakil.length > 1 ? `Wakil ${i + 1}` : "Wakil"))}
+        {ki.map(m => renderMember(m))}
+        {wakil.map(m => renderMember(m))}
       </div>
     </div>
   );
@@ -377,7 +377,7 @@ export default function Structure() {
                   const kkSet = new Set(kelompokMembers.filter(m => m.family_group).map(m => m.family_group));
                   const kkCount = kkSet.size;
                   const subKelompoks = [...new Set(kelompokMembers.filter(m => m.sub_kelompok).map(m => m.sub_kelompok))];
-                  const jamaahBiasa = applyMubalighFilter(kelompokMembers.filter(m => !isPengurus(m)));
+                  const jamaahBiasa = applyMubalighFilter(kelompokMembers.filter(m => !isPengurus(m) && m.dapukan !== "Jamaah" && m.dapukan !== "Jamaah Biasa"));
 
                   return (
                     <div key={kelompok} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow space-y-3">
