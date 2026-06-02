@@ -9,13 +9,22 @@ import { useAppConfig } from "@/lib/AppConfigContext";
 
 // Combobox: dropdown list + free-text input
 function ComboField({ value, onChange, options, placeholder }) {
-  const isCustom = value && !options.includes(value);
-  const [showCustom, setShowCustom] = useState(isCustom);
+  // Determine initial mode based on value
+  const [showCustom, setShowCustom] = useState(() => !!(value && !options.includes(value)));
+
+  // Sync showCustom when value changes from outside (e.g. editing existing member)
+  useEffect(() => {
+    if (value && !options.includes(value)) {
+      setShowCustom(true);
+    }
+  }, [value, options]);
+
+  const selectValue = showCustom ? "__custom__" : (options.includes(value) ? value : "");
 
   return (
     <div className="space-y-1">
       <Select
-        value={showCustom ? "__custom__" : (options.includes(value) ? value : "")}
+        value={selectValue}
         onValueChange={v => {
           if (v === "__custom__") {
             setShowCustom(true);
@@ -37,7 +46,6 @@ function ComboField({ value, onChange, options, placeholder }) {
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={`Ketik ${placeholder}...`}
-          autoFocus
         />
       )}
     </div>
@@ -96,7 +104,13 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
               <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} required />
             </Field>
             <Field label="No. Telepon">
-              <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+              <Input
+                type="text"
+                inputMode="tel"
+                value={form.phone}
+                onChange={e => setForm({ ...form, phone: e.target.value })}
+                placeholder="cth: +61 4xx xxx xxx"
+              />
             </Field>
             <Field label="Jenis Kelamin">
               <Select value={form.gender} onValueChange={v => setForm({ ...form, gender: v })}>
@@ -115,7 +129,17 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
               </Select>
             </Field>
             <Field label="Tahun Lahir">
-              <Input type="number" value={form.birth_year} onChange={e => setForm({ ...form, birth_year: e.target.value })} placeholder="cth: 1990" />
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={form.birth_year}
+                onChange={e => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                  setForm({ ...form, birth_year: val });
+                }}
+                placeholder="cth: 1990"
+                maxLength={4}
+              />
             </Field>
             <Field label="Tempat Lahir">
               <Select value={form.birthplace} onValueChange={v => setForm({ ...form, birthplace: v })}>
