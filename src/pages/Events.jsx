@@ -22,6 +22,7 @@ export default function Events() {
   const [filterLevel, setFilterLevel] = useState("all");
   const [filterDesa, setFilterDesa] = useState("all");
   const [filterKelompok, setFilterKelompok] = useState("all");
+  const [filterMubaligh, setFilterMubaligh] = useState("all");
   const navigate = useNavigate();
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
@@ -74,7 +75,13 @@ export default function Events() {
     const matchLevel = filterLevel === "all" || e.level === filterLevel;
     const matchDesa = filterDesa === "all" || e.desa === filterDesa || (filterDesa !== "all" && e.level === "Daerah");
     const matchKelompok = filterKelompok === "all" || e.kelompok === filterKelompok;
-    return matchLevel && matchDesa && matchKelompok;
+    let matchMubaligh = true;
+    if (filterMubaligh !== "all" && e.participant_dapukan && e.participant_dapukan.length > 0) {
+      if (filterMubaligh === "both") matchMubaligh = e.participant_dapukan.some(d => d.toLowerCase().includes("muball"));
+      else if (filterMubaligh === "mubaligh") matchMubaligh = e.participant_dapukan.some(d => d === "Muballigh" || d.toLowerCase().includes("muballigh"));
+      else if (filterMubaligh === "mubalighot") matchMubaligh = e.participant_dapukan.some(d => d === "Muballighot" || d.toLowerCase().includes("muballighot"));
+    }
+    return matchLevel && matchDesa && matchKelompok && matchMubaligh;
   });
 
   // Group by level for display
@@ -147,6 +154,15 @@ export default function Events() {
                 </SelectContent>
               </Select>
             )}
+            <Select value={filterMubaligh} onValueChange={setFilterMubaligh}>
+              <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Jamaah</SelectItem>
+                <SelectItem value="both">Mubaligh &amp; Mubalighot</SelectItem>
+                <SelectItem value="mubaligh">Mubaligh Saja</SelectItem>
+                <SelectItem value="mubalighot">Mubalighot Saja</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {isLoading ? (

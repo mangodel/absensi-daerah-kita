@@ -12,7 +12,7 @@ export const DESA_KELOMPOK_MAP = {
 };
 
 export const DAPUKAN_LIST = [
-  "Jamaah Biasa",
+  "Jamaah",
   // Keimaman
   "Ki", "Wakil",
   // KU & PKU

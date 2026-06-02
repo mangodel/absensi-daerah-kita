@@ -22,5 +22,9 @@
       "type": "string",
       "description": "Kelompok yang dikelola (untuk admin_kelompok)"
     }
-  }
+  },
+  "required": [
+    "desa",
+    "kelompok"
+  ]
 }

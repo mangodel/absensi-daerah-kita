@@ -262,26 +262,23 @@ export default function Attendance() {
                     {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                {/* Filter Mubaligh & Dapukan hanya untuk event Daerah */}
+                <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
+                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Seluruh Jamaah</SelectItem>
+                    <SelectItem value="muballigh_both">Mubaligh &amp; Mubalighot</SelectItem>
+                    <SelectItem value="muballigh_only">Mubaligh Saja</SelectItem>
+                    <SelectItem value="muballighot_only">Mubalighot Saja</SelectItem>
+                  </SelectContent>
+                </Select>
                 {selectedEvent.level === "Daerah" && (
-                  <>
-                    <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
-                      <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Seluruh Jamaah</SelectItem>
-                        <SelectItem value="muballigh_both">Muballigh &amp; Muballighot</SelectItem>
-                        <SelectItem value="muballigh_only">Muballigh Saja</SelectItem>
-                        <SelectItem value="muballighot_only">Muballighot Saja</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={filterDapukan} onValueChange={setFilterDapukan}>
-                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Semua Dapukan</SelectItem>
-                        {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </>
+                  <Select value={filterDapukan} onValueChange={setFilterDapukan}>
+                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua Dapukan</SelectItem>
+                      {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 )}
                 <Button onClick={handleSave} disabled={saving || filledCount === 0} className="ml-auto">
                   {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}

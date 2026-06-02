@@ -1,18 +1,30 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { FileBarChart, Users, CalendarCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileBarChart, Users, CalendarCheck, ChevronDown, ChevronUp, Download, Image } from "lucide-react";
 import { MONTHS } from "@/lib/constants";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  PieChart, Pie, Cell, LineChart, Line
+} from "recharts";
 
 const STATUS_COLOR = {
   Hadir: "bg-accent/10 text-accent border-accent/20",
   "Izin Sekolah": "bg-primary/10 text-primary border-primary/20",
   "Izin Kerja": "bg-blue-50 text-blue-600 border-blue-200",
   Alpa: "bg-destructive/10 text-destructive border-destructive/20",
+};
+
+const STATUS_CHART_COLORS = {
+  Hadir: "#22c55e",
+  "Izin Sekolah": "#f59e0b",
+  "Izin Kerja": "#3b82f6",
+  Alpa: "#ef4444",
 };
 
 function pct(val, total) {
@@ -22,15 +34,15 @@ function pct(val, total) {
 
 function SummaryCard({ title, value, sub, color = "primary" }) {
   const colors = {
-    primary: "bg-primary/10 text-primary",
-    accent: "bg-accent/10 text-accent",
-    destructive: "bg-destructive/10 text-destructive",
-    warning: "bg-orange-50 text-orange-600",
+    primary: "text-primary",
+    accent: "text-accent",
+    destructive: "text-destructive",
+    warning: "text-orange-600",
   };
   return (
     <div className="bg-card border border-border rounded-xl p-4">
       <p className="text-xs text-muted-foreground font-medium mb-1">{title}</p>
-      <p className={`text-2xl font-bold ${colors[color].split(" ")[1]}`}>{value}</p>
+      <p className={`text-2xl font-bold ${colors[color]}`}>{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
     </div>
   );
@@ -42,6 +54,8 @@ export default function MonthlyReport() {
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedMonth, setSelectedMonth] = useState(String(currentMonth));
   const [expandedDesa, setExpandedDesa] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef(null);
 
   const { config } = useAppConfig();
   const desaKelompokMap = config.desa_kelompok_map || {};
@@ -57,7 +71,6 @@ export default function MonthlyReport() {
   const month = Number(selectedMonth);
   const year = Number(selectedYear);
 
-  // Scope attendances by role
   const allMonthAttendances = allAttendances.filter(a => a.month === month && a.year === year);
   const monthAttendances = useMemo(() => {
     if (isSuperAdmin) return allMonthAttendances;
@@ -68,7 +81,6 @@ export default function MonthlyReport() {
 
   const monthEvents = events.filter(e => e.month === month && e.year === year);
 
-  // Per-desa stats
   const desaStats = useMemo(() => {
     const desaList = isSuperAdmin ? Object.keys(desaKelompokMap) :
       isAdminDesa && userDesa ? [userDesa] :
@@ -82,11 +94,9 @@ export default function MonthlyReport() {
 
       const kelompokStats = kelompoks.map(kelompok => {
         const km = desaMembers.filter(m => m.kelompok === kelompok);
-        // Attendance for this kelompok: all events that belong to this kelompok
         const kAtts = allMonthAttendances.filter(a => a.kelompok === kelompok);
         const hadir = kAtts.filter(a => a.status === "Hadir").length;
         const total = kAtts.length;
-        // Count events relevant to this kelompok: Daerah + Desa (same desa) + Kelompok (same kelompok)
         const kEvents = allEvents.filter(e =>
           e.month === month && e.year === year && (
             e.level === "Daerah" ||
@@ -97,7 +107,6 @@ export default function MonthlyReport() {
         return { kelompok, memberCount: km.length, hadir, total, events: kEvents.length, rate: pct(hadir, total) };
       });
 
-      // Desa attendance = all kelompoks in desa
       const desaAtts = allMonthAttendances.filter(a => a.desa === desa);
       const totalHadir = desaAtts.filter(a => a.status === "Hadir").length;
       const totalAtt = desaAtts.length;
@@ -108,14 +117,75 @@ export default function MonthlyReport() {
 
   const totalActiveMembers = members.filter(m => m.status === "Aktif").length;
   const totalHadir = monthAttendances.filter(a => a.status === "Hadir").length;
+  const totalIzinSekolah = monthAttendances.filter(a => a.status === "Izin Sekolah").length;
+  const totalIzinKerja = monthAttendances.filter(a => a.status === "Izin Kerja").length;
+  const totalAlpa = monthAttendances.filter(a => a.status === "Alpa").length;
   const overallRate = pct(totalHadir, monthAttendances.length);
 
-  // Scope badge label
   const scopeLabel = isAdminKelompok && userKelompok
     ? `Kelompok ${userKelompok}`
     : isAdminDesa && userDesa
     ? `Desa ${userDesa}`
     : "Daerah";
+
+  // Chart: Bar per desa
+  const desaChartData = desaStats.map(d => ({
+    name: d.desa,
+    Hadir: d.totalHadir,
+    "Tidak Hadir": d.totalAtt - d.totalHadir,
+    Total: d.totalAtt,
+  }));
+
+  // Chart: Pie status
+  const pieData = [
+    { name: "Hadir", value: totalHadir, color: STATUS_CHART_COLORS.Hadir },
+    { name: "Izin Sekolah", value: totalIzinSekolah, color: STATUS_CHART_COLORS["Izin Sekolah"] },
+    { name: "Izin Kerja", value: totalIzinKerja, color: STATUS_CHART_COLORS["Izin Kerja"] },
+    { name: "Alpa", value: totalAlpa, color: STATUS_CHART_COLORS.Alpa },
+  ].filter(d => d.value > 0);
+
+  // Chart: per kelompok (flattened)
+  const kelompokChartData = desaStats.flatMap(d =>
+    d.kelompokStats.map(k => ({
+      name: k.kelompok.replace(/kelompok /i, "K"),
+      Hadir: k.hadir,
+      Total: k.total,
+      rate: k.total > 0 ? Math.round((k.hadir / k.total) * 100) : 0,
+    }))
+  );
+
+  const handleExport = async (format) => {
+    setExporting(true);
+    const html2canvas = (await import("html2canvas")).default;
+    const element = reportRef.current;
+    const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+
+    if (format === "jpg") {
+      const link = document.createElement("a");
+      link.download = `laporan-absensi-${MONTHS[month - 1]}-${year}.jpg`;
+      link.href = canvas.toDataURL("image/jpeg", 0.95);
+      link.click();
+    } else if (format === "pdf") {
+      const { jsPDF } = await import("jspdf");
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let heightLeft = pdfHeight;
+      let position = 0;
+      pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
+      pdf.save(`laporan-absensi-${MONTHS[month - 1]}-${year}.pdf`);
+    }
+    setExporting(false);
+  };
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
@@ -130,7 +200,7 @@ export default function MonthlyReport() {
             <span className="ml-2 inline-block text-[10px] bg-primary/5 border border-primary/20 text-primary rounded-md px-2 py-0.5">{scopeLabel}</span>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -143,72 +213,211 @@ export default function MonthlyReport() {
               {[currentYear, currentYear - 1, currentYear - 2].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={() => handleExport("pdf")} disabled={exporting}>
+            <Download className="w-4 h-4 mr-1.5" /> PDF
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleExport("jpg")} disabled={exporting}>
+            <Image className="w-4 h-4 mr-1.5" /> JPG
+          </Button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard title="Total Jamaah Aktif" value={totalActiveMembers} color="primary" />
-        <SummaryCard title="Total Kehadiran" value={totalHadir} sub={`dari ${monthAttendances.length} absensi`} color="accent" />
-        <SummaryCard title="Tingkat Kehadiran" value={overallRate} color="warning" />
-        <SummaryCard title="Total Kegiatan" value={monthEvents.length} sub={`Bulan ${MONTHS[month - 1]} ${year}`} color="primary" />
-      </div>
+      {/* Exportable content */}
+      <div ref={reportRef} className="space-y-6 bg-background p-2">
+        {/* Report title (visible in export) */}
+        <div className="hidden print:block text-center mb-2">
+          <h2 className="text-lg font-bold">Laporan Absensi {MONTHS[month - 1]} {year} — {scopeLabel}</h2>
+        </div>
 
-      {/* Per-Desa Breakdown — Daerah & Admin Desa */}
-      {!isAdminKelompok && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Rekap per Desa</h2>
-          {desaStats.map(({ desa, memberCount, totalHadir, totalAtt, kelompokStats, rate }) => (
-            <div key={desa} className="bg-card border border-border rounded-2xl overflow-hidden">
-              <button
-                className="w-full p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors"
-                onClick={() => setExpandedDesa(expandedDesa === desa ? null : desa)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Users className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold text-sm">{desa}</p>
-                    <p className="text-xs text-muted-foreground">{memberCount} jamaah aktif · {kelompokStats.length} kelompok</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right hidden sm:block">
-                    <p className="text-sm font-bold text-accent">{rate}</p>
-                    <p className="text-xs text-muted-foreground">{totalHadir}/{totalAtt} hadir</p>
-                  </div>
-                  {expandedDesa === desa ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                </div>
-              </button>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <SummaryCard title="Total Jamaah Aktif" value={totalActiveMembers} color="primary" />
+          <SummaryCard title="Total Kehadiran" value={totalHadir} sub={`dari ${monthAttendances.length} absensi`} color="accent" />
+          <SummaryCard title="Tingkat Kehadiran" value={overallRate} color="warning" />
+          <SummaryCard title="Total Kegiatan" value={monthEvents.length} sub={`Bulan ${MONTHS[month - 1]} ${year}`} color="primary" />
+        </div>
 
-              {expandedDesa === desa && (
-                <div className="border-t border-border">
+        {/* Charts */}
+        {monthAttendances.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Pie Chart */}
+            <div className="bg-card border border-border rounded-2xl p-5">
+              <h3 className="text-sm font-semibold mb-3">Distribusi Status Kehadiran</h3>
+              <div className="flex items-center gap-4">
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={2} dataKey="value">
+                      {pieData.map((entry, index) => (
+                        <Cell key={index} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v, n) => [v, n]} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2 min-w-[120px]">
+                  {pieData.map(d => (
+                    <div key={d.name} className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: d.color }} />
+                      <span className="text-xs text-muted-foreground">{d.name}</span>
+                      <span className="text-xs font-semibold ml-auto">{d.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Bar per Desa */}
+            {desaChartData.length > 0 && (
+              <div className="bg-card border border-border rounded-2xl p-5">
+                <h3 className="text-sm font-semibold mb-3">Kehadiran per Desa</h3>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={desaChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Bar dataKey="Hadir" fill="#22c55e" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="Tidak Hadir" fill="#ef4444" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Bar per Kelompok */}
+            {kelompokChartData.length > 0 && (
+              <div className="bg-card border border-border rounded-2xl p-5 lg:col-span-2">
+                <h3 className="text-sm font-semibold mb-3">Tingkat Kehadiran per Kelompok (%)</h3>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={kelompokChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} unit="%" />
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v) => [`${v}%`, "Kehadiran"]} />
+                    <Bar dataKey="rate" fill="#6366f1" radius={[3, 3, 0, 0]} name="% Hadir" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Per-Desa Breakdown */}
+        {!isAdminKelompok && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground">Rekap per Desa</h2>
+            {desaStats.map(({ desa, memberCount, totalHadir, totalAtt, kelompokStats, rate }) => (
+              <div key={desa} className="bg-card border border-border rounded-2xl overflow-hidden">
+                <button
+                  className="w-full p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors"
+                  onClick={() => setExpandedDesa(expandedDesa === desa ? null : desa)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-sm">{desa}</p>
+                      <p className="text-xs text-muted-foreground">{memberCount} jamaah aktif · {kelompokStats.length} kelompok</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-sm font-bold text-accent">{rate}</p>
+                      <p className="text-xs text-muted-foreground">{totalHadir}/{totalAtt} hadir</p>
+                    </div>
+                    {expandedDesa === desa ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                  </div>
+                </button>
+
+                {expandedDesa === desa && (
+                  <div className="border-t border-border">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-secondary/50">
+                          <tr>
+                            <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Kelompok</th>
+                            <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Jamaah</th>
+                            <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Hadir</th>
+                            <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Total Absen</th>
+                            <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">% Hadir</th>
+                            <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Kegiatan</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {kelompokStats.map(({ kelompok, memberCount, hadir, total, events, rate }) => (
+                            <tr key={kelompok} className="border-t border-border hover:bg-secondary/20">
+                              <td className="px-4 py-2.5 font-medium">{kelompok}</td>
+                              <td className="px-4 py-2.5 text-center text-muted-foreground">{memberCount}</td>
+                              <td className="px-4 py-2.5 text-center text-accent font-medium">{hadir}</td>
+                              <td className="px-4 py-2.5 text-center text-muted-foreground">{total}</td>
+                              <td className="px-4 py-2.5 text-center">
+                                <Badge variant="outline" className={total > 0 ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground"}>
+                                  {rate}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-2.5 text-center text-muted-foreground">{events}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            {desaStats.length === 0 && (
+              <div className="bg-card border border-dashed border-border rounded-2xl p-12 text-center">
+                <p className="text-muted-foreground text-sm">Tidak ada data untuk periode ini.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Kelompok View */}
+        {isAdminKelompok && userKelompok && (() => {
+          const myStats = desaStats.flatMap(d => d.kelompokStats).find(k => k.kelompok === userKelompok);
+          if (!myStats) return (
+            <div className="bg-card border border-dashed border-border rounded-2xl p-12 text-center">
+              <p className="text-muted-foreground text-sm">Tidak ada data absensi untuk kelompok ini bulan ini.</p>
+            </div>
+          );
+
+          const kelompokAtts = allMonthAttendances.filter(a => a.kelompok === userKelompok);
+
+          return (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold">Detail Kelompok {userKelompok}</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <SummaryCard title="Jamaah Aktif" value={myStats.memberCount} color="primary" />
+                <SummaryCard title="Hadir" value={myStats.hadir} color="accent" />
+                <SummaryCard title="% Kehadiran" value={myStats.rate} color="warning" />
+                <SummaryCard title="Kegiatan" value={myStats.events} color="primary" />
+              </div>
+              {kelompokAtts.length > 0 && (
+                <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border">
+                    <p className="text-sm font-semibold">Rincian Status Kehadiran</p>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-secondary/50">
                         <tr>
-                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Kelompok</th>
-                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Jamaah</th>
-                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Hadir</th>
-                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Total Absen</th>
-                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">% Hadir</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Nama</th>
+                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Tanggal</th>
                           <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Kegiatan</th>
+                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Status</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {kelompokStats.map(({ kelompok, memberCount, hadir, total, events, rate }) => (
-                          <tr key={kelompok} className="border-t border-border hover:bg-secondary/20">
-                            <td className="px-4 py-2.5 font-medium">{kelompok}</td>
-                            <td className="px-4 py-2.5 text-center text-muted-foreground">{memberCount}</td>
-                            <td className="px-4 py-2.5 text-center text-accent font-medium">{hadir}</td>
-                            <td className="px-4 py-2.5 text-center text-muted-foreground">{total}</td>
-                            <td className="px-4 py-2.5 text-center">
-                              <Badge variant="outline" className={total > 0 ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground"}>
-                                {rate}
-                              </Badge>
+                        {kelompokAtts.sort((a, b) => new Date(a.date) - new Date(b.date)).map(a => (
+                          <tr key={a.id} className="border-t border-border hover:bg-secondary/20">
+                            <td className="px-4 py-2 font-medium text-xs">{a.member_name}</td>
+                            <td className="px-4 py-2 text-center text-xs text-muted-foreground">{a.date}</td>
+                            <td className="px-4 py-2 text-center text-xs text-muted-foreground">{a.event_name || "-"}</td>
+                            <td className="px-4 py-2 text-center">
+                              <Badge variant="outline" className={`text-[10px] ${STATUS_COLOR[a.status] || ""}`}>{a.status}</Badge>
                             </td>
-                            <td className="px-4 py-2.5 text-center text-muted-foreground">{events}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -217,72 +426,9 @@ export default function MonthlyReport() {
                 </div>
               )}
             </div>
-          ))}
-          {desaStats.length === 0 && (
-            <div className="bg-card border border-dashed border-border rounded-2xl p-12 text-center">
-              <p className="text-muted-foreground text-sm">Tidak ada data untuk periode ini.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Kelompok View — hanya tampil untuk admin_kelompok */}
-      {isAdminKelompok && userKelompok && (() => {
-        const myStats = desaStats.flatMap(d => d.kelompokStats).find(k => k.kelompok === userKelompok);
-        if (!myStats) return (
-          <div className="bg-card border border-dashed border-border rounded-2xl p-12 text-center">
-            <p className="text-muted-foreground text-sm">Tidak ada data absensi untuk kelompok ini bulan ini.</p>
-          </div>
-        );
-
-        const kelompokAtts = allMonthAttendances.filter(a => a.kelompok === userKelompok);
-        const byStatus = {};
-        kelompokAtts.forEach(a => { byStatus[a.status] = (byStatus[a.status] || 0) + 1; });
-
-        return (
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold">Detail Kelompok {userKelompok}</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <SummaryCard title="Jamaah Aktif" value={myStats.memberCount} color="primary" />
-              <SummaryCard title="Hadir" value={myStats.hadir} color="accent" />
-              <SummaryCard title="% Kehadiran" value={myStats.rate} color="warning" />
-              <SummaryCard title="Kegiatan" value={myStats.events} color="primary" />
-            </div>
-            {/* Status breakdown */}
-            {kelompokAtts.length > 0 && (
-              <div className="bg-card border border-border rounded-2xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-border">
-                  <p className="text-sm font-semibold">Rincian Status Kehadiran</p>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-secondary/50">
-                      <tr>
-                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Nama</th>
-                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Tanggal</th>
-                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Kegiatan</th>
-                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {kelompokAtts.sort((a, b) => new Date(a.date) - new Date(b.date)).map(a => (
-                        <tr key={a.id} className="border-t border-border hover:bg-secondary/20">
-                          <td className="px-4 py-2 font-medium text-xs">{a.member_name}</td>
-                          <td className="px-4 py-2 text-center text-xs text-muted-foreground">{a.date}</td>
-                          <td className="px-4 py-2 text-center text-xs text-muted-foreground">{a.event_name || "-"}</td>
-                          <td className="px-4 py-2 text-center">
-                            <Badge variant="outline" className={`text-[10px] ${STATUS_COLOR[a.status] || ""}`}>{a.status}</Badge>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
+          );
+        })()}
+      </div>
     </div>
   );
 }
