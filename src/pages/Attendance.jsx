@@ -97,6 +97,8 @@ export default function Attendance() {
   const scopedMembers = filterMembers(members);
   const activeMembers = scopedMembers.filter(m => m.status === "Aktif");
 
+  const thisYear = new Date().getFullYear();
+
   // Auto-filter base member pool berdasarkan event config
   const eventBasedMembers = activeMembers.filter(m => {
     if (!selectedEvent) return true;
@@ -105,6 +107,17 @@ export default function Attendance() {
     if (selectedEvent.level === "Kelompok") {
       if (selectedEvent.desa && m.desa !== selectedEvent.desa) return false;
       if (selectedEvent.kelompok && m.kelompok !== selectedEvent.kelompok) return false;
+    }
+    // Filter by participant_filter (preset)
+    const pf = selectedEvent.participant_filter;
+    if (pf) {
+      const age = thisYear - (m.birth_year || thisYear);
+      if (pf === "mubaligh_both") return m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot";
+      if (pf === "mubaligh_only") return m.muballigh_status === "Muballigh";
+      if (pf === "mubalighot_only") return m.muballigh_status === "Muballighot";
+      if (pf === "generus_smp") return age >= 12 && age <= 14;
+      if (pf === "generus_sma") return age >= 15 && age <= 17;
+      if (pf === "usia_nikah") return age >= 18 && (m.marital_status === "Belum Menikah" || !m.marital_status);
     }
     // Filter by participant_dapukan if set
     const pDap = selectedEvent.participant_dapukan;
@@ -219,12 +232,18 @@ export default function Attendance() {
                     <span className="text-xs text-muted-foreground">· {selectedEvent.location}</span>
                   )}
                 </div>
-                {selectedEvent.participant_dapukan && selectedEvent.participant_dapukan.length > 0 && (
+                {(selectedEvent.participant_filter || (selectedEvent.participant_dapukan && selectedEvent.participant_dapukan.length > 0)) && (
                   <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-primary/5 border border-primary/15 rounded-xl">
                     <span className="text-xs text-primary font-medium">Peserta terdaftar:</span>
-                    {selectedEvent.participant_dapukan.map(d => (
-                      <Badge key={d} className="text-[10px] bg-primary/10 text-primary border-primary/20">{d}</Badge>
-                    ))}
+                    {selectedEvent.participant_filter ? (
+                      <Badge className="text-[10px] bg-accent/10 text-accent border-accent/20">
+                        {{ mubaligh_both: "Semua Mubaligh & Mubalighot", mubaligh_only: "Mubaligh Saja", mubalighot_only: "Mubalighot Saja", generus_smp: "Generus SMP", generus_sma: "Generus SMA", usia_nikah: "Usia Nikah (Lajang 18+)" }[selectedEvent.participant_filter] || selectedEvent.participant_filter}
+                      </Badge>
+                    ) : (
+                      selectedEvent.participant_dapukan.map(d => (
+                        <Badge key={d} className="text-[10px] bg-primary/10 text-primary border-primary/20">{d}</Badge>
+                      ))
+                    )}
                     <span className="text-xs text-muted-foreground ml-1">({filteredMembers.length} anggota)</span>
                   </div>
                 )}

@@ -15,15 +15,48 @@ const empty = {
   name: "", level: "Kelompok", desa: "", kelompok: "",
   date: "", description: "", location: "",
   participant_dapukan: [], // [] = semua jamaah
+  participant_filter: "", // special filter: mubaligh_both, mubaligh_only, mubalighot_only, generus_smp, generus_sma, usia_nikah
 };
 
-function getEligibleCount(members, dapukanList, desa, kelompok, level) {
+const currentYear = new Date().getFullYear();
+
+function applyParticipantFilter(pool, filter) {
+  if (!filter) return pool;
+  if (filter === "mubaligh_both") return pool.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot");
+  if (filter === "mubaligh_only") return pool.filter(m => m.muballigh_status === "Muballigh");
+  if (filter === "mubalighot_only") return pool.filter(m => m.muballigh_status === "Muballighot");
+  if (filter === "generus_smp") return pool.filter(m => {
+    const age = currentYear - (m.birth_year || currentYear);
+    return age >= 12 && age <= 14;
+  });
+  if (filter === "generus_sma") return pool.filter(m => {
+    const age = currentYear - (m.birth_year || currentYear);
+    return age >= 15 && age <= 17;
+  });
+  if (filter === "usia_nikah") return pool.filter(m => {
+    const age = currentYear - (m.birth_year || currentYear);
+    return age >= 18 && (m.marital_status === "Belum Menikah" || !m.marital_status);
+  });
+  return pool;
+}
+
+function getEligibleCount(members, dapukanList, participantFilter, desa, kelompok, level) {
   let pool = members.filter(m => m.status === "Aktif");
   if (level === "Desa" && desa) pool = pool.filter(m => m.desa === desa);
   if (level === "Kelompok" && kelompok) pool = pool.filter(m => m.kelompok === kelompok && (!desa || m.desa === desa));
+  if (participantFilter) return applyParticipantFilter(pool, participantFilter).length;
   if (!dapukanList || dapukanList.length === 0) return pool.length;
   return pool.filter(m => dapukanList.includes(m.dapukan)).length;
 }
+
+const PRESET_FILTERS = [
+  { value: "mubaligh_both", label: "Semua Mubaligh & Mubalighot" },
+  { value: "mubaligh_only", label: "Mubaligh Saja" },
+  { value: "mubalighot_only", label: "Mubalighot Saja" },
+  { value: "generus_smp", label: "Generus SMP (12–14 thn)" },
+  { value: "generus_sma", label: "Generus SMA (15–17 thn)" },
+  { value: "usia_nikah", label: "Usia Nikah (Lajang 18+)" },
+];
 
 export default function EventFormDialog({ open, onOpenChange, event, prefilledDate, onSave }) {
   const { config } = useAppConfig();
@@ -41,7 +74,7 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
 
   useEffect(() => {
     if (event) {
-      setForm({ ...empty, ...event, participant_dapukan: event.participant_dapukan || [] });
+      setForm({ ...empty, ...event, participant_dapukan: event.participant_dapukan || [], participant_filter: event.participant_filter || "" });
     } else if (prefilledDate) {
       const iso = `${prefilledDate.getFullYear()}-${String(prefilledDate.getMonth()+1).padStart(2,"0")}-${String(prefilledDate.getDate()).padStart(2,"0")}`;
       setForm({ ...empty, date: iso });
@@ -51,7 +84,7 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
   }, [event, prefilledDate, open]);
 
   const kelompokOptions = form.desa ? desaKelompokMap[form.desa] || [] : [];
-  const eligibleCount = getEligibleCount(members, form.participant_dapukan, form.desa, form.kelompok, form.level);
+  const eligibleCount = getEligibleCount(members, form.participant_dapukan, form.participant_filter, form.desa, form.kelompok, form.level);
 
   const toggleDapukan = (d) => {
     setForm(prev => {
@@ -73,10 +106,10 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
     });
   };
 
-  // All dapukan options except "Jamaah Biasa"
-  const dapukanOptions = DAPUKAN_LIST.filter(d => d !== "Jamaah Biasa");
+  // All dapukan options except "Jamaah" / "Jamaah Biasa"
+  const dapukanOptions = DAPUKAN_LIST.filter(d => d !== "Jamaah Biasa" && d !== "Jamaah");
   const selectedDapukan = form.participant_dapukan || [];
-  const allSelected = selectedDapukan.length === 0;
+  const allSelected = selectedDapukan.length === 0 && !form.participant_filter;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,40 +177,62 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
             <Label className="text-xs font-medium flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-primary" /> Peserta Kegiatan
             </Label>
-            <p className="text-xs text-muted-foreground">Pilih dapukan yang hadir. Kosongkan = <strong>semua jamaah aktif</strong>.</p>
+            <p className="text-xs text-muted-foreground">Pilih filter peserta. Kosongkan = <strong>semua jamaah aktif</strong>.</p>
 
-            {/* Quick: pilih semua / kosongkan */}
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setForm(f => ({ ...f, participant_dapukan: [] }))}
-                className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${allSelected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary"}`}>
-                Semua Jamaah
-              </button>
-              <button type="button" onClick={() => setForm(f => ({ ...f, participant_dapukan: [...dapukanOptions] }))}
-                className="text-xs px-2.5 py-1 rounded-lg border border-border hover:bg-secondary">
-                Pilih Semua Dapukan
-              </button>
+            {/* Reset */}
+            <button type="button"
+              onClick={() => setForm(f => ({ ...f, participant_dapukan: [], participant_filter: "" }))}
+              className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${allSelected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary"}`}>
+              Semua Jamaah
+            </button>
+
+            {/* Preset filter khusus */}
+            <div>
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Filter Cepat</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PRESET_FILTERS.map(pf => {
+                  const active = form.participant_filter === pf.value;
+                  return (
+                    <button key={pf.value} type="button"
+                      onClick={() => setForm(f => ({ ...f, participant_filter: active ? "" : pf.value, participant_dapukan: [] }))}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${active ? "bg-accent text-accent-foreground border-accent" : "border-border bg-card hover:bg-secondary"}`}>
+                      {pf.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
-              {dapukanOptions.map(d => {
-                const selected = selectedDapukan.includes(d);
-                return (
-                  <button
-                    key={d} type="button"
-                    onClick={() => toggleDapukan(d)}
-                    className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card hover:bg-secondary"}`}
-                  >
-                    {d}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Per-dapukan manual (only if no preset active) */}
+            {!form.participant_filter && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Pilih Dapukan Manual</p>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, participant_dapukan: [...dapukanOptions] }))}
+                    className="text-[10px] text-primary hover:underline">Pilih Semua</button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {dapukanOptions.map(d => {
+                    const selected = selectedDapukan.includes(d);
+                    return (
+                      <button key={d} type="button" onClick={() => toggleDapukan(d)}
+                        className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border bg-card hover:bg-secondary"}`}>
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
               <Badge variant="outline" className="text-[10px] bg-primary/5 border-primary/20 text-primary">
                 {eligibleCount} anggota eligible
               </Badge>
-              {selectedDapukan.length > 0 && (
+              {form.participant_filter && (
+                <span className="text-accent font-medium">{PRESET_FILTERS.find(p => p.value === form.participant_filter)?.label}</span>
+              )}
+              {!form.participant_filter && selectedDapukan.length > 0 && (
                 <span>{selectedDapukan.length} dapukan dipilih</span>
               )}
             </div>

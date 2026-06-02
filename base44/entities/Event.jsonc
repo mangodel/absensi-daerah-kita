@@ -53,6 +53,19 @@
     },
     "participant_filter": {
       "type": "string",
+      "enum": [
+        "",
+        "mubaligh_both",
+        "mubaligh_only",
+        "mubalighot_only",
+        "generus_smp",
+        "generus_sma",
+        "usia_nikah"
+      ],
+      "description": "Filter peserta berbasis kriteria khusus"
+    },
+    "participant_filter_legacy": {
+      "type": "string",
       "description": "Filter peserta legacy (all/muballigh/dapukan/smp/sma/muda_mudi)"
     }
   },
