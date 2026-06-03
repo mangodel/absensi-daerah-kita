@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DAPUKAN_LIST, DAPUKAN_LEVEL_LIST, BIRTHPLACE_LIST, VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, EMPLOYMENT_LIST, MEMBER_STATUS_LIST, GENDER_LIST, MARITAL_STATUS_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
+import FamilyGroupField from "@/components/members/FamilyGroupField";
 
 // Field wrapper — defined OUTSIDE parent component to prevent remount on every render
 function Field({ label, children }) {
@@ -60,7 +61,7 @@ const emptyMember = {
   phone: "", notes: ""
 };
 
-export default function MemberFormDialog({ open, onOpenChange, member, onSave }) {
+export default function MemberFormDialog({ open, onOpenChange, member, onSave, allMembers = [] }) {
   const { config } = useAppConfig();
   const desaList = config.desa_list || [];
   const desaKelompokMap = config.desa_kelompok_map || {};
@@ -79,6 +80,8 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
   }, [member, open]);
 
   const kelompokOptions = form.desa ? desaKelompokMap[form.desa] || [] : [];
+  // Anggota di kelompok yang sama (untuk pilihan KK)
+  const membersInKelompok = allMembers.filter(m => m.kelompok === form.kelompok);
 
   const set = useCallback((field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -237,10 +240,11 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave })
               />
             </Field>
             <Field label="Grup Keluarga (KK)">
-              <Input
+              <FamilyGroupField
                 value={form.family_group}
-                onChange={e => set("family_group", e.target.value)}
-                placeholder="Nama kepala keluarga / grup"
+                onChange={v => set("family_group", v)}
+                membersInKelompok={membersInKelompok}
+                currentMemberId={member?.id}
               />
             </Field>
           </div>

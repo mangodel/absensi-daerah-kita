@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart } from "lucide-react";
+import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import DesaOverview from "@/components/dashboard/DesaOverview";
@@ -123,6 +123,17 @@ export default function Dashboard() {
 
   const activeMembers = members.filter(m => m.status === "Aktif").length;
   const inactiveMembers = members.filter(m => m.status === "Tidak Aktif").length;
+
+  // Hitung total KK: setiap family_group unik = 1 KK, tanpa family_group masing-masing = 1 KK
+  const totalKK = (() => {
+    const groups = new Set();
+    let noGroup = 0;
+    members.forEach(m => {
+      if (m.family_group && m.family_group.trim()) groups.add(m.family_group.trim());
+      else noGroup++;
+    });
+    return groups.size + noGroup;
+  })();
   const yearAttendances = attendances.filter(a => a.year === Number(selectedYear));
   // Admin kelompok: only kelompok-level events attendance (exclude Daerah events)
   // Kelompok: all attendance for their kelompok (including Daerah/Desa events they attend)
@@ -180,8 +191,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Jamaah" value={members.length} icon={Users} color="primary" />
         <StatCard title="Aktif" value={activeMembers} icon={UserCheck} color="accent" />
-        <StatCard title="Tidak Aktif" value={inactiveMembers} icon={UserX} color="destructive" />
-        <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="warning" />
+        <StatCard title="Total KK" value={totalKK} icon={Home} color="warning" />
+        <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="primary" />
       </div>
 
       {upcomingEvents.length > 0 && (
@@ -219,10 +230,14 @@ export default function Dashboard() {
       {isAdminKelompok && (
         <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
           <h3 className="font-semibold text-sm text-foreground">Ringkasan Kelompok {userKelompok}</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="bg-secondary/40 rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-primary">{members.filter(m => m.status === "Aktif").length}</p>
               <p className="text-xs text-muted-foreground mt-1">Jamaah Aktif</p>
+            </div>
+            <div className="bg-secondary/40 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-amber-500">{totalKK}</p>
+              <p className="text-xs text-muted-foreground mt-1">Total KK</p>
             </div>
             <div className="bg-secondary/40 rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-accent">{attendanceRate}%</p>

@@ -191,6 +191,7 @@ export default function Members() {
         onOpenChange={setFormOpen}
         member={editMember}
         onSave={handleSave}
+        allMembers={allMembers}
       />
 
       <CsvUploadDialog
