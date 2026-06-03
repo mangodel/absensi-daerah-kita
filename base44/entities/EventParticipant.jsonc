@@ -1,0 +1,55 @@
+{
+  "name": "EventParticipant",
+  "type": "object",
+  "properties": {
+    "participant_id": {
+      "type": "string",
+      "description": "ID unik peserta format P000001"
+    },
+    "event_id": {
+      "type": "string",
+      "description": "ID event terkait"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Nama lengkap peserta"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Nomor telepon"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email peserta"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Organisasi/instansi"
+    },
+    "registration_date": {
+      "type": "string",
+      "description": "Tanggal registrasi (ISO string)"
+    },
+    "qr_code_value": {
+      "type": "string",
+      "description": "Nilai QR code (sama dengan participant_id)"
+    },
+    "attendance_status": {
+      "type": "string",
+      "enum": [
+        "Present",
+        "Absent"
+      ],
+      "default": "Absent",
+      "description": "Status kehadiran"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan tambahan"
+    }
+  },
+  "required": [
+    "full_name",
+    "event_id"
+  ]
+}

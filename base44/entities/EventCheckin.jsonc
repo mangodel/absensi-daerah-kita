@@ -1,0 +1,56 @@
+{
+  "name": "EventCheckin",
+  "type": "object",
+  "properties": {
+    "participant_id": {
+      "type": "string",
+      "description": "participant_id (P000001 format)"
+    },
+    "participant_db_id": {
+      "type": "string",
+      "description": "ID database peserta"
+    },
+    "participant_name": {
+      "type": "string",
+      "description": "Nama peserta"
+    },
+    "event_id": {
+      "type": "string",
+      "description": "ID event"
+    },
+    "checkin_time": {
+      "type": "string",
+      "description": "Waktu check-in (ISO string)"
+    },
+    "checkin_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal check-in"
+    },
+    "checkin_method": {
+      "type": "string",
+      "enum": [
+        "QR Scan",
+        "Manual"
+      ],
+      "description": "Metode check-in"
+    },
+    "scanner_station": {
+      "type": "string",
+      "description": "Nama pos scanner"
+    },
+    "volunteer_name": {
+      "type": "string",
+      "description": "Nama volunteer/panitia"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan"
+    }
+  },
+  "required": [
+    "participant_id",
+    "event_id",
+    "checkin_time"
+  ]
+}

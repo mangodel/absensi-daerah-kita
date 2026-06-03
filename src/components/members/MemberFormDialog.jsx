@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DAPUKAN_LIST, DAPUKAN_LEVEL_LIST, BIRTHPLACE_LIST, VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, EMPLOYMENT_LIST, MEMBER_STATUS_LIST, GENDER_LIST, MARITAL_STATUS_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import FamilyGroupField from "@/components/members/FamilyGroupField";
+import { base44 } from "@/api/base44Client";
 
 // Field wrapper — defined OUTSIDE parent component to prevent remount on every render
 function Field({ label, children }) {
@@ -87,9 +88,25 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
     setForm(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const data = { ...form, birth_year: form.birth_year ? Number(form.birth_year) : undefined };
+
+    // Auto-record transfer history if desa or kelompok changed
+    if (member && member.id && (member.desa !== form.desa || member.kelompok !== form.kelompok)) {
+      const today = new Date().toISOString().split("T")[0];
+      base44.entities.TransferHistory.create({
+        member_id: member.id,
+        member_name: member.full_name,
+        from_desa: member.desa || "",
+        from_kelompok: member.kelompok || "",
+        to_desa: form.desa || "",
+        to_kelompok: form.kelompok || "",
+        transfer_date: today,
+        reason: "Diubah via edit data anggota",
+      }).catch(() => {}); // fire-and-forget
+    }
+
     onSave(data);
   };
 

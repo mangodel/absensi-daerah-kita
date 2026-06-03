@@ -1,0 +1,37 @@
+{
+  "name": "EventSession",
+  "type": "object",
+  "properties": {
+    "event_name": {
+      "type": "string",
+      "description": "Nama event"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Tanggal event"
+    },
+    "venue": {
+      "type": "string",
+      "description": "Lokasi/venue"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi event"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Draft",
+        "Active",
+        "Closed"
+      ],
+      "default": "Draft",
+      "description": "Status event"
+    }
+  },
+  "required": [
+    "event_name",
+    "event_date"
+  ]
+}
