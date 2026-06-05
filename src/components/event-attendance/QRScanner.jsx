@@ -1,21 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera } from "lucide-react";
+import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Monitor } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import CameraScanner from "./CameraScanner";
 
 export default function QRScanner({ eventId, eventName }) {
   const qc = useQueryClient();
   const [manualId, setManualId] = useState("");
   const [search, setSearch] = useState("");
-  const [result, setResult] = useState(null); // { type: "success"|"duplicate"|"notfound", participant, checkin }
+  const [result, setResult] = useState(null);
   const [scannerStation, setScannerStation] = useState("Pintu Utama");
   const [volunteerName, setVolunteerName] = useState("");
-  const [mode, setMode] = useState("manual"); // "manual" | "search"
+  const [mode, setMode] = useState("manual"); // "manual" | "camera" | "search"
 
   const { data: participants = [] } = useQuery({
     queryKey: ["event-participants", eventId],
@@ -32,12 +33,10 @@ export default function QRScanner({ eventId, eventName }) {
 
   const checkinMut = useMutation({
     mutationFn: async (participant) => {
-      // Check duplicate
       const existing = checkins.find(c => c.participant_db_id === participant.id);
       if (existing) return { type: "duplicate", participant, checkin: existing };
 
       const now = new Date();
-      // Create checkin record
       await base44.entities.EventCheckin.create({
         participant_id: participant.participant_id,
         participant_db_id: participant.id,
@@ -45,11 +44,10 @@ export default function QRScanner({ eventId, eventName }) {
         event_id: eventId,
         checkin_time: now.toISOString(),
         checkin_date: now.toISOString().split("T")[0],
-        checkin_method: mode === "manual" ? "Manual" : "QR Scan",
+        checkin_method: mode === "camera" ? "QR Scan" : mode === "manual" ? "Manual" : "Manual",
         scanner_station: scannerStation,
         volunteer_name: volunteerName,
       });
-      // Update participant status
       await base44.entities.EventParticipant.update(participant.id, { attendance_status: "Present" });
       return { type: "success", participant };
     },
@@ -76,15 +74,27 @@ export default function QRScanner({ eventId, eventName }) {
     handleCheckin(p);
   };
 
+  // Called by camera scanner when QR decoded
+  const handleCameraScan = (decoded) => {
+    if (checkinMut.isPending) return;
+    const p = participants.find(x => x.participant_id === decoded || x.qr_code_value === decoded);
+    if (!p) { setResult({ type: "notfound" }); return; }
+    handleCheckin(p);
+  };
+
   const filteredSearch = search.length > 1
     ? participants.filter(p =>
         p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-        p.phone?.includes(search) ||
-        p.participant_id?.includes(search)
+        p.phone?.includes(search) || p.participant_id?.includes(search)
       )
     : [];
 
   const recentCheckins = checkins.slice(0, 5);
+
+  const openDisplay = () => {
+    const params = new URLSearchParams(window.location.search);
+    window.open(`/event-display?event_id=${eventId}`, "_blank");
+  };
 
   if (!eventId) return (
     <div className="bg-card border border-border rounded-2xl p-10 text-center text-muted-foreground">
@@ -108,12 +118,18 @@ export default function QRScanner({ eventId, eventName }) {
       </div>
 
       {/* Mode Toggle */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button variant={mode === "manual" ? "default" : "outline"} size="sm" onClick={() => { setMode("manual"); setResult(null); }}>
           <QrCode className="w-4 h-4 mr-1" /> Input ID
         </Button>
+        <Button variant={mode === "camera" ? "default" : "outline"} size="sm" onClick={() => { setMode("camera"); setResult(null); }}>
+          <Camera className="w-4 h-4 mr-1" /> Kamera
+        </Button>
         <Button variant={mode === "search" ? "default" : "outline"} size="sm" onClick={() => { setMode("search"); setResult(null); }}>
           <Search className="w-4 h-4 mr-1" /> Cari Nama
+        </Button>
+        <Button variant="outline" size="sm" className="ml-auto" onClick={openDisplay}>
+          <Monitor className="w-4 h-4 mr-1" /> Tampilan TV
         </Button>
       </div>
 
@@ -125,12 +141,11 @@ export default function QRScanner({ eventId, eventName }) {
           "bg-destructive/10 border border-destructive/20"
         }`}>
           {result.type === "success" && <CheckCircle className="w-8 h-8 text-accent shrink-0" />}
-          {result.type === "duplicate" && <AlertCircle className="w-8 h-8 text-amber-500 shrink-0" />}
-          {result.type === "notfound" && <AlertCircle className="w-8 h-8 text-destructive shrink-0" />}
+          {(result.type === "duplicate" || result.type === "notfound") && <AlertCircle className="w-8 h-8 text-amber-500 shrink-0" />}
           <div>
             {result.type === "success" && (
               <>
-                <p className="font-semibold text-accent">✓ Check-in Berhasil!</p>
+                <p className="font-semibold text-accent text-lg">✓ Check-in Berhasil!</p>
                 <p className="text-sm">{result.participant?.full_name} · {result.participant?.participant_id}</p>
               </>
             )}
@@ -154,7 +169,7 @@ export default function QRScanner({ eventId, eventName }) {
       {mode === "manual" && (
         <form onSubmit={handleManualSubmit} className="bg-card border border-border rounded-xl p-6 space-y-4">
           <h3 className="font-semibold text-center text-lg">Scan / Ketik ID Peserta</h3>
-          <p className="text-xs text-center text-muted-foreground">Arahkan scanner QR ke kolom ini, atau ketik manual ID peserta (P000001)</p>
+          <p className="text-xs text-center text-muted-foreground">Arahkan scanner barcode ke kolom ini, atau ketik manual ID peserta (P000001)</p>
           <Input
             autoFocus
             value={manualId}
@@ -167,6 +182,15 @@ export default function QRScanner({ eventId, eventName }) {
             {checkinMut.isPending ? "Memproses..." : "Tandai Hadir"}
           </Button>
         </form>
+      )}
+
+      {/* Camera Mode */}
+      {mode === "camera" && (
+        <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+          <h3 className="font-semibold text-center">Scan QR dengan Kamera</h3>
+          <p className="text-xs text-center text-muted-foreground">Arahkan kamera ke QR Code peserta</p>
+          <CameraScanner onScan={handleCameraScan} active={mode === "camera"} />
+        </div>
       )}
 
       {/* Search Mode */}

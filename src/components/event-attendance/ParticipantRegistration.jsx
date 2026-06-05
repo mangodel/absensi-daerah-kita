@@ -1,13 +1,16 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Download, QrCode, CheckCircle, XCircle, Pencil } from "lucide-react";
-import QRCode from "@/components/event-attendance/QRCodeDisplay";
+import { Plus, Search, Download, QrCode, CheckCircle, XCircle, Pencil, Users } from "lucide-react";
+import QRCodeDisplay from "@/components/event-attendance/QRCodeDisplay";
+import MemberImport from "@/components/event-attendance/MemberImport";
+import { useToast } from "@/components/ui/use-toast";
 
 function generateParticipantId(existing) {
   const maxNum = existing.reduce((max, p) => {
@@ -21,6 +24,7 @@ const empty = { full_name: "", phone: "", email: "", organization: "", notes: ""
 
 export default function ParticipantRegistration({ eventId }) {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
@@ -93,99 +97,122 @@ export default function ParticipantRegistration({ eventId }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-2 flex-1">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Cari nama, telepon, ID..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-          <Button variant="outline" size="sm" onClick={exportCSV}>
-            <Download className="w-4 h-4 mr-1" /> CSV
-          </Button>
-        </div>
-        <Button size="sm" onClick={() => handleOpen()}>
-          <Plus className="w-4 h-4 mr-1" /> Daftar Peserta
-        </Button>
-      </div>
+      <Tabs defaultValue="list">
+        <TabsList className="grid grid-cols-2 w-full">
+          <TabsTrigger value="list"><QrCode className="w-4 h-4 mr-1" /> Daftar Peserta</TabsTrigger>
+          <TabsTrigger value="import"><Users className="w-4 h-4 mr-1" /> Import dari Database</TabsTrigger>
+        </TabsList>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/50">
-              <tr>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">ID</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Nama</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">Telepon</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground hidden md:table-cell">Organisasi</th>
-                <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Status</th>
-                <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">QR</th>
-                <th className="px-4 py-2.5"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(p => (
-                <tr key={p.id} className="border-t border-border hover:bg-secondary/20 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{p.participant_id}</td>
-                  <td className="px-4 py-3 font-medium">{p.full_name}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">{p.phone || "-"}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell">{p.organization || "-"}</td>
-                  <td className="px-4 py-3 text-center">
-                    {p.attendance_status === "Present" ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-accent font-medium">
-                        <CheckCircle className="w-3.5 h-3.5" /> Hadir
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <XCircle className="w-3.5 h-3.5" /> Absen
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQrView(p)}>
-                      <QrCode className="w-4 h-4" />
-                    </Button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpen(p)}>
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-sm">Belum ada peserta terdaftar.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        {/* ===== LIST TAB ===== */}
+        <TabsContent value="list" className="space-y-3 mt-3">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex gap-2 flex-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input className="pl-9" placeholder="Cari nama, telepon, ID..." value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
+              <Button variant="outline" size="sm" onClick={exportCSV}>
+                <Download className="w-4 h-4 mr-1" /> CSV
+              </Button>
+            </div>
+            <Button size="sm" onClick={() => handleOpen()}>
+              <Plus className="w-4 h-4 mr-1" /> Tambah Manual
+            </Button>
+          </div>
+
+          <div className="text-xs text-muted-foreground px-1">{participants.length} peserta terdaftar · {participants.filter(p => p.attendance_status === "Present").length} hadir</div>
+
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/50">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">ID</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Nama</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">Organisasi/Kelompok</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Status</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">QR</th>
+                    <th className="px-4 py-2.5"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(p => (
+                    <tr key={p.id} className="border-t border-border hover:bg-secondary/20 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{p.participant_id}</td>
+                      <td className="px-4 py-3 font-medium text-sm">{p.full_name}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">{p.organization || "-"}</td>
+                      <td className="px-4 py-3 text-center">
+                        {p.attendance_status === "Present" ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-accent font-medium">
+                            <CheckCircle className="w-3.5 h-3.5" /> Hadir
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <XCircle className="w-3.5 h-3.5" /> Absen
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setQrView(p)}>
+                          <QrCode className="w-4 h-4" />
+                        </Button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpen(p)}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && (
+                    <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground text-sm">Belum ada peserta terdaftar.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ===== IMPORT TAB ===== */}
+        <TabsContent value="import" className="mt-3">
+          <div className="bg-card border border-border rounded-xl p-4">
+            <div className="mb-4">
+              <h3 className="font-semibold text-sm">Import Jamaah dari Database</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Filter berdasarkan desa, kelompok, atau dapukan, lalu pilih jamaah yang akan didaftarkan sebagai peserta.</p>
+            </div>
+            <MemberImport
+              eventId={eventId}
+              participants={participants}
+              onImported={(count) => {
+                toast({ description: `${count} peserta berhasil diimport.` });
+              }}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Form Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit Peserta" : "Daftarkan Peserta Baru"}</DialogTitle>
+            <DialogTitle>{editing ? "Edit Peserta" : "Tambah Peserta Manual"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Nama Lengkap *</Label>
-              <Input value={form.full_name} onChange={e => set("full_name", e.target.value)} placeholder="Nama lengkap" required />
+              <Input value={form.full_name} onChange={e => set("full_name", e.target.value)} placeholder="Nama lengkap" />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">No. Telepon</Label>
-              <Input type="text" inputMode="tel" value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+62 8xx..." />
+              <Input inputMode="tel" value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+62 8xx..." />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Email</Label>
               <Input type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="email@domain.com" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Organisasi/Instansi</Label>
-              <Input value={form.organization} onChange={e => set("organization", e.target.value)} placeholder="Nama organisasi..." />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Catatan</Label>
-              <Input value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Catatan tambahan..." />
+              <Label className="text-xs text-muted-foreground">Organisasi/Kelompok</Label>
+              <Input value={form.organization} onChange={e => set("organization", e.target.value)} placeholder="Nama kelompok..." />
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
@@ -206,7 +233,7 @@ export default function ParticipantRegistration({ eventId }) {
             </DialogHeader>
             <p className="font-semibold text-lg">{qrView.full_name}</p>
             <p className="text-sm text-muted-foreground font-mono">{qrView.participant_id}</p>
-            <QRCode value={qrView.qr_code_value || qrView.participant_id} size={220} />
+            <QRCodeDisplay value={qrView.qr_code_value || qrView.participant_id} size={220} />
             <Button variant="outline" onClick={() => {
               const canvas = document.querySelector("#qr-canvas");
               if (canvas) {

@@ -17,6 +17,7 @@ import MonthlyReport from '@/pages/MonthlyReport';
 import Reminders from '@/pages/Reminders';
 import Documents from '@/pages/Documents';
 import EventAttendance from '@/pages/EventAttendance';
+import EventDisplay from '@/pages/EventDisplay';
 import { AppConfigProvider } from '@/lib/AppConfigContext';
 
 const AuthenticatedApp = () => {
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
         <Route path="/documents" element={<Documents />} />
         <Route path="/event-attendance" element={<EventAttendance />} />
       </Route>
+      <Route path="/event-display" element={<EventDisplay />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -28,6 +28,10 @@
       ],
       "default": "Draft",
       "description": "Status event"
+    },
+    "linked_event_id": {
+      "type": "string",
+      "description": "ID event dari jadwal kegiatan utama (opsional)"
     }
   },
   "required": [
