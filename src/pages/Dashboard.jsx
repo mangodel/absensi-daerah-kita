@@ -162,7 +162,7 @@ export default function Dashboard() {
     : "Daerah";
 
   return (
-    <div className="space-y-6 pb-20 md:pb-0">
+    <div className="space-y-6 pb-28 lg:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{pt.dashboard || "Dashboard"}</h1>
