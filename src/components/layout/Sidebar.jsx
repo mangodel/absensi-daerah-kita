@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell, FolderOpen, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell, FolderOpen, LogOut, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -27,14 +27,14 @@ const navItems = [
   { label: "Absensi", icon: CalendarCheck, path: "/attendance" },
   { label: "Laporan Bulanan", icon: FileBarChart, path: "/reports" },
   { label: "Dokumen", icon: FolderOpen, path: "/documents" },
+  { label: "Absensi Event", icon: ScanLine, path: "/event-attendance" },
   { label: "Pindah Kelompok", icon: ArrowRightLeft, path: "/transfers" },
   { label: "Struktur Organisasi", icon: Building2, path: "/structure" },
 ];
 
-export default function Sidebar({ onCollapsedChange }) {
+export default function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const toggleCollapsed = (val) => { setCollapsed(val); onCollapsedChange?.(val); };
   const { config } = useAppConfig();
   const { user } = useAuth();
   const { canAccessSettings, role, userDesa, userKelompok, isSuperAdmin, isAdminDesa } = useUserRole();
@@ -71,7 +71,7 @@ export default function Sidebar({ onCollapsedChange }) {
           </div>
         )}
         {collapsed && config.logo_url && <img src={config.logo_url} alt="Logo" className="w-8 h-8 object-contain rounded mx-auto" />}
-        <button onClick={() => toggleCollapsed(!collapsed)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
+        <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground">
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       </div>

@@ -6,11 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MONTHS, VISA_STATUS_LIST, DAPUKAN_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
-import { CalendarCheck, Save, Loader2, CalendarDays, ScanLine, Link2 } from "lucide-react";
+import { CalendarCheck, Save, Loader2, CalendarDays } from "lucide-react";
 import AttendanceTable from "@/components/attendance/AttendanceTable";
 import AttendanceHistory from "@/components/attendance/AttendanceHistory";
 import AttendanceChart from "@/components/attendance/AttendanceChart";
-import EventAttendancePanel from "@/components/attendance/EventAttendancePanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -32,7 +31,6 @@ export default function Attendance() {
   const [filterVisa, setFilterVisa] = useState("all");
   const [filterMuballigh, setFilterMuballigh] = useState("all"); // "all" | "muballigh_only" | "muballighot_only" | "muballigh_both"
   const [filterDapukan, setFilterDapukan] = useState("all");
-  const [filterGender, setFilterGender] = useState("all"); // "all" | "ibu_ibu" | "perempuan_all"
   const [attendanceData, setAttendanceData] = useState({});
   const [saving, setSaving] = useState(false);
   const [viewYear, setViewYear] = useState(String(currentYear));
@@ -137,17 +135,7 @@ export default function Attendance() {
     if (filterMuballigh === "muballigh_only") matchMuballigh = m.muballigh_status === "Muballigh";
     else if (filterMuballigh === "muballighot_only") matchMuballigh = m.muballigh_status === "Muballighot";
     else if (filterMuballigh === "muballigh_both") matchMuballigh = m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot";
-    let matchGender = true;
-    if (filterGender === "ibu_ibu") {
-      // Wanita yang sudah menikah, janda/duda, atau cerai
-      matchGender = m.gender === "Perempuan" &&
-        (m.marital_status === "Menikah" || m.marital_status === "Janda/Duda" || m.marital_status === "Cerai");
-    } else if (filterGender === "perempuan_all") {
-      matchGender = m.gender === "Perempuan";
-    } else if (filterGender === "laki_laki") {
-      matchGender = m.gender === "Laki-laki";
-    }
-    return matchDesa && matchKelompok && matchVisa && matchDapukan && matchMuballigh && matchGender;
+    return matchDesa && matchKelompok && matchVisa && matchDapukan && matchMuballigh;
   });
 
   const handleStatusChange = (memberId, status) => {
@@ -191,7 +179,7 @@ export default function Attendance() {
   const filledCount = Object.keys(attendanceData).length;
 
   return (
-    <div className="space-y-6 pb-28 lg:pb-0">
+    <div className="space-y-6 pb-20 md:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -202,13 +190,10 @@ export default function Attendance() {
       </div>
 
       <Tabs defaultValue="input">
-        <TabsList className="flex flex-wrap h-auto gap-1">
-          <TabsTrigger value="input" className="text-xs sm:text-sm">Input Absensi</TabsTrigger>
-          <TabsTrigger value="history" className="text-xs sm:text-sm">Riwayat</TabsTrigger>
-          <TabsTrigger value="chart" className="text-xs sm:text-sm">Grafik</TabsTrigger>
-          <TabsTrigger value="event" className="text-xs sm:text-sm">
-            <ScanLine className="w-3.5 h-3.5 mr-1" />Absensi Event
-          </TabsTrigger>
+        <TabsList>
+          <TabsTrigger value="input">Input Absensi</TabsTrigger>
+          <TabsTrigger value="history">Riwayat</TabsTrigger>
+          <TabsTrigger value="chart">Grafik</TabsTrigger>
         </TabsList>
 
         <TabsContent value="input" className="space-y-4 mt-4">
@@ -297,21 +282,12 @@ export default function Attendance() {
                   </SelectContent>
                 </Select>
                 <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
-                  <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Seluruh Jamaah</SelectItem>
                     <SelectItem value="muballigh_both">Mubaligh &amp; Mubalighot</SelectItem>
                     <SelectItem value="muballigh_only">Mubaligh Saja</SelectItem>
                     <SelectItem value="muballighot_only">Mubalighot Saja</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={filterGender} onValueChange={setFilterGender}>
-                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Jenis Kelamin</SelectItem>
-                    <SelectItem value="ibu_ibu">👩 Ibu-ibu (Menikah/Janda)</SelectItem>
-                    <SelectItem value="perempuan_all">Semua Perempuan</SelectItem>
-                    <SelectItem value="laki_laki">Laki-laki</SelectItem>
                   </SelectContent>
                 </Select>
                 {selectedEvent.level === "Daerah" && (
@@ -389,10 +365,6 @@ export default function Attendance() {
             filterDesa={isAdminDesa ? userDesa : isAdminKelompok ? userDesa : undefined}
             filterKelompok={isAdminKelompok ? userKelompok : undefined}
           />
-        </TabsContent>
-
-        <TabsContent value="event" className="mt-4">
-          <EventAttendancePanel />
         </TabsContent>
       </Tabs>
     </div>
