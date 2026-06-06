@@ -42,6 +42,10 @@ function getAgeLabel(birth_year) {
 }
 
 function MemberRow({ member, index, isHead, onEdit, onDelete }) {
+  const addressStr = member.address || member.suburb || member.state || member.postcode
+    ? `${member.address || ""} ${member.suburb || ""} ${member.state || ""} ${member.postcode || ""}`.trim()
+    : null;
+
   return (
     <div className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors hover:bg-secondary/40 ${isHead ? "bg-primary/5 border border-primary/10" : ""}`}>
       <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${isHead ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>
@@ -67,6 +71,8 @@ function MemberRow({ member, index, isHead, onEdit, onDelete }) {
           {member.marital_status && <span>· {member.marital_status}</span>}
           {member.visa_status && <span>· {member.visa_status}</span>}
         </div>
+        {member.email && <div className="text-xs text-primary mt-1"><a href={`mailto:${member.email}`}>{member.email}</a></div>}
+        {addressStr && <div className="text-xs text-muted-foreground mt-0.5">{addressStr}</div>}
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <Badge
@@ -98,6 +104,11 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
   const head = members[0];
   const others = members.slice(1);
   const activeCount = members.filter(m => m.status === "Aktif").length;
+  
+  // Alamat dari kepala keluarga
+  const addressStr = head && (head.address || head.suburb || head.state || head.postcode)
+    ? `${head.address || ""} ${head.suburb || ""} ${head.state || ""} ${head.postcode || ""}`.trim()
+    : null;
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -110,7 +121,10 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm text-foreground truncate">Keluarga {familyName}</p>
-          <p className="text-xs text-muted-foreground">{members.length} anggota · {activeCount} aktif</p>
+          <div className="flex flex-col gap-1 mt-0.5">
+            <p className="text-xs text-muted-foreground">{members.length} anggota · {activeCount} aktif</p>
+            {addressStr && <p className="text-xs text-muted-foreground truncate">{addressStr}</p>}
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-muted-foreground">{members[0]?.kelompok}</span>

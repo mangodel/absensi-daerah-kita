@@ -59,7 +59,7 @@ const emptyMember = {
   full_name: "", email: "", gender: "", marital_status: "", desa: "", kelompok: "", sub_kelompok: "",
   family_group: "", birth_year: "", birthplace: "", visa_status: "", muballigh_status: "",
   employment: "", dapukan: "Jamaah", dapukan_level: "Kelompok", status: "Aktif",
-  phone: "", notes: ""
+  phone: "", address: "", suburb: "", state: "", postcode: "", notes: ""
 };
 
 export default function MemberFormDialog({ open, onOpenChange, member, onSave, allMembers = [] }) {
@@ -270,6 +270,42 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
                 onChange={v => set("family_group", v)}
                 membersInKelompok={membersInKelompok}
                 currentMemberId={member?.id}
+              />
+            </Field>
+          </div>
+
+          {/* Alamat Australia */}
+          <div className="text-xs font-semibold text-primary uppercase tracking-wider pt-1">Alamat Rumah (Australia)</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <Field label="Jalan / Nomor Rumah">
+                <Input
+                  value={form.address}
+                  onChange={e => set("address", e.target.value)}
+                  placeholder="cth: 42 Smith Street"
+                />
+              </Field>
+            </div>
+            <Field label="Suburb / Kota">
+              <Input
+                value={form.suburb}
+                onChange={e => set("suburb", e.target.value)}
+                placeholder="cth: Adelaide"
+              />
+            </Field>
+            <Field label="State">
+              <Select value={form.state} onValueChange={v => set("state", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih State" /></SelectTrigger>
+                <SelectContent>
+                  {["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Postcode">
+              <Input
+                value={form.postcode}
+                onChange={e => set("postcode", e.target.value)}
+                placeholder="cth: 5000"
               />
             </Field>
           </div>

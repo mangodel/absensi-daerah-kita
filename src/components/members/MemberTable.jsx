@@ -19,11 +19,12 @@ export default function MemberTable({ members, onEdit, onDelete }) {
           <TableHeader>
             <TableRow className="bg-secondary/50">
               <TableHead className="font-semibold text-xs">Nama</TableHead>
+              <TableHead className="font-semibold text-xs">Email</TableHead>
+              <TableHead className="font-semibold text-xs">Alamat</TableHead>
               <TableHead className="font-semibold text-xs">Desa</TableHead>
               <TableHead className="font-semibold text-xs">Kelompok</TableHead>
               <TableHead className="font-semibold text-xs">Dapukan</TableHead>
               <TableHead className="font-semibold text-xs">Telepon</TableHead>
-              <TableHead className="font-semibold text-xs">Visa</TableHead>
               <TableHead className="font-semibold text-xs">Status</TableHead>
               <TableHead className="font-semibold text-xs text-right">Aksi</TableHead>
             </TableRow>
@@ -36,6 +37,15 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                   {member.birth_year && (
                     <div className="text-[10px] text-muted-foreground">{new Date().getFullYear() - member.birth_year} th ({member.birth_year})</div>
                   )}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {member.email ? <a href={`mailto:${member.email}`} className="text-primary hover:underline">{member.email}</a> : <span>-</span>}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground max-w-xs">
+                  {member.address || member.suburb || member.state || member.postcode
+                    ? `${member.address || ""} ${member.suburb || ""} ${member.state || ""} ${member.postcode || ""}`.trim()
+                    : <span className="text-muted-foreground">-</span>
+                  }
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.desa}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.kelompok}</TableCell>
@@ -52,7 +62,6 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                     : <span className="text-muted-foreground">-</span>
                   }
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">{member.visa_status || "-"}</TableCell>
                 <TableCell>
                   <Badge className={member.status === "Aktif"
                     ? "bg-accent/10 text-accent border-accent/20"

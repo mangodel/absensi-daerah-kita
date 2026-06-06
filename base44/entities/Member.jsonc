@@ -152,7 +152,29 @@
     },
     "address": {
       "type": "string",
-      "description": "Alamat"
+      "description": "Alamat rumah (street address)"
+    },
+    "suburb": {
+      "type": "string",
+      "description": "Suburb/Kota (untuk Australia)"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "NSW",
+        "VIC",
+        "QLD",
+        "SA",
+        "WA",
+        "TAS",
+        "ACT",
+        "NT"
+      ],
+      "description": "State (untuk Australia)"
+    },
+    "postcode": {
+      "type": "string",
+      "description": "Kode pos (untuk Australia)"
     },
     "emergency_contact": {
       "type": "string",
