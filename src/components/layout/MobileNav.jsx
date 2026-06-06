@@ -41,8 +41,6 @@ export default function MobileNav() {
     { label: "Portal", icon: UserCircle, path: "/jamaah" },
     ...(canAccessSettings ? [{ label: "Setelan", icon: Settings, path: "/settings" }] : []),
   ];
-  // Limit to 5 items + logout to avoid overflow; show most important first
-  const visibleNavItems = navItems.slice(0, 5);
 
   // Handle tab press with stack reset on double-tap (no full reload)
   const handleTabPress = (path) => {
@@ -60,9 +58,9 @@ export default function MobileNav() {
 
   return (
     <>
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[9999] w-full safe-area-inset-bottom">
-        <div className="flex justify-around items-center h-20 px-1 gap-0.5 w-full">
-          {visibleNavItems.map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[9999] w-full safe-area-inset-bottom overflow-hidden">
+        <div className="overflow-x-auto flex items-center h-20 px-1 gap-0.5 w-full scrollbar-hide">
+          {navItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             return (
               <Link 
@@ -77,7 +75,7 @@ export default function MobileNav() {
                     }
                   }}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-0.5 flex-1 py-2",
+                    "flex flex-col items-center justify-center gap-0.5 py-2 min-w-max px-2",
                     isActive ? "text-primary" : "text-gray-500"
                   )}
                 >
@@ -93,7 +91,7 @@ export default function MobileNav() {
            })}
           <button
             onClick={() => setShowLogout(true)}
-            className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-destructive"
+            className="flex flex-col items-center justify-center gap-0.5 py-2 min-w-max px-2 text-destructive"
           >
             <LogOut className="w-5 h-5" />
             <span className="text-[11px] font-semibold text-center leading-tight whitespace-nowrap">Keluar</span>
