@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useAppConfig } from "@/lib/AppConfigContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +43,7 @@ function calcDistance(lat1, lng1, lat2, lng2) {
 export default function EventRegister() {
   const { eventId: paramId } = useParams();
   const eventId = paramId || getEventIdFromUrl();
+  const { config: appConfig } = useAppConfig();
   const [form, setForm] = useState({});
   const [step, setStep] = useState("form"); // form | success | duplicate
   const [participantId, setParticipantId] = useState(null);
@@ -226,14 +228,22 @@ Panitia ${event?.event_name || "Event"}
     </div>
   );
 
+  const bannerUrl = appConfig.register_banner_url;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-lg space-y-5">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden max-w-md w-full shadow-lg space-y-0">
+        {/* Banner */}
+        {bannerUrl ? (
+          <img src={bannerUrl} alt="Banner" className="w-full object-cover max-h-48" />
+        ) : (
+          <div className="bg-primary/10 flex items-center justify-center py-5">
+            <CalendarDays className="w-8 h-8 text-primary" />
+          </div>
+        )}
+        <div className="p-6 space-y-5">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
-            <CalendarDays className="w-7 h-7 text-primary" />
-          </div>
           <h1 className="text-xl font-bold">{event?.event_name || "Formulir Pendaftaran"}</h1>
           {event?.event_date && (
             <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
@@ -310,6 +320,7 @@ Panitia ${event?.event_name || "Event"}
           {participants.length} peserta terdaftar
           {maxParticipants > 0 && ` dari ${maxParticipants}`}
         </div>
+        </div>{/* end inner padding div */}
       </div>
     </div>
   );

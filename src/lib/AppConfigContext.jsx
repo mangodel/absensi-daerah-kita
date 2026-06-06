@@ -5,6 +5,8 @@ const DEFAULTS = {
   org_name: "Attendance",
   org_subtitle: "Sistem Absensi Daerah",
   logo_url: "",
+  register_banner_url: "",
+  login_logo_url: "",
   desa_list: ["Desa 1", "Desa 2"],
   desa_kelompok_map: {
     "Desa 1": ["Kelompok 1", "Kelompok 2", "Kelompok 3", "Kelompok 4", "Kelompok 5", "Kelompok 6", "Kelompok 7"],

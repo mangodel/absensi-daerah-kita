@@ -37,16 +37,25 @@ export default function Settings() {
 
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadingLoginLogo, setUploadingLoginLogo] = useState(false);
   const [orgName, setOrgName] = useState("");
   const [orgSubtitle, setOrgSubtitle] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [registerBannerUrl, setRegisterBannerUrl] = useState("");
+  const [loginLogoUrl, setLoginLogoUrl] = useState("");
   const [pageTitles, setPageTitles] = useState({});
   const [desaKelompokMap, setDesaKelompokMap] = useState({});
+
+  const bannerInputRef = useRef();
+  const loginLogoInputRef = useRef();
 
   useEffect(() => {
     setOrgName(config.org_name || "");
     setOrgSubtitle(config.org_subtitle || "");
     setLogoUrl(config.logo_url || "");
+    setRegisterBannerUrl(config.register_banner_url || "");
+    setLoginLogoUrl(config.login_logo_url || "");
     setPageTitles({ ...config.page_titles });
     setDesaKelompokMap(JSON.parse(JSON.stringify(config.desa_kelompok_map || {})));
   }, [config]);
@@ -80,11 +89,31 @@ export default function Settings() {
     setUploadingLogo(false);
   };
 
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setRegisterBannerUrl(file_url);
+    setUploadingBanner(false);
+  };
+
+  const handleLoginLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLoginLogo(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setLoginLogoUrl(file_url);
+    setUploadingLoginLogo(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     await upsertConfig("org_name", orgName, "Nama Organisasi");
     await upsertConfig("org_subtitle", orgSubtitle, "Subtitle");
     await upsertConfig("logo_url", logoUrl, "Logo URL");
+    await upsertConfig("register_banner_url", registerBannerUrl, "Banner Form Registrasi");
+    await upsertConfig("login_logo_url", loginLogoUrl, "Logo Halaman Login");
     await upsertConfig("page_titles", pageTitles, "Judul Halaman");
     await upsertConfig("desa_kelompok_map", desaKelompokMap, "Peta Desa-Kelompok");
     await reload();
@@ -178,7 +207,47 @@ export default function Settings() {
               </div>
               <Input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="Atau masukkan URL logo (https://...)" className="text-xs" />
             </div>
-            <div className="space-y-1.5">
+            {/* Banner Form Registrasi */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              <Label className="text-xs text-muted-foreground">Banner / Logo Form Registrasi Peserta</Label>
+              <p className="text-[11px] text-muted-foreground">Gambar ini muncul di bagian atas formulir pendaftaran event.</p>
+              <div className="flex items-center gap-4">
+                <div className="w-32 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-secondary/30 overflow-hidden shrink-0">
+                  {registerBannerUrl ? <img src={registerBannerUrl} alt="Banner" className="w-full h-full object-cover" /> : <Image className="w-5 h-5 text-muted-foreground" />}
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerUpload} />
+                  <Button size="sm" variant="outline" onClick={() => bannerInputRef.current?.click()} disabled={uploadingBanner}>
+                    {uploadingBanner ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+                    {uploadingBanner ? "Mengupload..." : "Upload Banner"}
+                  </Button>
+                  {registerBannerUrl && <Button size="sm" variant="ghost" className="text-destructive ml-2" onClick={() => setRegisterBannerUrl("")}>Hapus</Button>}
+                </div>
+              </div>
+              <Input value={registerBannerUrl} onChange={e => setRegisterBannerUrl(e.target.value)} placeholder="Atau masukkan URL gambar banner (https://...)" className="text-xs" />
+            </div>
+
+            {/* Logo Halaman Login */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              <Label className="text-xs text-muted-foreground">Logo Halaman Login</Label>
+              <p className="text-[11px] text-muted-foreground">Logo khusus untuk portal masuk. Jika kosong, akan menggunakan logo organisasi.</p>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-secondary/30 overflow-hidden shrink-0">
+                  {loginLogoUrl ? <img src={loginLogoUrl} alt="Login Logo" className="w-full h-full object-contain" /> : <Image className="w-5 h-5 text-muted-foreground" />}
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <input ref={loginLogoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLoginLogoUpload} />
+                  <Button size="sm" variant="outline" onClick={() => loginLogoInputRef.current?.click()} disabled={uploadingLoginLogo}>
+                    {uploadingLoginLogo ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+                    {uploadingLoginLogo ? "Mengupload..." : "Upload Logo Login"}
+                  </Button>
+                  {loginLogoUrl && <Button size="sm" variant="ghost" className="text-destructive ml-2" onClick={() => setLoginLogoUrl("")}>Hapus</Button>}
+                </div>
+              </div>
+              <Input value={loginLogoUrl} onChange={e => setLoginLogoUrl(e.target.value)} placeholder="Atau masukkan URL logo login (https://...)" className="text-xs" />
+            </div>
+
+            <div className="space-y-1.5 pt-2 border-t border-border">
               <Label className="text-xs text-muted-foreground">Nama Organisasi</Label>
               <Input value={orgName} onChange={e => setOrgName(e.target.value)} />
             </div>
