@@ -11,6 +11,7 @@ import MemberFormDialog from "@/components/members/MemberFormDialog";
 import CsvUploadDialog from "@/components/members/CsvUploadDialog";
 import MemberTable from "@/components/members/MemberTable";
 import FamilyGroupView from "@/components/members/FamilyGroupView";
+import MemberSummaryBar from "@/components/members/MemberSummaryBar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUserRole } from "@/lib/useUserRole";
 
@@ -213,6 +214,8 @@ export default function Members() {
           onDelete={canManageMembers ? setDeleteMember : null}
         />
       )}
+
+      <MemberSummaryBar members={filtered} />
 
       <MemberFormDialog
         open={formOpen}
