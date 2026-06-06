@@ -10,6 +10,7 @@ import { VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, DAPUKAN_LIST } from "@/lib/con
 import MemberFormDialog from "@/components/members/MemberFormDialog";
 import CsvUploadDialog from "@/components/members/CsvUploadDialog";
 import MemberTable from "@/components/members/MemberTable";
+import FamilyGroupView from "@/components/members/FamilyGroupView";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUserRole } from "@/lib/useUserRole";
 
@@ -32,6 +33,7 @@ export default function Members() {
   const [filterBirthYear, setFilterBirthYear] = useState("");
   const [filterDapukan, setFilterDapukan] = useState("all");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [viewMode, setViewMode] = useState("table"); // "table" | "family"
 
   const queryClient = useQueryClient();
 
@@ -90,16 +92,36 @@ export default function Members() {
           <h1 className="text-2xl font-bold text-foreground">{pt.members || "Data Anggota"}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{members.length} {pt.members_subtitle || "anggota terdaftar"}</p>
         </div>
-        {canManageMembers && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setCsvOpen(true)}>
-              <Upload className="w-4 h-4 mr-2" />Upload CSV
+        <div className="flex gap-2 flex-wrap">
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <Button
+              variant={viewMode === "table" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-none h-9"
+              onClick={() => setViewMode("table")}
+            >
+              Tabel
             </Button>
-            <Button onClick={() => { setEditMember(null); setFormOpen(true); }}>
-              <Plus className="w-4 h-4 mr-2" />Tambah
+            <Button
+              variant={viewMode === "family" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-none h-9"
+              onClick={() => setViewMode("family")}
+            >
+              Per Keluarga
             </Button>
           </div>
-        )}
+          {canManageMembers && (
+            <>
+              <Button variant="outline" onClick={() => setCsvOpen(true)}>
+                <Upload className="w-4 h-4 mr-2" />Upload CSV
+              </Button>
+              <Button onClick={() => { setEditMember(null); setFormOpen(true); }}>
+                <Plus className="w-4 h-4 mr-2" />Tambah
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Search + filter bar */}
@@ -178,6 +200,12 @@ export default function Members() {
         <div className="flex justify-center py-12">
           <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
         </div>
+      ) : viewMode === "family" ? (
+        <FamilyGroupView
+          members={filtered}
+          onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
+          onDelete={canManageMembers ? setDeleteMember : null}
+        />
       ) : (
         <MemberTable
           members={filtered}
