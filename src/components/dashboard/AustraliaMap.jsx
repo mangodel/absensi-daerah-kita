@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
-import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Equirectangular projection: lng 112..180 -> x, lat -10..-55 -> y
-// ViewBox: 0 0 760 480
-const W = 760, H = 480;
+// Equirectangular projection: lng 112..180 -> x, lat -5..-55 -> y (extended top for Darwin)
+// ViewBox: 0 0 760 540
+const W = 760, H = 540;
 const LNG_MIN = 112, LNG_MAX = 180;
-const LAT_MIN = -10, LAT_MAX = -55;
+const LAT_MIN = -5, LAT_MAX = -55;
 
 const lx = (lng) => ((lng - LNG_MIN) / (LNG_MAX - LNG_MIN)) * W;
 const ly = (lat) => ((lat - LAT_MIN) / (LAT_MAX - LAT_MIN)) * H;
@@ -86,7 +85,6 @@ export default function AustraliaMap({ members }) {
   const { config } = useAppConfig();
   const desaKelompokMap = config.desa_kelompok_map || {};
   const [hoveredCity, setHoveredCity] = useState(null);
-  const [zoom, setZoom] = useState(1);
   const [showCityBreakdown, setShowCityBreakdown] = useState(null);
 
   const cityData = useMemo(() => {
@@ -142,32 +140,12 @@ export default function AustraliaMap({ members }) {
 
   return (
     <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold text-sm text-foreground">Sebaran Jamaah</h3>
-          <p className="text-xs text-muted-foreground">Australia &amp; New Zealand</p>
-        </div>
-        <div className="flex gap-1">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 w-8 p-0"
-            onClick={() => setZoom(z => Math.min(z + 0.2, 2))}
-          >
-            <ZoomIn className="w-4 h-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 w-8 p-0"
-            onClick={() => setZoom(z => Math.max(z - 0.2, 0.6))}
-          >
-            <ZoomOut className="w-4 h-4" />
-          </Button>
-        </div>
+      <div>
+        <h3 className="font-semibold text-sm text-foreground">Sebaran Jamaah</h3>
+        <p className="text-xs text-muted-foreground">Australia &amp; New Zealand — hover & klik untuk detail</p>
       </div>
 
-      <div className="w-full rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 50%, #dbeafe 100%)", transform: `scale(${zoom})`, transformOrigin: "top center", transition: "transform 0.2s ease" }}>
+      <div className="w-full rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 50%, #dbeafe 100%)" }}>
         <svg
           viewBox={`0 0 ${W} ${H}`}
           style={{ display: "block", width: "100%", height: "auto" }}
@@ -192,10 +170,10 @@ export default function AustraliaMap({ members }) {
 
           {/* Grid lines */}
           {[120, 130, 140, 150, 160, 170].map(lng => (
-            <line key={`lg${lng}`} x1={lx(lng)} y1="0" x2={lx(lng)} y2={H} stroke="#93c5fd" strokeWidth="0.5" opacity="0.4" />
+            <line key={`lg${lng}`} x1={lx(lng)} y1="0" x2={lx(lng)} y2={H} stroke="#93c5fd" strokeWidth="0.5" opacity="0.3" />
           ))}
-          {[-15, -20, -25, -30, -35, -40, -45].map(lat => (
-            <line key={`lt${lat}`} x1="0" y1={ly(lat)} x2={W} y2={ly(lat)} stroke="#93c5fd" strokeWidth="0.5" opacity="0.4" />
+          {[-10, -15, -20, -25, -30, -35, -40, -45, -50].map(lat => (
+            <line key={`lt${lat}`} x1="0" y1={ly(lat)} x2={W} y2={ly(lat)} stroke="#93c5fd" strokeWidth="0.5" opacity="0.3" />
           ))}
 
           {/* Land masses dengan warna state */}
@@ -218,11 +196,13 @@ export default function AustraliaMap({ members }) {
 
           {/* City markers with enhanced interactivity */}
           {Object.entries(CITY_COORDS).map(([city, pos]) => {
-            const count = cityData[city] || 0;
+            const cityInfo = cityData[city];
+            const count = cityInfo?.total || 0;
             const isActive = count > 0;
             const ratio = count / maxCount;
             const r = isActive ? Math.max(10, Math.min(28, 10 + ratio * 18)) : 5;
             const isHovered = hoveredCity === city;
+            const isSelected = showCityBreakdown === city;
 
             return (
               <g
@@ -230,17 +210,18 @@ export default function AustraliaMap({ members }) {
                 style={{ cursor: isActive ? "pointer" : "default" }}
                 onMouseEnter={() => isActive && setHoveredCity(city)}
                 onMouseLeave={() => setHoveredCity(null)}
+                onClick={() => isActive && setShowCityBreakdown(isSelected ? null : city)}
               >
                 {/* Animated glow ring when active */}
                 {isActive && (
                   <>
                     <circle cx={pos.x} cy={pos.y} r={r + 6}
-                      fill="hsl(243,75%,59%)" opacity={isHovered ? 0.3 : 0.15}
+                      fill="hsl(243,75%,59%)" opacity={isHovered || isSelected ? 0.3 : 0.15}
                       style={{
-                        animation: isHovered ? "none" : "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
+                        animation: (isHovered || isSelected) ? "none" : "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
                       }}
                     />
-                    {isHovered && (
+                    {(isHovered || isSelected) && (
                       <circle cx={pos.x} cy={pos.y} r={r + 14}
                         fill="hsl(243,75%,59%)" opacity="0.2"
                         style={{
@@ -252,9 +233,9 @@ export default function AustraliaMap({ members }) {
                 )}
                 {/* Main marker circle */}
                 <circle
-                  cx={pos.x} cy={pos.y} r={isHovered ? r + 4 : r}
+                  cx={pos.x} cy={pos.y} r={(isHovered || isSelected) ? r + 4 : r}
                   fill={isActive ? "hsl(243,75%,59%)" : "#cbd5e1"}
-                  stroke="white" strokeWidth={isActive ? 2.5 : 1.5}
+                  stroke={isSelected ? "#4f46e5" : "white"} strokeWidth={isActive ? (isSelected ? 3 : 2.5) : 1.5}
                   opacity={isActive ? 1 : 0.5}
                   style={{
                     transition: "all 0.2s ease",
@@ -270,10 +251,10 @@ export default function AustraliaMap({ members }) {
                 )}
                 {/* City label */}
                 <text
-                  x={pos.x} y={pos.y - r - (isHovered ? 9 : 6)}
-                  textAnchor="middle" fontSize={isHovered ? "8.5" : "7.5"}
-                  fill={isActive ? (isHovered ? "#4f46e5" : "#1e293b") : "#64748b"}
-                  fontWeight={isActive ? (isHovered ? "800" : "700") : "500"}
+                  x={pos.x} y={pos.y - r - (isHovered || isSelected ? 9 : 6)}
+                  textAnchor="middle" fontSize={isHovered || isSelected ? "8.5" : "7.5"}
+                  fill={isActive ? (isHovered || isSelected ? "#4f46e5" : "#1e293b") : "#64748b"}
+                  fontWeight={isActive ? (isHovered || isSelected ? "800" : "700") : "500"}
                   fontFamily="Inter,sans-serif"
                   stroke="white" strokeWidth="3" paintOrder="stroke"
                   style={{ transition: "font-size 0.2s ease" }}
@@ -285,15 +266,15 @@ export default function AustraliaMap({ members }) {
                 {isHovered && isActive && (() => {
                   const tw = 140, th = 80;
                   const tx = Math.min(Math.max(pos.x - tw / 2, 4), W - tw - 4);
-                  const ty = pos.y - r - 90;
+                  const ty = Math.max(pos.y - r - 90, 4);
                   return (
                     <g filter="url(#glow)">
                       <rect x={tx} y={ty} width={tw} height={th} rx="6" fill="white" stroke="hsl(243,75%,59%)" strokeWidth="2" opacity="0.98" />
                       <text x={tx + tw / 2} y={ty + 15} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="hsl(243,75%,59%)" fontFamily="Inter,sans-serif">{city}</text>
-                      <text x={tx + tw / 2} y={ty + 32} textAnchor="middle" fontSize="10" fontWeight="700" fill="#1e293b" fontFamily="Inter,sans-serif">{cityData[city]?.total || 0} jamaah</text>
-                      <text x={tx + tw / 2} y={ty + 45} textAnchor="middle" fontSize="6.5" fill="#64748b" fontFamily="Inter,sans-serif">♂ {cityData[city]?.male || 0} | ♀ {cityData[city]?.female || 0}</text>
-                      <text x={tx + tw / 2} y={ty + 58} textAnchor="middle" fontSize="6.5" fill="#64748b" fontFamily="Inter,sans-serif">Dewasa {cityData[city]?.adult || 0} | Generus {cityData[city]?.generus || 0}</text>
-                      <text x={tx + tw / 2} y={ty + 72} textAnchor="middle" fontSize="6" fill="#94a3b8" fontFamily="Inter,sans-serif" style={{ cursor: "pointer" }}>(Klik untuk toggle)</text>
+                      <text x={tx + tw / 2} y={ty + 32} textAnchor="middle" fontSize="10" fontWeight="700" fill="#1e293b" fontFamily="Inter,sans-serif">{cityInfo?.total || 0} jamaah</text>
+                      <text x={tx + tw / 2} y={ty + 45} textAnchor="middle" fontSize="6.5" fill="#64748b" fontFamily="Inter,sans-serif">♂ {cityInfo?.male || 0} | ♀ {cityInfo?.female || 0}</text>
+                      <text x={tx + tw / 2} y={ty + 58} textAnchor="middle" fontSize="6.5" fill="#64748b" fontFamily="Inter,sans-serif">Dewasa {cityInfo?.adult || 0} | Generus {cityInfo?.generus || 0}</text>
+                      <text x={tx + tw / 2} y={ty + 72} textAnchor="middle" fontSize="6" fill="#94a3b8" fontFamily="Inter,sans-serif">(Klik untuk toggle)</text>
                     </g>
                   );
                 })()}
