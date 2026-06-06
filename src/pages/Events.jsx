@@ -24,6 +24,7 @@ export default function Events() {
   const [filterKelompok, setFilterKelompok] = useState("all");
   const [filterMubaligh, setFilterMubaligh] = useState("all");
   const [filterIbuIbu, setFilterIbuIbu] = useState("all");
+  const [filterGender, setFilterGender] = useState("all");
   const navigate = useNavigate();
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
@@ -82,15 +83,18 @@ export default function Events() {
       else if (filterMubaligh === "mubaligh") matchMubaligh = e.participant_dapukan.some(d => d === "Muballigh" || d.toLowerCase().includes("muballigh"));
       else if (filterMubaligh === "mubalighot") matchMubaligh = e.participant_dapukan.some(d => d === "Muballighot" || d.toLowerCase().includes("muballighot"));
     }
-    // Filter ibu-ibu: kegiatan khusus wanita yang sudah/pernah menikah
-    // Logika: event dianggap "ibu-ibu" bila participant_filter = ibu_ibu, atau
-    // tidak ada filter dapukan khusus selain perempuan dewasa (pendekatan: tidak ada filter mubaligh)
+    // Filter ibu-ibu
     let matchIbuIbu = true;
     if (filterIbuIbu === "ibu_ibu") {
-      matchIbuIbu = e.participant_filter === "ibu_ibu" ||
-        (e.participant_dapukan && e.participant_dapukan.some(d => d.toLowerCase().includes("ibu")));
+      matchIbuIbu = e.participant_filter === "ibu_ibu";
     }
-    return matchLevel && matchDesa && matchKelompok && matchMubaligh && matchIbuIbu;
+    // Filter gender
+    let matchGender = true;
+    if (filterGender !== "all") {
+      const expectedGender = filterGender === "perempuan" ? "Perempuan" : "Laki-laki";
+      matchGender = e.participant_filter === "ibu_ibu" || !e.participant_filter;
+    }
+    return matchLevel && matchDesa && matchKelompok && matchMubaligh && matchIbuIbu && matchGender;
   });
 
   // Group by level for display
@@ -172,11 +176,19 @@ export default function Events() {
                 <SelectItem value="mubalighot">Mubalighot Saja</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterIbuIbu} onValueChange={setFilterIbuIbu}>
-              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <Select value={filterGender} onValueChange={setFilterGender}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Gender</SelectItem>
-                <SelectItem value="ibu_ibu">Ibu-ibu (menikah/janda)</SelectItem>
+                <SelectItem value="perempuan">Perempuan</SelectItem>
+                <SelectItem value="laki-laki">Laki-laki</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterIbuIbu} onValueChange={setFilterIbuIbu}>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="ibu_ibu">Ibu-ibu</SelectItem>
               </SelectContent>
             </Select>
           </div>
