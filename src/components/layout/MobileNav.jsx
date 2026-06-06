@@ -60,8 +60,8 @@ export default function MobileNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 px-1 py-1 safe-area-inset-bottom">
-        <div className="flex justify-around scrollbar-hide gap-0.5">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 h-20" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex justify-between items-stretch h-full px-1 gap-1">
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             return (
@@ -69,34 +69,34 @@ export default function MobileNav() {
                  key={item.path} 
                  to={item.path} 
                  onClick={(e) => {
-                   if (isActive) {
-                     e.preventDefault();
-                     handleTabPress(item.path);
-                   } else {
-                     handleTabPress(item.path);
-                   }
-                 }}
-                 className={cn(
-                   "flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg text-[10px] font-medium transition-colors relative shrink-0 min-h-[56px] min-w-[50px]",
-                   isActive ? "text-primary" : "text-muted-foreground"
+                    if (isActive) {
+                      e.preventDefault();
+                      handleTabPress(item.path);
+                    } else {
+                      handleTabPress(item.path);
+                    }
+                  }}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-0.5 flex-1 rounded-lg text-[10px] font-medium transition-colors relative",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                 <item.icon className="w-5 h-5" />
+                 <span className="truncate text-center leading-tight text-[9px]">{item.label}</span>
+                 {item.badge > 0 && (
+                   <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-white text-[7px] font-bold rounded-full flex items-center justify-center">
+                     {item.badge}
+                   </span>
                  )}
-               >
-                <item.icon className="w-6 h-6" />
-                <span className="truncate max-w-[48px] text-center leading-tight">{item.label}</span>
-                {item.badge > 0 && (
-                  <span className="absolute top-1 right-1 w-5 h-5 bg-destructive text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+               </Link>
+             );
+           })}
           <button
             onClick={() => setShowLogout(true)}
-            className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg text-[10px] font-medium transition-colors text-destructive shrink-0 min-h-[56px] min-w-[50px]"
+            className="flex flex-col items-center justify-center gap-0.5 flex-1 rounded-lg text-[10px] font-medium transition-colors text-destructive"
           >
-            <LogOut className="w-6 h-6" />
-            <span className="truncate max-w-[48px] text-center leading-tight">Keluar</span>
+            <LogOut className="w-5 h-5" />
+            <span className="truncate text-center leading-tight text-[9px]">Keluar</span>
           </button>
         </div>
       </nav>
