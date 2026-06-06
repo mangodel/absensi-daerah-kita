@@ -398,7 +398,7 @@ export default function JamaahPortal() {
         )}
 
         {/* Navigasi ke halaman terpisah */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 mt-6">
           <Link to="/jamaah/survey">
             <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20 hover:border-primary/50">
               <CardContent className="p-5 flex flex-col items-center gap-3 text-center">
