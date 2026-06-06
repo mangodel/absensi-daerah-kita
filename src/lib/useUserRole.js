@@ -23,7 +23,7 @@ export function useUserRole() {
   const filterMembers = (members) => {
     if (isSuperAdmin) return members;
     if (isAdminDesa && userDesa) return members.filter(m => m.desa === userDesa);
-    if (isAdminKelompok && userKelompok) return members.filter(m => m.kelompok === userKelompok);
+    if (isAdminKelompok && userDesa && userKelompok) return members.filter(m => m.desa === userDesa && m.kelompok === userKelompok);
     return [];
   };
 
