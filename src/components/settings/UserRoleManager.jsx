@@ -67,35 +67,38 @@ export default function UserRoleManager() {
     e.preventDefault();
     if (!inviteForm.email) return;
     setInviting(true);
+    try {
+      // Platform hanya menerima "admin" atau "user" — selalu undang sebagai "user"
+      // Role kustom (admin_desa, admin_kelompok, dll.) disimpan setelah user terdaftar
+      await base44.users.inviteUser(inviteForm.email, "user");
 
-    // Base44 platform role: super_admin → "admin", semua lainnya → "user"
-    const base44Role = inviteForm.role === "super_admin" ? "admin" : "user";
+      // Tunggu sebentar agar user muncul di DB, lalu update role + desa + kelompok
+      await new Promise(r => setTimeout(r, 1500));
+      const allUsers = await base44.entities.User.list();
+      const newUser = allUsers.find(u => u.email?.toLowerCase() === inviteForm.email.toLowerCase());
+      if (newUser) {
+        const updateData = { role: inviteForm.role };
+        if (inviteForm.desa) updateData.desa = inviteForm.desa;
+        if (inviteForm.kelompok) updateData.kelompok = inviteForm.kelompok;
+        await base44.entities.User.update(newUser.id, updateData);
+      }
 
-    // Kirim undangan
-    await base44.users.inviteUser(inviteForm.email, base44Role);
-
-    // Setelah invite berhasil, cari user baru dan simpan role + desa + kelompok
-    // Tunggu sebentar agar user terdaftar di DB
-    await new Promise(r => setTimeout(r, 1500));
-    const allUsers = await base44.entities.User.list();
-    const newUser = allUsers.find(u => u.email?.toLowerCase() === inviteForm.email.toLowerCase());
-    if (newUser) {
-      const updateData = { role: inviteForm.role };
-      if (inviteForm.desa) updateData.desa = inviteForm.desa;
-      if (inviteForm.kelompok) updateData.kelompok = inviteForm.kelompok;
-      await base44.entities.User.update(newUser.id, updateData);
+      queryClient.invalidateQueries({ queryKey: ["users_list"] });
+      toast({
+        title: `Undangan dikirim ke ${inviteForm.email}`,
+        description: `Role "${getRoleLabel(inviteForm.role)}" akan ditetapkan setelah pengguna menerima undangan.`,
+      });
+      setInviteOpen(false);
+      setInviteForm({ email: "", role: "admin_kelompok", desa: "", kelompok: "" });
+    } catch (err) {
+      toast({
+        title: "Gagal mengirim undangan",
+        description: err?.message || "Terjadi kesalahan. Coba lagi.",
+        variant: "destructive",
+      });
+    } finally {
+      setInviting(false);
     }
-
-    queryClient.invalidateQueries({ queryKey: ["users_list"] });
-    toast({
-      title: `Undangan dikirim ke ${inviteForm.email}`,
-      description: newUser
-        ? `Role "${getRoleLabel(inviteForm.role)}" berhasil ditetapkan.`
-        : "Setelah pengguna menerima undangan, atur role-nya di daftar pengguna.",
-    });
-    setInviting(false);
-    setInviteOpen(false);
-    setInviteForm({ email: "", role: "admin_kelompok", desa: "", kelompok: "" });
   };
 
   const getRoleStyle = (role) => ROLE_OPTIONS.find(r => r.value === role)?.color || "bg-secondary text-secondary-foreground";
