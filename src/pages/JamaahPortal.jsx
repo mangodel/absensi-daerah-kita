@@ -195,18 +195,35 @@ export default function JamaahPortal() {
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground leading-tight">{user?.full_name || "Portal Jamaah"}</p>
-              <p className="text-[10px] text-muted-foreground">{user?.email}</p>
+              <p className="text-[10px] text-muted-foreground">{user?.email || "Guest"}</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="text-destructive hover:bg-destructive/10 gap-1.5"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Keluar</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            {user ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-destructive hover:bg-destructive/10 gap-1.5"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Keluar</span>
+              </Button>
+            ) : (
+              <>
+                <Link to="/jamaah-login">
+                  <Button variant="outline" size="sm">
+                    Masuk
+                  </Button>
+                </Link>
+                <Link to="/jamaah/signup">
+                  <Button size="sm">
+                    Daftar
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
