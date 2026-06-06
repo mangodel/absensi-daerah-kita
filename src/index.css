@@ -7,6 +7,9 @@
 @layer base {
   :root {
     --font-inter: 'Inter', sans-serif;
+    --font-size-base: 14px;
+    --line-height-relaxed: 1.6;
+    --spacing-touch: 12px;
     --background: 220 20% 97%;
     --foreground: 224 71% 4%;
     --card: 0 0% 100%;
@@ -88,6 +91,24 @@
   body {
     @apply bg-background text-foreground font-inter;
     overscroll-behavior: none;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  
+  p, span, li, label {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  
+  /* Mobile-specific improvements */
+  @media (max-width: 768px) {
+    body {
+      font-size: 14px;
+    }
+    button, input, select, textarea, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
   button, a, [role="button"] {
     user-select: none;

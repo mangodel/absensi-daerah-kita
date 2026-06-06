@@ -12,7 +12,7 @@ export default function AppLayout() {
         <MobileNav />
       </div>
       <main className="md:ml-64 min-h-screen">
-        <div className="p-4 md:p-8 pb-24 md:pb-8">
+        <div className="p-3 md:p-8 pb-24 md:pb-8">
           <Outlet />
         </div>
       </main>

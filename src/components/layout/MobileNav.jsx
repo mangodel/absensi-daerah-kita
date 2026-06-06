@@ -21,6 +21,7 @@ export default function MobileNav() {
   const location = useLocation();
   const { canAccessSettings, isSuperAdmin, isAdminDesa } = useUserRole();
   const [showLogout, setShowLogout] = useState(false);
+  const [tabStacks, setTabStacks] = useState({});
 
   const { data: reminders = [] } = useQuery({
     queryKey: ["reminders"],
@@ -43,21 +44,48 @@ export default function MobileNav() {
   // Limit to 5 items + logout to avoid overflow; show most important first
   const visibleNavItems = navItems.slice(0, 5);
 
+  // Handle tab press with stack reset on double-tap
+  const handleTabPress = (path) => {
+    const currentPath = location.pathname;
+    const isCurrentTab = currentPath === path || currentPath.startsWith(path + '/');
+    
+    if (isCurrentTab && tabStacks[path]) {
+      // Double tap: reset stack
+      setTabStacks(prev => ({ ...prev, [path]: false }));
+      // Optionally navigate to root of this tab
+      window.history.pushState(null, '', path);
+      window.location.reload();
+    } else if (!isCurrentTab) {
+      // New tab: save as current
+      setTabStacks(prev => ({ ...prev, [path]: true }));
+    }
+  };
+
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 px-1 py-1 safe-area-pb">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 px-2 py-1 safe-area-pb">
         <div className="flex justify-around overflow-x-auto scrollbar-hide">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             return (
-              <Link key={item.path} to={item.path} className={cn(
-                "flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-lg text-[9px] font-medium transition-colors relative shrink-0",
-                isActive ? "text-primary" : "text-muted-foreground"
-              )}>
-                <item.icon className="w-5 h-5" />
-                <span className="truncate max-w-[40px] text-center">{item.label}</span>
+              <Link 
+                key={item.path} 
+                to={item.path} 
+                onClick={(e) => {
+                  if (isActive) {
+                    e.preventDefault();
+                    handleTabPress(item.path);
+                  }
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors relative shrink-0 min-h-[56px]",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <item.icon className="w-6 h-6" />
+                <span className="truncate max-w-[48px] text-center leading-tight">{item.label}</span>
                 {item.badge > 0 && (
-                  <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute top-1 right-1 w-5 h-5 bg-destructive text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                     {item.badge}
                   </span>
                 )}
@@ -66,10 +94,10 @@ export default function MobileNav() {
           })}
           <button
             onClick={() => setShowLogout(true)}
-            className="flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-lg text-[9px] font-medium transition-colors text-destructive shrink-0"
+            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors text-destructive shrink-0 min-h-[56px]"
           >
-            <LogOut className="w-5 h-5" />
-            <span>Keluar</span>
+            <LogOut className="w-6 h-6" />
+            <span className="truncate max-w-[48px] text-center leading-tight">Keluar</span>
           </button>
         </div>
       </nav>

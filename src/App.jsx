@@ -2,29 +2,41 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from '@/components/layout/AppLayout';
-import Dashboard from '@/pages/Dashboard';
-import Members from '@/pages/Members';
-import Attendance from '@/pages/Attendance';
-import Transfers from '@/pages/Transfers';
-import Structure from '@/pages/Structure.jsx';
-import Events from '@/pages/Events';
-import Settings from '@/pages/Settings';
-import MonthlyReport from '@/pages/MonthlyReport';
-import Reminders from '@/pages/Reminders';
-import Documents from '@/pages/Documents';
-import EventAttendance from '@/pages/EventAttendance';
-import EventDisplay from '@/pages/EventDisplay';
-import VolunteerScanner from '@/pages/VolunteerScanner';
-import EventRegister from '@/pages/EventRegister';
-import JamaahPortal from '@/pages/JamaahPortal';
-import JamaahSurvey from '@/pages/JamaahSurvey';
-import JamaahAbsensi from '@/pages/JamaahAbsensi';
+import PageTransition from '@/components/PageTransition';
 import { AppConfigProvider } from '@/lib/AppConfigContext';
+
+// Lazy load page components for code splitting
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Members = lazy(() => import('@/pages/Members'));
+const Attendance = lazy(() => import('@/pages/Attendance'));
+const Transfers = lazy(() => import('@/pages/Transfers'));
+const Structure = lazy(() => import('@/pages/Structure'));
+const Events = lazy(() => import('@/pages/Events'));
+const Settings = lazy(() => import('@/pages/Settings'));
+const MonthlyReport = lazy(() => import('@/pages/MonthlyReport'));
+const Reminders = lazy(() => import('@/pages/Reminders'));
+const Documents = lazy(() => import('@/pages/Documents'));
+const EventAttendance = lazy(() => import('@/pages/EventAttendance'));
+const EventDisplay = lazy(() => import('@/pages/EventDisplay'));
+const VolunteerScanner = lazy(() => import('@/pages/VolunteerScanner'));
+const EventRegister = lazy(() => import('@/pages/EventRegister'));
+const JamaahPortal = lazy(() => import('@/pages/JamaahPortal'));
+const JamaahSurvey = lazy(() => import('@/pages/JamaahSurvey'));
+const JamaahAbsensi = lazy(() => import('@/pages/JamaahAbsensi'));
+
+// Loading fallback component
+const PageLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+  </div>
+);
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -49,31 +61,44 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // Render the main app
+  // Render the main app with page transitions
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/members" element={<Members />} />
-        <Route path="/attendance" element={<Attendance />} />
-        <Route path="/transfers" element={<Transfers />} />
-        <Route path="/structure" element={<Structure />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/reports" element={<MonthlyReport />} />
-        <Route path="/reminders" element={<Reminders />} />
-        <Route path="/documents" element={<Documents />} />
-        <Route path="/event-attendance" element={<EventAttendance />} />
-      </Route>
-      <Route path="/event-display" element={<EventDisplay />} />
-      <Route path="/scanner-volunteer" element={<VolunteerScanner />} />
-      <Route path="/event-register/:eventId" element={<EventRegister />} />
-      <Route path="/event-register" element={<EventRegister />} />
-      <Route path="/jamaah" element={<JamaahPortal />} />
-      <Route path="/jamaah/survey" element={<JamaahSurvey />} />
-      <Route path="/jamaah/absensi" element={<JamaahAbsensi />} />
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+    <AnimatePresence mode="wait">
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<SuspendedPage><Dashboard /></SuspendedPage>} />
+          <Route path="/members" element={<SuspendedPage><Members /></SuspendedPage>} />
+          <Route path="/attendance" element={<SuspendedPage><Attendance /></SuspendedPage>} />
+          <Route path="/transfers" element={<SuspendedPage><Transfers /></SuspendedPage>} />
+          <Route path="/structure" element={<SuspendedPage><Structure /></SuspendedPage>} />
+          <Route path="/events" element={<SuspendedPage><Events /></SuspendedPage>} />
+          <Route path="/settings" element={<SuspendedPage><Settings /></SuspendedPage>} />
+          <Route path="/reports" element={<SuspendedPage><MonthlyReport /></SuspendedPage>} />
+          <Route path="/reminders" element={<SuspendedPage><Reminders /></SuspendedPage>} />
+          <Route path="/documents" element={<SuspendedPage><Documents /></SuspendedPage>} />
+          <Route path="/event-attendance" element={<SuspendedPage><EventAttendance /></SuspendedPage>} />
+        </Route>
+        <Route path="/event-display" element={<SuspendedPage><EventDisplay /></SuspendedPage>} />
+        <Route path="/scanner-volunteer" element={<SuspendedPage><VolunteerScanner /></SuspendedPage>} />
+        <Route path="/event-register/:eventId" element={<SuspendedPage><EventRegister /></SuspendedPage>} />
+        <Route path="/event-register" element={<SuspendedPage><EventRegister /></SuspendedPage>} />
+        <Route path="/jamaah" element={<SuspendedPage><JamaahPortal /></SuspendedPage>} />
+        <Route path="/jamaah/survey" element={<SuspendedPage><JamaahSurvey /></SuspendedPage>} />
+        <Route path="/jamaah/absensi" element={<SuspendedPage><JamaahAbsensi /></SuspendedPage>} />
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
+// Wrapper component for pages with Suspense and PageTransition
+function SuspendedPage({ children }) {
+  return (
+    <Suspense fallback={<PageLoadingFallback />}>
+      <PageTransition>
+        {children}
+      </PageTransition>
+    </Suspense>
   );
 };
 
