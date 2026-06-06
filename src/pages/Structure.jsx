@@ -115,7 +115,7 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-medium text-sm">{m.full_name}</span>
             {isWakil && (
-              <span className="text-[9px] font-semibold text-primary/60">Wakil {idx + 1}</span>
+              <span className="text-[9px] font-semibold text-primary/60">Wakil {idx + 1} - Ki</span>
             )}
           </div>
           {getDapukanLabel(m) && (
