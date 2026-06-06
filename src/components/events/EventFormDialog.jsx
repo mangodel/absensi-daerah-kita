@@ -37,11 +37,14 @@ function applyParticipantFilter(pool, filter) {
     const age = currentYear - (m.birth_year || currentYear);
     return age >= 18 && (m.marital_status === "Belum Menikah" || !m.marital_status);
   });
-  // Ibu-ibu: wanita yang sudah menikah, cerai, atau janda/duda
-  if (filter === "ibu_ibu") return pool.filter(m =>
-    m.gender === "Perempuan" &&
-    ["Menikah", "Cerai", "Janda/Duda"].includes(m.marital_status)
-  );
+  // Ibu-ibu: perempuan yang sudah menikah atau pernah menikah
+  if (filter === "ibu_ibu") {
+    const statusNikah = ["menikah", "cerai", "janda/duda", "janda", "duda"];
+    return pool.filter(m =>
+      (m.gender === "Perempuan" || (m.gender || "").toLowerCase() === "perempuan") &&
+      statusNikah.includes((m.marital_status || "").toLowerCase().trim())
+    );
+  }
   return pool;
 }
 
