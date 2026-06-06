@@ -58,7 +58,7 @@ export default function Sidebar() {
 
   return (
     <aside className={cn(
-      "fixed left-0 top-0 h-screen bg-card border-r border-border flex flex-col z-40 transition-all duration-300",
+      "fixed left-0 top-0 h-screen bg-card border-r border-border flex flex-col z-50 transition-all duration-300",
       collapsed ? "w-[68px]" : "w-64"
     )}>
       <div className="p-4 border-b border-border flex items-center justify-between">
