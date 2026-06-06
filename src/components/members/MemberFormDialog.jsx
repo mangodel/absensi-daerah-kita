@@ -92,6 +92,11 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
     e.preventDefault();
     const data = { ...form, birth_year: form.birth_year ? Number(form.birth_year) : undefined };
 
+    // Auto-set family_group if dapukan is "Kepala Keluarga"
+    if (form.dapukan === "Kepala Keluarga") {
+      data.family_group = form.full_name;
+    }
+
     // Auto-record transfer history if desa or kelompok changed
     if (member && member.id && (member.desa !== form.desa || member.kelompok !== form.kelompok)) {
       const today = new Date().toISOString().split("T")[0];

@@ -25,6 +25,8 @@ export const DAPUKAN_LIST = [
   "Muballigh 4S", "Muballigh Daerah", "Muballigh Desa", "Muballigh Kelompok",
   // Tim & Lainnya
   "PJP", "PJK",
+  // Keluarga
+  "Kepala Keluarga",
 ];
 // Dapukan pengurus (non-Jamaah Biasa), urutan tampil di Struktur
 export const DAPUKAN_PENGURUS_ORDER = [
