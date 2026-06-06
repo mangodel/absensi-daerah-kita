@@ -110,6 +110,9 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
             {isWakil && (
               <span className="text-[9px] font-semibold text-primary/60">Wakil {idx + 1}</span>
             )}
+            {m.dapukan && m.dapukan !== "Jamaah" && m.dapukan !== "Jamaah Biasa" && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-primary/5 text-primary border-primary/20">{m.dapukan}</Badge>
+            )}
           </div>
           {isSuperAdmin && (
             editingId === m.id ? (
@@ -163,10 +166,10 @@ function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId,
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-medium text-sm">{member.full_name}</span>
+            {member.dapukan && member.dapukan !== "Jamaah" && member.dapukan !== "Jamaah Biasa" && (
+              <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${badgeClass}`}>{member.dapukan}</Badge>
+            )}
           </div>
-          {isOther && member.dapukan && (
-            <div className="text-[10px] text-muted-foreground mt-0.5">{member.dapukan}</div>
-          )}
           {isSuperAdmin && !isOther && (
             editingId === member.id ? (
               <div className="flex items-center gap-1 mt-0.5">
@@ -480,10 +483,15 @@ export default function Structure() {
                           </p>
                           <div className="space-y-1">
                             {jamaahBiasa.map(m => (
-                              <div key={m.id} className="text-xs flex items-center justify-between">
-                                <span>{m.full_name}</span>
-                                {m.phone && <span className="text-muted-foreground text-[10px]">{m.phone}</span>}
-                              </div>
+                              <div key={m.id} className="text-xs flex items-center justify-between gap-2">
+                                    <span className="flex items-center gap-1.5 flex-wrap">
+                                      {m.full_name}
+                                      {m.dapukan && m.dapukan !== "Jamaah" && m.dapukan !== "Jamaah Biasa" && (
+                                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-violet-50 text-violet-700 border-violet-200">{m.dapukan}</Badge>
+                                      )}
+                                    </span>
+                                    {m.phone && <span className="text-muted-foreground text-[10px] shrink-0">{m.phone}</span>}
+                                  </div>
                             ))}
                           </div>
                         </div>
