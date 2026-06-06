@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,23 +53,38 @@ const READONLY_FIELDS = [
 ];
 
 export default function JamaahPortal() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+  const { user: adminUser } = useAuth();
   const queryClient = useQueryClient();
+  const [jamaahUser, setJamaahUser] = useState(null);
   const [editData, setEditData] = useState({});
   const [emailError, setEmailError] = useState("");
   const [registeringEmail, setRegisteringEmail] = useState(false);
   const [editingFamily, setEditingFamily] = useState(null);
   const [familyEditData, setFamilyEditData] = useState({});
 
-  // Cari data member berdasarkan email user
+  // Check jamaah login status on mount
+  useEffect(() => {
+    const checkJamaahAuth = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setJamaahUser(currentUser);
+      } catch (error) {
+        setJamaahUser(null);
+      }
+    };
+    checkJamaahAuth();
+  }, []);
+
+  // Cari data member berdasarkan email user jamaah
   const { data: members = [], isLoading: loadingMembers } = useQuery({
-    queryKey: ["my-member", user?.email],
+    queryKey: ["my-member", jamaahUser?.email],
     queryFn: () => base44.entities.Member.list(),
-    enabled: !!user,
+    enabled: !!jamaahUser,
   });
 
-  const myMember = user?.email
-    ? members.find(m => m.email?.toLowerCase() === user?.email?.toLowerCase())
+  const myMember = jamaahUser?.email
+    ? members.find(m => m.email?.toLowerCase() === jamaahUser?.email?.toLowerCase())
     : null;
 
   // Ambil semua anggota keluarga dengan family_group yang sama
@@ -173,8 +189,8 @@ export default function JamaahPortal() {
 
   const handleLogout = async () => {
     await base44.auth.logout();
-    // Force hard reload untuk reset semua state
-    window.location.replace("/jamaah-login");
+    setJamaahUser(null);
+    window.location.href = "/jamaah-login";
   };
 
   if (loadingMembers) {
@@ -195,12 +211,12 @@ export default function JamaahPortal() {
               <User className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground leading-tight">{user?.full_name || "Portal Jamaah"}</p>
-              <p className="text-[10px] text-muted-foreground">{user?.email || "Guest"}</p>
+              <p className="text-sm font-semibold text-foreground leading-tight">{jamaahUser?.full_name || "Portal Jamaah"}</p>
+              <p className="text-[10px] text-muted-foreground">{jamaahUser?.email || "Guest"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isAuthenticated && user?.email ? (
+            {jamaahUser?.email ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -252,7 +268,7 @@ export default function JamaahPortal() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {READONLY_FIELDS.map(f => {
-                    const val = f.key === "email" ? (myMember?.email || user?.email) : myMember[f.key];
+                    const val = f.key === "email" ? (myMember?.email || jamaahUser?.email) : myMember[f.key];
                     if (!val) return null;
                     return (
                       <div key={f.key} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
