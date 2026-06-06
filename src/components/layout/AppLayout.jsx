@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import MobileNav from "./MobileNav";
+import MobileNavTest from "./MobileNavTest";
 
 export default function AppLayout() {
   return (
@@ -13,7 +14,7 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </main>
-      <MobileNav />
+      <MobileNavTest />
     </div>
   );
 }
