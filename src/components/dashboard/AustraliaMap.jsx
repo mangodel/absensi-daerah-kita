@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
+import { ZoomIn, ZoomOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Equirectangular projection: lng 112..180 -> x, lat -10..-55 -> y
 // ViewBox: 0 0 760 480
@@ -84,21 +86,11 @@ export default function AustraliaMap({ members }) {
   const { config } = useAppConfig();
   const desaKelompokMap = config.desa_kelompok_map || {};
   const [hoveredCity, setHoveredCity] = useState(null);
-
-  // State colors untuk visual peta yang lebih interaktif
-  const stateColors = {
-    WA: "#f0fdf4", WA_border: "#4ade80",
-    NT: "#f0fdf4", NT_border: "#4ade80",
-    SA: "#f0fdf4", SA_border: "#4ade80",
-    QLD: "#fefce8", QLD_border: "#facc15",
-    NSW: "#fef3c7", NSW_border: "#fbbf24",
-    VIC: "#fecaca", VIC_border: "#f87171",
-    TAS: "#fce7f3", TAS_border: "#f472b6",
-    NZ: "#e0e7ff", NZ_border: "#818cf8",
-  };
+  const [zoom, setZoom] = useState(1);
+  const [showCityBreakdown, setShowCityBreakdown] = useState(null);
 
   const cityData = useMemo(() => {
-    const counts = {};
+    const data = {};
     Object.entries(desaKelompokMap).forEach(([desa, kelompoks]) => {
       kelompoks.forEach(kelompok => {
         const key = Object.keys(CITIES).find(city =>
@@ -106,35 +98,76 @@ export default function AustraliaMap({ members }) {
           desa.toLowerCase().includes(city.toLowerCase())
         );
         if (key) {
-          counts[key] = (counts[key] || 0) + members.filter(m => m.kelompok === kelompok).length;
+          const kelompokMembers = members.filter(m => m.kelompok === kelompok);
+          if (!data[key]) data[key] = { total: 0, male: 0, female: 0, adult: 0, generus: 0 };
+          data[key].total += kelompokMembers.length;
+          data[key].male += kelompokMembers.filter(m => m.gender === "Laki-laki").length;
+          data[key].female += kelompokMembers.filter(m => m.gender === "Perempuan").length;
+          data[key].adult += kelompokMembers.filter(m => !m.birth_year || new Date().getFullYear() - m.birth_year >= 18).length;
+          data[key].generus += kelompokMembers.filter(m => m.birth_year && new Date().getFullYear() - m.birth_year < 18).length;
         }
       });
       const desaKey = Object.keys(CITIES).find(city => desa.toLowerCase().includes(city.toLowerCase()));
-      if (desaKey && !counts[desaKey]) {
-        counts[desaKey] = members.filter(m => m.desa === desa).length;
+      if (desaKey && !data[desaKey]) {
+        const desaMembers = members.filter(m => m.desa === desa);
+        data[desaKey] = {
+          total: desaMembers.length,
+          male: desaMembers.filter(m => m.gender === "Laki-laki").length,
+          female: desaMembers.filter(m => m.gender === "Perempuan").length,
+          adult: desaMembers.filter(m => !m.birth_year || new Date().getFullYear() - m.birth_year >= 18).length,
+          generus: desaMembers.filter(m => m.birth_year && new Date().getFullYear() - m.birth_year < 18).length,
+        };
       }
     });
-    // Fallback: distribute members across cities by desa index
-    if (Object.keys(counts).length === 0 && members.length > 0) {
+    // Fallback
+    if (Object.keys(data).length === 0 && members.length > 0) {
       const desaNames = Object.keys(desaKelompokMap);
       const cityKeys = Object.keys(CITIES);
       desaNames.forEach((desa, i) => {
         const city = cityKeys[i % cityKeys.length];
-        counts[city] = (counts[city] || 0) + members.filter(m => m.desa === desa).length;
+        const desaMembers = members.filter(m => m.desa === desa);
+        if (!data[city]) data[city] = { total: 0, male: 0, female: 0, adult: 0, generus: 0 };
+        data[city].total += desaMembers.length;
+        data[city].male += desaMembers.filter(m => m.gender === "Laki-laki").length;
+        data[city].female += desaMembers.filter(m => m.gender === "Perempuan").length;
+        data[city].adult += desaMembers.filter(m => !m.birth_year || new Date().getFullYear() - m.birth_year >= 18).length;
+        data[city].generus += desaMembers.filter(m => m.birth_year && new Date().getFullYear() - m.birth_year < 18).length;
       });
     }
-    return counts;
+    return data;
   }, [members, desaKelompokMap]);
 
-  const maxCount = Math.max(...Object.values(cityData), 1);
-  const activeCities = Object.entries(cityData).filter(([, c]) => c > 0);
+  const maxCount = Math.max(...Object.values(cityData).map(c => c.total), 1);
+  const activeCities = Object.entries(cityData).filter(([, c]) => c.total > 0);
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
-      <h3 className="font-semibold text-sm text-foreground mb-0.5">Sebaran Jamaah</h3>
-      <p className="text-xs text-muted-foreground mb-4">Australia &amp; New Zealand — hover untuk detail</p>
+    <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-sm text-foreground">Sebaran Jamaah</h3>
+          <p className="text-xs text-muted-foreground">Australia &amp; New Zealand</p>
+        </div>
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0"
+            onClick={() => setZoom(z => Math.min(z + 0.2, 2))}
+          >
+            <ZoomIn className="w-4 h-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0"
+            onClick={() => setZoom(z => Math.max(z - 0.2, 0.6))}
+          >
+            <ZoomOut className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
 
-      <div className="w-full rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 50%, #dbeafe 100%)" }}>
+      <div className="w-full rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 50%, #dbeafe 100%)", transform: `scale(${zoom})`, transformOrigin: "top center", transition: "transform 0.2s ease" }}>
         <svg
           viewBox={`0 0 ${W} ${H}`}
           style={{ display: "block", width: "100%", height: "auto" }}
@@ -250,15 +283,17 @@ export default function AustraliaMap({ members }) {
 
                 {/* Enhanced tooltip on hover */}
                 {isHovered && isActive && (() => {
-                  const tw = 120, th = 50;
+                  const tw = 140, th = 80;
                   const tx = Math.min(Math.max(pos.x - tw / 2, 4), W - tw - 4);
-                  const ty = pos.y - r - 60;
+                  const ty = pos.y - r - 90;
                   return (
                     <g filter="url(#glow)">
                       <rect x={tx} y={ty} width={tw} height={th} rx="6" fill="white" stroke="hsl(243,75%,59%)" strokeWidth="2" opacity="0.98" />
                       <text x={tx + tw / 2} y={ty + 15} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="hsl(243,75%,59%)" fontFamily="Inter,sans-serif">{city}</text>
-                      <text x={tx + tw / 2} y={ty + 32} textAnchor="middle" fontSize="9" fontWeight="700" fill="#1e293b" fontFamily="Inter,sans-serif">{count}</text>
-                      <text x={tx + tw / 2} y={ty + 45} textAnchor="middle" fontSize="7" fill="#64748b" fontFamily="Inter,sans-serif">anggota jamaah</text>
+                      <text x={tx + tw / 2} y={ty + 32} textAnchor="middle" fontSize="10" fontWeight="700" fill="#1e293b" fontFamily="Inter,sans-serif">{cityData[city]?.total || 0} jamaah</text>
+                      <text x={tx + tw / 2} y={ty + 45} textAnchor="middle" fontSize="6.5" fill="#64748b" fontFamily="Inter,sans-serif">♂ {cityData[city]?.male || 0} | ♀ {cityData[city]?.female || 0}</text>
+                      <text x={tx + tw / 2} y={ty + 58} textAnchor="middle" fontSize="6.5" fill="#64748b" fontFamily="Inter,sans-serif">Dewasa {cityData[city]?.adult || 0} | Generus {cityData[city]?.generus || 0}</text>
+                      <text x={tx + tw / 2} y={ty + 72} textAnchor="middle" fontSize="6" fill="#94a3b8" fontFamily="Inter,sans-serif" style={{ cursor: "pointer" }}>(Klik untuk toggle)</text>
                     </g>
                   );
                 })()}
@@ -297,14 +332,39 @@ export default function AustraliaMap({ members }) {
       </div>
 
       {activeCities.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {activeCities.sort((a, b) => b[1] - a[1]).map(([city, count]) => (
-            <div key={city} className="flex items-center gap-1.5 bg-primary/5 rounded-lg px-2.5 py-1">
-              <div className="w-2 h-2 rounded-full bg-primary" />
-              <span className="text-xs font-medium text-foreground">{city}</span>
-              <span className="text-xs text-muted-foreground">{count}</span>
+        <div className="mt-2 space-y-2">
+          {showCityBreakdown && cityData[showCityBreakdown] && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs space-y-1">
+              <p className="font-semibold text-foreground">{showCityBreakdown}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>Total: <span className="font-bold text-primary">{cityData[showCityBreakdown].total}</span></div>
+                <div>Laki-laki: <span className="font-bold">{cityData[showCityBreakdown].male}</span></div>
+                <div>Perempuan: <span className="font-bold">{cityData[showCityBreakdown].female}</span></div>
+                <div>Dewasa: <span className="font-bold">{cityData[showCityBreakdown].adult}</span></div>
+                <div>Generus: <span className="font-bold">{cityData[showCityBreakdown].generus}</span></div>
+              </div>
+              <Button size="sm" variant="ghost" className="w-full h-6 text-xs mt-1" onClick={() => setShowCityBreakdown(null)}>
+                Tutup
+              </Button>
             </div>
-          ))}
+          )}
+          <div className="flex flex-wrap gap-2">
+            {activeCities.sort((a, b) => b[1].total - a[1].total).map(([city, info]) => (
+              <button
+                key={city}
+                onClick={() => setShowCityBreakdown(showCityBreakdown === city ? null : city)}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition ${
+                  showCityBreakdown === city
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-primary/5 text-foreground hover:bg-primary/10"
+                }`}
+              >
+                <div className={`w-2 h-2 rounded-full ${showCityBreakdown === city ? "bg-primary-foreground" : "bg-primary"}`} />
+                <span className="font-medium">{city}</span>
+                <span className="font-bold">{info.total}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
