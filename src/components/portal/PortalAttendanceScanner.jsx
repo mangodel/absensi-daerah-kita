@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { QrCode, Camera, CheckCircle, XCircle, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
-export default function PortalAttendanceScanner({ member, user }) {
+export default function PortalAttendanceScanner({ member, user, volunteerLevel }) {
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [scanStatus, setScanStatus] = useState(null); // 'success' | 'error' | null
@@ -15,8 +15,24 @@ export default function PortalAttendanceScanner({ member, user }) {
   const html5QrRef = useRef(null);
 
   const { data: activeSessions = [] } = useQuery({
-    queryKey: ["active-event-sessions"],
-    queryFn: () => base44.entities.EventSession.filter({ status: "Active" }),
+    queryKey: ["active-event-sessions", volunteerLevel],
+    queryFn: async () => {
+      const sessions = await base44.entities.EventSession.filter({ status: "Active" });
+      // Filter sessions berdasarkan volunteer level jika ada
+      if (!volunteerLevel) return sessions;
+      return sessions.filter(s => {
+        if (volunteerLevel === "Daerah") return true; // Volunteer daerah lihat semua
+        if (volunteerLevel === "Desa" && member?.desa) {
+          // Volunteer desa lihat event desa mereka saja
+          return s.event_name?.includes(member.desa) || !s.event_name;
+        }
+        if (volunteerLevel === "Kelompok" && member?.kelompok) {
+          // Volunteer kelompok lihat event kelompok mereka saja
+          return s.event_name?.includes(member.kelompok) || !s.event_name;
+        }
+        return false;
+      });
+    },
   });
 
   const stopScanner = async () => {
