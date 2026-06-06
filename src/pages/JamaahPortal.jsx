@@ -36,7 +36,7 @@ const EDITABLE_FIELDS = [
 
 const READONLY_FIELDS = [
   { key: "full_name", label: "Nama Lengkap" },
-  { key: "email", label: "Email", isUserField: true },
+  { key: "email", label: "Email" },
   { key: "desa", label: "Desa" },
   { key: "kelompok", label: "Kelompok" },
   { key: "dapukan", label: "Dapukan" },
@@ -193,7 +193,7 @@ export default function JamaahPortal() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {READONLY_FIELDS.map(f => {
-                    const val = f.isUserField ? (f.key === "email" ? user?.email : user?.[f.key]) : myMember[f.key];
+                    const val = f.key === "email" ? (myMember?.email || user?.email) : myMember[f.key];
                     if (!val) return null;
                     return (
                       <div key={f.key} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">

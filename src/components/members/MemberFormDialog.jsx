@@ -56,7 +56,7 @@ function ComboField({ value, onChange, options, placeholder }) {
 }
 
 const emptyMember = {
-  full_name: "", gender: "", marital_status: "", desa: "", kelompok: "", sub_kelompok: "",
+  full_name: "", email: "", gender: "", marital_status: "", desa: "", kelompok: "", sub_kelompok: "",
   family_group: "", birth_year: "", birthplace: "", visa_status: "", muballigh_status: "",
   employment: "", dapukan: "Jamaah", dapukan_level: "Kelompok", status: "Aktif",
   phone: "", notes: ""
@@ -103,7 +103,7 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
         to_desa: form.desa || "",
         to_kelompok: form.kelompok || "",
         transfer_date: today,
-        reason: "Diubah via edit data anggota",
+        reason: "Diubah via edit data jamaah",
       }).catch(() => {}); // fire-and-forget
     }
 
@@ -114,7 +114,7 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Anggota" : "Tambah Anggota Baru"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Data Jamaah" : "Tambah Jamaah Baru"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -127,6 +127,14 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
                 onChange={e => set("full_name", e.target.value)}
                 placeholder="Nama lengkap"
                 required
+              />
+            </Field>
+            <Field label="Email">
+              <Input
+                type="email"
+                value={form.email}
+                onChange={e => set("email", e.target.value)}
+                placeholder="email@example.com"
               />
             </Field>
             <Field label="No. Telepon">
@@ -275,9 +283,9 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
           </Field>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
-            <Button type="submit">{isEdit ? "Simpan Perubahan" : "Tambah Anggota"}</Button>
-          </div>
+             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
+             <Button type="submit">{isEdit ? "Simpan Perubahan" : "Tambah Jamaah"}</Button>
+           </div>
         </form>
       </DialogContent>
     </Dialog>

@@ -243,7 +243,7 @@ export default function Members() {
       <AlertDialog open={!!deleteMember} onOpenChange={() => setDeleteMember(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Jamaah?</AlertDialogTitle>
+            <AlertDialogTitle>Hapus Data Jamaah?</AlertDialogTitle>
             <AlertDialogDescription>
               Apakah Anda yakin ingin menghapus {deleteMember?.full_name}? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
