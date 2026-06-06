@@ -369,7 +369,11 @@ export default function JamaahPortal() {
               <p className="text-xs text-muted-foreground mt-1">Grup: {myMember?.family_group}</p>
             </CardHeader>
             <CardContent className="space-y-2">
-              {familyMembers.map(member => {
+              {[...familyMembers].sort((a, b) => {
+                const aIsKepala = a.id === myMember?.id ? 0 : 1;
+                const bIsKepala = b.id === myMember?.id ? 0 : 1;
+                return aIsKepala - bIsKepala;
+              }).map(member => {
                 const isKepalaKeluarga = member.id === myMember?.id;
                 return (
                   <div key={member.id} className={`p-3 rounded-lg border ${isKepalaKeluarga ? 'border-primary/30 bg-primary/5' : 'border-border'} flex items-center justify-between`}>
