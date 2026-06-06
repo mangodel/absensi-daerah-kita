@@ -57,6 +57,7 @@ export default function JamaahPortal() {
   const { user: adminUser } = useAuth();
   const queryClient = useQueryClient();
   const [jamaahUser, setJamaahUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [editData, setEditData] = useState({});
   const [emailError, setEmailError] = useState("");
   const [registeringEmail, setRegisteringEmail] = useState(false);
@@ -71,6 +72,8 @@ export default function JamaahPortal() {
         setJamaahUser(currentUser);
       } catch (error) {
         setJamaahUser(null);
+      } finally {
+        setCheckingAuth(false);
       }
     };
     checkJamaahAuth();
@@ -192,6 +195,39 @@ export default function JamaahPortal() {
     setJamaahUser(null);
     window.location.href = "/jamaah-login";
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Jika tidak ada jamaahUser, tampilkan halaman login
+  if (!jamaahUser) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="py-12 text-center space-y-4">
+            <User className="w-12 h-12 text-muted-foreground mx-auto opacity-30" />
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-1">Anda belum login</p>
+              <p className="text-xs text-muted-foreground mb-4">Silakan login terlebih dahulu untuk mengakses portal jamaah</p>
+            </div>
+            <div className="flex gap-2">
+              <Link to="/jamaah-login" className="flex-1">
+                <Button className="w-full">Masuk</Button>
+              </Link>
+              <Link to="/jamaah/signup" className="flex-1">
+                <Button variant="outline" className="w-full">Daftar</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loadingMembers) {
     return (
