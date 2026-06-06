@@ -27,8 +27,10 @@ const ROLE_DESC = {
 
 export default function UserRoleManager() {
   const { config } = useAppConfig();
-  const desaList = config.desa_list || [];
   const desaKelompokMap = config.desa_kelompok_map || {};
+  const desaList = Object.keys(desaKelompokMap).length > 0
+    ? Object.keys(desaKelompokMap)
+    : (config.desa_list || []);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -65,11 +67,31 @@ export default function UserRoleManager() {
     e.preventDefault();
     if (!inviteForm.email) return;
     setInviting(true);
-    const base44Role = (inviteForm.role === "super_admin") ? "admin" : "user";
+
+    // Base44 platform role: super_admin → "admin", semua lainnya → "user"
+    const base44Role = inviteForm.role === "super_admin" ? "admin" : "user";
+
+    // Kirim undangan
     await base44.users.inviteUser(inviteForm.email, base44Role);
+
+    // Setelah invite berhasil, cari user baru dan simpan role + desa + kelompok
+    // Tunggu sebentar agar user terdaftar di DB
+    await new Promise(r => setTimeout(r, 1500));
+    const allUsers = await base44.entities.User.list();
+    const newUser = allUsers.find(u => u.email?.toLowerCase() === inviteForm.email.toLowerCase());
+    if (newUser) {
+      const updateData = { role: inviteForm.role };
+      if (inviteForm.desa) updateData.desa = inviteForm.desa;
+      if (inviteForm.kelompok) updateData.kelompok = inviteForm.kelompok;
+      await base44.entities.User.update(newUser.id, updateData);
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["users_list"] });
     toast({
       title: `Undangan dikirim ke ${inviteForm.email}`,
-      description: "Setelah pengguna menerima undangan, atur role-nya di daftar pengguna.",
+      description: newUser
+        ? `Role "${getRoleLabel(inviteForm.role)}" berhasil ditetapkan.`
+        : "Setelah pengguna menerima undangan, atur role-nya di daftar pengguna.",
     });
     setInviting(false);
     setInviteOpen(false);
@@ -236,14 +258,14 @@ export default function UserRoleManager() {
                 </Select>
               </div>
             )}
-            <div className="bg-secondary/40 rounded-lg p-3 text-xs text-muted-foreground">
-              <p>📧 Undangan dikirim ke email. Setelah diterima, atur role di daftar pengguna di atas.</p>
+            <div className="bg-secondary/40 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+              <p>📧 Email undangan akan dikirim ke alamat di atas.</p>
+              <p>✅ Role, desa, dan kelompok akan langsung ditetapkan saat undangan diterima.</p>
             </div>
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>Batal</Button>
+              <Button type="button" variant="outline" onClick={() => setInviteOpen(false)} disabled={inviting}>Batal</Button>
               <Button type="submit" disabled={inviting}>
-                {inviting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Kirim Undangan
+                {inviting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Mengirim...</> : "Kirim Undangan"}
               </Button>
             </div>
           </form>
