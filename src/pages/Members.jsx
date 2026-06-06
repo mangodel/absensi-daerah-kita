@@ -92,8 +92,8 @@ export default function Members() {
     <div className="space-y-6 pb-20 md:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{pt.members || "Data Anggota"}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{members.length} {pt.members_subtitle || "anggota terdaftar"}</p>
+          <h1 className="text-2xl font-bold text-foreground">{pt.members || "Data Jamaah"}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{members.length} {pt.members_subtitle || "jamaah terdaftar"}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <div className="flex rounded-lg border border-border overflow-hidden">
@@ -120,7 +120,7 @@ export default function Members() {
                 <Upload className="w-4 h-4 mr-2" />Upload CSV
               </Button>
               <Button onClick={() => { setEditMember(null); setFormOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" />Tambah
+                <Plus className="w-4 h-4 mr-2" />Tambah Jamaah
               </Button>
             </>
           )}
@@ -131,7 +131,7 @@ export default function Members() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Cari nama anggota..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Cari nama jamaah..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <Button variant="outline" onClick={() => setShowAdvanced(v => !v)} className="relative">
           <SlidersHorizontal className="w-4 h-4 mr-2" /> Filter
@@ -243,7 +243,7 @@ export default function Members() {
       <AlertDialog open={!!deleteMember} onOpenChange={() => setDeleteMember(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Anggota?</AlertDialogTitle>
+            <AlertDialogTitle>Hapus Jamaah?</AlertDialogTitle>
             <AlertDialogDescription>
               Apakah Anda yakin ingin menghapus {deleteMember?.full_name}? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>

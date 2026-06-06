@@ -236,7 +236,7 @@ export default function JamaahPortal() {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">Data Pribadi (Dapat Diedit)</CardTitle>
+                  <CardTitle className="text-sm font-semibold">Data Jamaah / Data Diri (Dapat Diedit)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {EDITABLE_FIELDS.map(f => {
