@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MONTHS, VISA_STATUS_LIST, DAPUKAN_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
-import { CalendarCheck, Save, Loader2, CalendarDays } from "lucide-react";
+import { CalendarCheck, Save, Loader2, CalendarDays, QrCode } from "lucide-react";
 import AttendanceTable from "@/components/attendance/AttendanceTable";
 import AttendanceHistory from "@/components/attendance/AttendanceHistory";
 import AttendanceChart from "@/components/attendance/AttendanceChart";
@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import QREventTab from "@/components/attendance/QREventTab";
 
 const levelColors = {
   "Daerah": "bg-primary/10 text-primary border-primary/20",
@@ -192,6 +193,7 @@ export default function Attendance() {
       <Tabs defaultValue="input">
         <TabsList>
           <TabsTrigger value="input">Input Absensi</TabsTrigger>
+          <TabsTrigger value="qr"><QrCode className="w-3.5 h-3.5 mr-1" />QR Event</TabsTrigger>
           <TabsTrigger value="history">Riwayat</TabsTrigger>
           <TabsTrigger value="chart">Grafik</TabsTrigger>
         </TabsList>
@@ -319,6 +321,10 @@ export default function Attendance() {
               <p className="text-muted-foreground text-sm">Pilih kegiatan di atas untuk mulai input absensi.</p>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="qr" className="mt-4">
+          <QREventTab events={events} members={members} />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4 mt-4">

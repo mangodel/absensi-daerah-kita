@@ -4,12 +4,13 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Monitor } from "lucide-react";
+import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Monitor, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import CameraScanner from "./CameraScanner";
+import { checkGeofence } from "./GeoCheckin";
 
-export default function QRScanner({ eventId, eventName }) {
+export default function QRScanner({ eventId, eventName, formConfig }) {
   const qc = useQueryClient();
   const [manualId, setManualId] = useState("");
   const [search, setSearch] = useState("");
@@ -33,8 +34,19 @@ export default function QRScanner({ eventId, eventName }) {
 
   const checkinMut = useMutation({
     mutationFn: async (participant) => {
+      // Anti-double: check if already checked in
       const existing = checkins.find(c => c.participant_db_id === participant.id);
       if (existing) return { type: "duplicate", participant, checkin: existing };
+
+      // Geo-fence validation
+      if (formConfig?.geofence_enabled && formConfig?.venue_lat && formConfig?.venue_lng) {
+        const geo = await checkGeofence({
+          venueLat: formConfig.venue_lat,
+          venueLng: formConfig.venue_lng,
+          radiusM: formConfig.venue_radius_m || 200,
+        });
+        if (!geo.allowed) return { type: "geofence", error: geo.error };
+      }
 
       const now = new Date();
       await base44.entities.EventCheckin.create({
@@ -105,6 +117,14 @@ export default function QRScanner({ eventId, eventName }) {
 
   return (
     <div className="space-y-4">
+      {/* Geo-fence indicator */}
+      {formConfig?.geofence_enabled && (
+        <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl px-4 py-2.5">
+          <MapPin className="w-4 h-4 text-primary shrink-0" />
+          <p className="text-xs text-primary">Geo-fence aktif — radius {formConfig.venue_radius_m || 200}m. Check-in hanya valid di area venue.</p>
+        </div>
+      )}
+
       {/* Settings Bar */}
       <div className="bg-card border border-border rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
@@ -141,7 +161,7 @@ export default function QRScanner({ eventId, eventName }) {
           "bg-destructive/10 border border-destructive/20"
         }`}>
           {result.type === "success" && <CheckCircle className="w-8 h-8 text-accent shrink-0" />}
-          {(result.type === "duplicate" || result.type === "notfound") && <AlertCircle className="w-8 h-8 text-amber-500 shrink-0" />}
+          {(result.type === "duplicate" || result.type === "notfound" || result.type === "geofence") && <AlertCircle className="w-8 h-8 text-amber-500 shrink-0" />}
           <div>
             {result.type === "success" && (
               <>
@@ -157,6 +177,12 @@ export default function QRScanner({ eventId, eventName }) {
             )}
             {result.type === "notfound" && (
               <p className="font-semibold text-destructive">ID peserta tidak ditemukan</p>
+            )}
+            {result.type === "geofence" && (
+              <>
+                <p className="font-semibold text-amber-700">Di Luar Lokasi Venue</p>
+                <p className="text-sm text-amber-600">{result.error}</p>
+              </>
             )}
           </div>
           {result.type !== "success" && (

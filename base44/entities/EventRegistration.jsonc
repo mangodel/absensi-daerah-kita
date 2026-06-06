@@ -1,0 +1,53 @@
+{
+  "name": "EventRegistration",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "ID EventSession terkait"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Nama lengkap pendaftar"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Nomor telepon"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email pendaftar"
+    },
+    "extra_data": {
+      "type": "string",
+      "description": "JSON string berisi data form tambahan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Approved",
+        "Rejected"
+      ],
+      "default": "Approved",
+      "description": "Status pendaftaran"
+    },
+    "participant_id": {
+      "type": "string",
+      "description": "ID peserta yang dibuat setelah approved (P000001)"
+    },
+    "qr_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Apakah QR sudah dikirim via email"
+    },
+    "source": {
+      "type": "string",
+      "description": "Sumber registrasi: online/import/manual"
+    }
+  },
+  "required": [
+    "event_id",
+    "full_name"
+  ]
+}

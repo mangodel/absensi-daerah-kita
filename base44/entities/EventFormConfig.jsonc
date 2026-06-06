@@ -1,0 +1,57 @@
+{
+  "name": "EventFormConfig",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "ID EventSession"
+    },
+    "fields": {
+      "type": "string",
+      "description": "JSON array konfigurasi field: [{key, label, type, required, options}]"
+    },
+    "welcome_message": {
+      "type": "string",
+      "description": "Pesan selamat datang di form registrasi"
+    },
+    "success_message": {
+      "type": "string",
+      "description": "Pesan setelah berhasil mendaftar"
+    },
+    "send_qr_email": {
+      "type": "boolean",
+      "default": true,
+      "description": "Kirim QR otomatis via email setelah mendaftar"
+    },
+    "max_participants": {
+      "type": "number",
+      "description": "Batas maksimal peserta (0 = tidak terbatas)"
+    },
+    "allow_walkin": {
+      "type": "boolean",
+      "default": true,
+      "description": "Izinkan registrasi walk-in (tanpa online)"
+    },
+    "venue_lat": {
+      "type": "number",
+      "description": "Latitude venue untuk geo-fence"
+    },
+    "venue_lng": {
+      "type": "number",
+      "description": "Longitude venue untuk geo-fence"
+    },
+    "venue_radius_m": {
+      "type": "number",
+      "default": 200,
+      "description": "Radius geo-fence dalam meter"
+    },
+    "geofence_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Aktifkan validasi lokasi saat check-in"
+    }
+  },
+  "required": [
+    "event_id"
+  ]
+}
