@@ -9,7 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -50,6 +57,8 @@ export default function JamaahPortal() {
   const [editData, setEditData] = useState({});
   const [emailError, setEmailError] = useState("");
   const [registeringEmail, setRegisteringEmail] = useState(false);
+  const [editingFamily, setEditingFamily] = useState(null);
+  const [familyEditData, setFamilyEditData] = useState({});
 
   // Cari data member berdasarkan email user
   const { data: members = [], isLoading: loadingMembers } = useQuery({
@@ -61,6 +70,11 @@ export default function JamaahPortal() {
   const myMember = user?.email
     ? members.find(m => m.email?.toLowerCase() === user?.email?.toLowerCase())
     : null;
+
+  // Ambil semua anggota keluarga dengan family_group yang sama
+  const familyMembers = myMember
+    ? members.filter(m => m.family_group === myMember.family_group)
+    : [];
 
   useEffect(() => {
     if (myMember) {
@@ -92,9 +106,36 @@ export default function JamaahPortal() {
     onError: () => toast.error("Gagal menyimpan perubahan"),
   });
 
+  const updateFamilyMutation = useMutation({
+    mutationFn: (data) => base44.entities.Member.update(editingFamily.id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-member"] });
+      setEditingFamily(null);
+      toast.success("Data anggota keluarga berhasil diperbarui");
+    },
+    onError: () => toast.error("Gagal menyimpan perubahan"),
+  });
+
   const handleSave = () => {
     if (!myMember) return;
     updateMutation.mutate(editData);
+  };
+
+  const handleEditFamilyMember = (member) => {
+    setEditingFamily(member);
+    setFamilyEditData({
+      full_name: member.full_name || "",
+      gender: member.gender || "",
+      marital_status: member.marital_status || "",
+      phone: member.phone || "",
+      phone_country_code: member.phone_country_code || "Indonesia",
+      address: member.address || "",
+    });
+  };
+
+  const handleSaveFamily = () => {
+    if (!editingFamily) return;
+    updateFamilyMutation.mutate(familyEditData);
   };
 
   const generateEmailFromName = (name) => {
@@ -317,6 +358,45 @@ export default function JamaahPortal() {
           )}
         </div>
 
+        {/* Anggota Keluarga */}
+        {familyMembers.length > 0 && (
+          <Card className="mb-6 border-accent/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Users className="w-4 h-4 text-accent" />
+                Anggota Keluarga ({familyMembers.length})
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">Grup: {myMember?.family_group}</p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {familyMembers.map(member => {
+                const isKepalaKeluarga = member.id === myMember?.id;
+                return (
+                  <div key={member.id} className={`p-3 rounded-lg border ${isKepalaKeluarga ? 'border-primary/30 bg-primary/5' : 'border-border'} flex items-center justify-between`}>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">{member.full_name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {isKepalaKeluarga && <Badge className="text-[10px] h-auto py-0.5">Kepala Keluarga</Badge>}
+                        {member.gender && <span className="text-xs text-muted-foreground">{member.gender}</span>}
+                        {member.marital_status && <span className="text-xs text-muted-foreground">• {member.marital_status}</span>}
+                      </div>
+                      {member.phone && <p className="text-xs text-muted-foreground mt-1">{member.phone}</p>}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEditFamilyMember(member)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Navigasi ke halaman terpisah */}
         <div className="grid grid-cols-2 gap-3">
           <Link to="/jamaah/survey">
@@ -351,6 +431,101 @@ export default function JamaahPortal() {
 
 
       </div>
+
+      {/* Dialog Edit Anggota Keluarga */}
+      <Dialog open={!!editingFamily} onOpenChange={(open) => !open && setEditingFamily(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Data Anggota Keluarga</DialogTitle>
+          </DialogHeader>
+          {editingFamily && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm">Nama Lengkap</Label>
+                <Input
+                  value={familyEditData.full_name || ""}
+                  onChange={e => setFamilyEditData(prev => ({ ...prev, full_name: e.target.value }))}
+                  className="text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-sm">Jenis Kelamin</Label>
+                  <Select value={familyEditData.gender || ""} onValueChange={val => setFamilyEditData(prev => ({ ...prev, gender: val }))}>
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder="Pilih" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>-</SelectItem>
+                      <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                      <SelectItem value="Perempuan">Perempuan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Status Pernikahan</Label>
+                  <Select value={familyEditData.marital_status || ""} onValueChange={val => setFamilyEditData(prev => ({ ...prev, marital_status: val }))}>
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder="Pilih" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>-</SelectItem>
+                      <SelectItem value="Menikah">Menikah</SelectItem>
+                      <SelectItem value="Belum Menikah">Belum Menikah</SelectItem>
+                      <SelectItem value="Cerai">Cerai</SelectItem>
+                      <SelectItem value="Janda/Duda">Janda/Duda</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Nomor Telepon</Label>
+                <div className="flex gap-2">
+                  <Select value={familyEditData.phone_country_code || "Indonesia"} onValueChange={val => setFamilyEditData(prev => ({ ...prev, phone_country_code: val }))}>
+                    <SelectTrigger className="w-32 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Indonesia">+62</SelectItem>
+                      <SelectItem value="Australia">+61</SelectItem>
+                      <SelectItem value="New Zealand">+64</SelectItem>
+                      <SelectItem value="Cook Islands">+682</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={familyEditData.phone || ""}
+                    onChange={e => setFamilyEditData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="08xxxx"
+                    className="text-sm flex-1"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Alamat</Label>
+                <Textarea
+                  value={familyEditData.address || ""}
+                  onChange={e => setFamilyEditData(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="Alamat lengkap"
+                  rows={2}
+                  className="text-sm resize-none"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditingFamily(null)}>
+              Batal
+            </Button>
+            <Button onClick={handleSaveFamily} disabled={updateFamilyMutation.isPending}>
+              {updateFamilyMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
