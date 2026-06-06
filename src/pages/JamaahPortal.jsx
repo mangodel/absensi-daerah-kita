@@ -173,9 +173,9 @@ export default function JamaahPortal() {
         {!myMember && (
           <div className="mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium text-amber-800">Data jamaah tidak ditemukan</p>
-              <p className="text-xs text-amber-700 mt-0.5">Hubungi admin untuk menautkan akun Anda dengan data anggota.</p>
+              <p className="text-xs text-amber-700 mt-0.5">Hubungi admin untuk menautkan akun Anda dengan data anggota, atau <Link to="/jamaah/signup" className="underline font-semibold">daftar akun baru di sini</Link>.</p>
             </div>
           </div>
         )}
