@@ -60,8 +60,8 @@ export default function MobileNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 h-20" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-        <div className="flex justify-between items-stretch h-full px-1 gap-1">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className="flex justify-between items-center h-16 px-1 gap-1">
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             return (
