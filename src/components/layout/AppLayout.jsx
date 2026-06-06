@@ -4,18 +4,16 @@ import MobileNav from "./MobileNav";
 
 export default function AppLayout() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <div className="hidden md:block">
         <Sidebar />
       </div>
-      <main className="md:ml-64 min-h-screen md:pb-8">
-        <div className="p-3 md:p-8 pb-24 md:pb-0">
+      <main className="md:ml-64 flex-1 min-h-screen md:pb-0 pb-20">
+        <div className="p-3 md:p-8">
           <Outlet />
         </div>
       </main>
-      <div className="block md:hidden">
-        <MobileNav />
-      </div>
+      <MobileNav />
     </div>
   );
 }
