@@ -173,7 +173,8 @@ export default function JamaahPortal() {
 
   const handleLogout = async () => {
     await base44.auth.logout();
-    window.location.href = "/jamaah-login";
+    // Force hard reload untuk reset semua state
+    window.location.replace("/jamaah-login");
   };
 
   if (loadingMembers) {
@@ -199,7 +200,7 @@ export default function JamaahPortal() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {user ? (
+            {user && user.email ? (
               <Button
                 variant="ghost"
                 size="sm"
