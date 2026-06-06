@@ -130,9 +130,9 @@ export default function JamaahPortal() {
     }
   };
 
-  const handleLogout = () => {
-    window.location.href = "/login";
-    base44.auth.logout();
+  const handleLogout = async () => {
+    await base44.auth.logout();
+    window.location.href = "/jamaah-login";
   };
 
   if (loadingMembers) {
