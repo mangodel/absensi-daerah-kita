@@ -121,19 +121,7 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
           {getDapukanLabel(m) && (
             <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 mt-0.5 bg-primary/5 text-primary border-primary/20">{getDapukanLabel(m)}</Badge>
           )}
-          {isSuperAdmin && (
-            editingId === m.id ? (
-              <div className="flex items-center gap-1 mt-1">
-                <Input className="h-5 text-[10px] px-1 py-0" value={editDapukan} onChange={e => setEditDapukan(e.target.value)} autoFocus />
-                <button onClick={() => onSaveEdit(m.id)} className="text-accent"><Check className="w-3 h-3" /></button>
-                <button onClick={onCancelEdit} className="text-muted-foreground"><X className="w-3 h-3" /></button>
-              </div>
-            ) : (
-              <button onClick={() => onStartEdit(m.id, m.dapukan)} className="text-muted-foreground hover:text-primary mt-0.5">
-                <Pencil className="w-2.5 h-2.5" />
-              </button>
-            )
-          )}
+
           {m.phone && <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground"><Phone className="w-2.5 h-2.5" />{m.phone}</div>}
         </div>
         {isSuperAdmin && isWakil && (
@@ -177,19 +165,7 @@ function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId,
           {getDapukanLabel(member) && (
             <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 mt-0.5 ${badgeClass}`}>{getDapukanLabel(member)}</Badge>
           )}
-          {isSuperAdmin && !isOther && (
-            editingId === member.id ? (
-              <div className="flex items-center gap-1 mt-0.5">
-                <Input className="h-5 text-[10px] px-1 py-0" value={editDapukan} onChange={e => setEditDapukan(e.target.value)} autoFocus />
-                <button onClick={() => onSaveEdit(member.id)} className="text-accent"><Check className="w-3 h-3" /></button>
-                <button onClick={onCancelEdit} className="text-muted-foreground"><X className="w-3 h-3" /></button>
-              </div>
-            ) : (
-              <button onClick={() => onStartEdit(member.id, member.dapukan)} className="text-muted-foreground hover:text-primary mt-0.5">
-                <Pencil className="w-2.5 h-2.5" />
-              </button>
-            )
-          )}
+
           {member.phone && <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground"><Phone className="w-2.5 h-2.5" />{member.phone}</div>}
         </div>
       </div>
