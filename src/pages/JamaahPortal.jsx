@@ -57,10 +57,9 @@ export default function JamaahPortal() {
     enabled: !!user,
   });
 
-  const myMember = members.find(
-    m => m.phone === user?.phone ||
-    (user?.full_name && m.full_name?.toLowerCase() === user?.full_name?.toLowerCase())
-  ) || members[0];
+  const myMember = user?.full_name
+    ? members.find(m => m.full_name?.toLowerCase() === user?.full_name?.toLowerCase())
+    : members.find(m => m.phone === user?.phone);
 
   useEffect(() => {
     if (myMember) {
