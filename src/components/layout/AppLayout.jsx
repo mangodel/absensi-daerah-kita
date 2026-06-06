@@ -13,7 +13,9 @@ export default function AppLayout() {
           <Outlet />
         </div>
       </main>
-      <MobileNav />
+      <div className="block md:hidden">
+        <MobileNav />
+      </div>
     </div>
   );
 }
