@@ -157,20 +157,16 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
 
 // Generic pengurus card for non-keimaman
 function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, isOther, isMubalighKat }) {
-  const mubalighBadge = isMubalighKat ? getMubalighBadge(member) : null;
-
   return (
     <div className={`px-3 py-2.5 rounded-xl border bg-white/70 ${colorClass}`}>
       <div className="flex items-start gap-1">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-medium text-sm">{member.full_name}</span>
-            {mubalighBadge && (
-              <Badge className={`text-[9px] px-1.5 py-0 ${mubalighBadge.color}`} variant="outline">
-                {mubalighBadge.label}
-              </Badge>
-            )}
           </div>
+          {isOther && member.dapukan && (
+            <div className="text-[10px] text-muted-foreground mt-0.5">{member.dapukan}</div>
+          )}
           {isSuperAdmin && !isOther && (
             editingId === member.id ? (
               <div className="flex items-center gap-1 mt-0.5">
