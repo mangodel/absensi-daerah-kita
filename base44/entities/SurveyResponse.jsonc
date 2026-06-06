@@ -1,0 +1,43 @@
+{
+  "name": "SurveyResponse",
+  "type": "object",
+  "properties": {
+    "survey_id": {
+      "type": "string",
+      "description": "ID SurveyConfig"
+    },
+    "survey_title": {
+      "type": "string",
+      "description": "Judul survei saat diisi"
+    },
+    "member_id": {
+      "type": "string",
+      "description": "ID Member yang mengisi"
+    },
+    "member_name": {
+      "type": "string",
+      "description": "Nama Member"
+    },
+    "desa": {
+      "type": "string",
+      "description": "Desa member"
+    },
+    "kelompok": {
+      "type": "string",
+      "description": "Kelompok member"
+    },
+    "answers": {
+      "type": "string",
+      "description": "JSON string jawaban: [{question_id, answer}]"
+    },
+    "submitted_at": {
+      "type": "string",
+      "description": "Waktu pengisian (ISO string)"
+    }
+  },
+  "required": [
+    "survey_id",
+    "member_id",
+    "answers"
+  ]
+}

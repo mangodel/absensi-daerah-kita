@@ -1,0 +1,60 @@
+{
+  "name": "SurveyConfig",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Judul survei"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi/penjelasan survei"
+    },
+    "questions": {
+      "type": "string",
+      "description": "JSON array pertanyaan: [{id, question, type (text/radio/checkbox), options, required}]"
+    },
+    "target_scope": {
+      "type": "string",
+      "enum": [
+        "Semua",
+        "Desa",
+        "Kelompok"
+      ],
+      "default": "Semua",
+      "description": "Target penerima survei"
+    },
+    "target_desa": {
+      "type": "string",
+      "description": "Desa target (jika scope Desa/Kelompok)"
+    },
+    "target_kelompok": {
+      "type": "string",
+      "description": "Kelompok target (jika scope Kelompok)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Draft",
+        "Aktif",
+        "Selesai"
+      ],
+      "default": "Draft",
+      "description": "Status survei"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "Batas waktu pengisian"
+    },
+    "allow_multiple_responses": {
+      "type": "boolean",
+      "default": false,
+      "description": "Boleh isi lebih dari sekali?"
+    }
+  },
+  "required": [
+    "title",
+    "questions"
+  ]
+}

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell, FolderOpen, LogOut, ScanLine } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell, FolderOpen, LogOut, ScanLine, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -30,6 +30,7 @@ const navItems = [
   { label: "Absensi Event", icon: ScanLine, path: "/event-attendance" },
   { label: "Pindah Kelompok", icon: ArrowRightLeft, path: "/transfers" },
   { label: "Struktur Organisasi", icon: Building2, path: "/structure" },
+  { label: "Portal Jamaah", icon: UserCircle, path: "/jamaah" },
 ];
 
 export default function Sidebar() {
@@ -147,7 +148,10 @@ export default function Sidebar() {
               <AlertDialogCancel>Batal</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => base44.auth.logout()}
+                onClick={() => {
+                  base44.auth.logout();
+                  window.location.href = "/login";
+                }}
               >
                 Ya, Keluar
               </AlertDialogAction>

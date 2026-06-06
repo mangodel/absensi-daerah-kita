@@ -20,6 +20,7 @@ import EventAttendance from '@/pages/EventAttendance';
 import EventDisplay from '@/pages/EventDisplay';
 import VolunteerScanner from '@/pages/VolunteerScanner';
 import EventRegister from '@/pages/EventRegister';
+import JamaahPortal from '@/pages/JamaahPortal';
 import { AppConfigProvider } from '@/lib/AppConfigContext';
 
 const AuthenticatedApp = () => {
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
       <Route path="/scanner-volunteer" element={<VolunteerScanner />} />
       <Route path="/event-register/:eventId" element={<EventRegister />} />
       <Route path="/event-register" element={<EventRegister />} />
+      <Route path="/jamaah" element={<JamaahPortal />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

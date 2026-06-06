@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, CalendarDays, Bell, FileBarChart, Settings, FolderOpen, LogOut, ScanLine } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, CalendarDays, Bell, FileBarChart, Settings, FolderOpen, LogOut, ScanLine, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/lib/useUserRole";
 import { useQuery } from "@tanstack/react-query";
@@ -37,6 +37,7 @@ export default function MobileNav() {
     { label: "Dokumen", icon: FolderOpen, path: "/documents" },
     { label: "Absensi Event", icon: ScanLine, path: "/event-attendance" },
     { label: "Pengingat", icon: Bell, path: "/reminders", badge: urgentCount },
+    { label: "Portal", icon: UserCircle, path: "/jamaah" },
     ...(canAccessSettings ? [{ label: "Setelan", icon: Settings, path: "/settings" }] : []),
   ];
   // Limit to 5 items + logout to avoid overflow; show most important first
@@ -85,7 +86,10 @@ export default function MobileNav() {
             <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => base44.auth.logout()}
+              onClick={() => {
+                base44.auth.logout();
+                window.location.href = "/login";
+              }}
             >
               Ya, Keluar
             </AlertDialogAction>
