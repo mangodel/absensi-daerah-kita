@@ -85,6 +85,18 @@ export default function AustraliaMap({ members }) {
   const desaKelompokMap = config.desa_kelompok_map || {};
   const [hoveredCity, setHoveredCity] = useState(null);
 
+  // State colors untuk visual peta yang lebih interaktif
+  const stateColors = {
+    WA: "#f0fdf4", WA_border: "#4ade80",
+    NT: "#f0fdf4", NT_border: "#4ade80",
+    SA: "#f0fdf4", SA_border: "#4ade80",
+    QLD: "#fefce8", QLD_border: "#facc15",
+    NSW: "#fef3c7", NSW_border: "#fbbf24",
+    VIC: "#fecaca", VIC_border: "#f87171",
+    TAS: "#fce7f3", TAS_border: "#f472b6",
+    NZ: "#e0e7ff", NZ_border: "#818cf8",
+  };
+
   const cityData = useMemo(() => {
     const counts = {};
     Object.entries(desaKelompokMap).forEach(([desa, kelompoks]) => {
@@ -120,16 +132,30 @@ export default function AustraliaMap({ members }) {
   return (
     <div className="bg-card rounded-2xl border border-border p-5">
       <h3 className="font-semibold text-sm text-foreground mb-0.5">Sebaran Jamaah</h3>
-      <p className="text-xs text-muted-foreground mb-4">Australia &amp; New Zealand — hover kota untuk detail</p>
+      <p className="text-xs text-muted-foreground mb-4">Australia &amp; New Zealand — hover untuk detail</p>
 
-      <div className="w-full rounded-xl overflow-hidden" style={{ background: "#bfdbfe" }}>
+      <div className="w-full rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 50%, #dbeafe 100%)" }}>
         <svg
           viewBox={`0 0 ${W} ${H}`}
           style={{ display: "block", width: "100%", height: "auto" }}
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Ocean */}
-          <rect x="0" y="0" width={W} height={H} fill="#bfdbfe" />
+          {/* Ocean gradient background */}
+          <defs>
+            <linearGradient id="oceanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#e0f2fe" />
+              <stop offset="50%" stopColor="#bfdbfe" />
+              <stop offset="100%" stopColor="#dbeafe" />
+            </linearGradient>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <rect x="0" y="0" width={W} height={H} fill="url(#oceanGrad)" />
 
           {/* Grid lines */}
           {[120, 130, 140, 150, 160, 170].map(lng => (
@@ -139,27 +165,30 @@ export default function AustraliaMap({ members }) {
             <line key={`lt${lat}`} x1="0" y1={ly(lat)} x2={W} y2={ly(lat)} stroke="#93c5fd" strokeWidth="0.5" opacity="0.4" />
           ))}
 
-          {/* Land masses */}
-          <path d={AU_D} fill="#d1fae5" stroke="#4ade80" strokeWidth="1.5" strokeLinejoin="round" />
-          <path d={TAS_D} fill="#d1fae5" stroke="#4ade80" strokeWidth="1" strokeLinejoin="round" />
-          <path d={NZ_N_D} fill="#d1fae5" stroke="#4ade80" strokeWidth="1" strokeLinejoin="round" />
-          <path d={NZ_S_D} fill="#d1fae5" stroke="#4ade80" strokeWidth="1" strokeLinejoin="round" />
+          {/* Land masses dengan warna state */}
+          {/* WA, NT, SA (Utara/Barat) */}
+          <path d={AU_D} fill="#f0fdf4" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round" opacity="0.95" />
+          {/* Tasmania */}
+          <path d={TAS_D} fill="#fce7f3" stroke="#ec4899" strokeWidth="1.5" strokeLinejoin="round" />
+          {/* New Zealand */}
+          <path d={NZ_N_D} fill="#e0e7ff" stroke="#6366f1" strokeWidth="1.5" strokeLinejoin="round" />
+          <path d={NZ_S_D} fill="#e0e7ff" stroke="#6366f1" strokeWidth="1.5" strokeLinejoin="round" />
 
           {/* State borders */}
-          <line x1={lx(129)} y1={ly(-14)} x2={lx(129)} y2={ly(-35.5)} stroke="#86efac" strokeWidth="0.8" strokeDasharray="4,3" />
-          <line x1={lx(141)} y1={ly(-26)} x2={lx(141)} y2={ly(-38)} stroke="#86efac" strokeWidth="0.8" strokeDasharray="4,3" />
-          <line x1={lx(141)} y1={ly(-29)} x2={lx(153.5)} y2={ly(-29)} stroke="#86efac" strokeWidth="0.8" strokeDasharray="4,3" />
+          <line x1={lx(129)} y1={ly(-14)} x2={lx(129)} y2={ly(-35.5)} stroke="#bbf7d0" strokeWidth="1" strokeDasharray="5,4" opacity="0.6" />
+          <line x1={lx(141)} y1={ly(-26)} x2={lx(141)} y2={ly(-38)} stroke="#fde047" strokeWidth="1" strokeDasharray="5,4" opacity="0.6" />
+          <line x1={lx(141)} y1={ly(-29)} x2={lx(153.5)} y2={ly(-29)} stroke="#fde047" strokeWidth="1" strokeDasharray="5,4" opacity="0.6" />
 
           {/* Labels */}
-          <text x={lx(134)} y={ly(-27)} textAnchor="middle" fontSize="14" fill="#166534" fontWeight="800" opacity="0.2" fontFamily="Inter,sans-serif" letterSpacing="4">AUSTRALIA</text>
-          <text x={lx(173)} y={ly(-43)} textAnchor="middle" fontSize="8" fill="#166534" fontWeight="700" opacity="0.35" fontFamily="Inter,sans-serif">NEW ZEALAND</text>
+          <text x={lx(134)} y={ly(-27)} textAnchor="middle" fontSize="16" fill="#15803d" fontWeight="900" opacity="0.15" fontFamily="Inter,sans-serif" letterSpacing="3">AUSTRALIA</text>
+          <text x={lx(173)} y={ly(-43)} textAnchor="middle" fontSize="9" fill="#4f46e5" fontWeight="800" opacity="0.2" fontFamily="Inter,sans-serif" letterSpacing="1">NZ</text>
 
-          {/* City markers */}
+          {/* City markers with enhanced interactivity */}
           {Object.entries(CITY_COORDS).map(([city, pos]) => {
             const count = cityData[city] || 0;
             const isActive = count > 0;
             const ratio = count / maxCount;
-            const r = isActive ? Math.max(9, Math.min(24, 9 + ratio * 16)) : 4;
+            const r = isActive ? Math.max(10, Math.min(28, 10 + ratio * 18)) : 5;
             const isHovered = hoveredCity === city;
 
             return (
@@ -169,46 +198,67 @@ export default function AustraliaMap({ members }) {
                 onMouseEnter={() => isActive && setHoveredCity(city)}
                 onMouseLeave={() => setHoveredCity(null)}
               >
-                {/* Pulse ring when hovered */}
+                {/* Animated glow ring when active */}
                 {isActive && (
-                  <circle cx={pos.x} cy={pos.y} r={r + (isHovered ? 14 : 8)}
-                    fill="hsl(243,75%,59%)" opacity={isHovered ? 0.25 : 0.12} />
+                  <>
+                    <circle cx={pos.x} cy={pos.y} r={r + 6}
+                      fill="hsl(243,75%,59%)" opacity={isHovered ? 0.3 : 0.15}
+                      style={{
+                        animation: isHovered ? "none" : "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
+                      }}
+                    />
+                    {isHovered && (
+                      <circle cx={pos.x} cy={pos.y} r={r + 14}
+                        fill="hsl(243,75%,59%)" opacity="0.2"
+                        style={{
+                          animation: "pulse 1.5s ease-out"
+                        }}
+                      />
+                    )}
+                  </>
                 )}
+                {/* Main marker circle */}
                 <circle
-                  cx={pos.x} cy={pos.y} r={isHovered ? r + 3 : r}
-                  fill={isActive ? "hsl(243,75%,59%)" : "#94a3b8"}
-                  stroke="white" strokeWidth={isActive ? 2 : 1}
-                  opacity={isActive ? 1 : 0.45}
-                  style={{ transition: "r 0.15s ease" }}
+                  cx={pos.x} cy={pos.y} r={isHovered ? r + 4 : r}
+                  fill={isActive ? "hsl(243,75%,59%)" : "#cbd5e1"}
+                  stroke="white" strokeWidth={isActive ? 2.5 : 1.5}
+                  opacity={isActive ? 1 : 0.5}
+                  style={{
+                    transition: "all 0.2s ease",
+                    filter: isActive ? "drop-shadow(0 2px 4px rgba(0,0,0,0.15))" : "none"
+                  }}
                 />
+                {/* Member count badge */}
                 {isActive && (
-                  <text x={pos.x} y={pos.y + 1} textAnchor="middle" dominantBaseline="middle"
-                    fontSize={count >= 100 ? "6" : "7.5"} fill="white" fontWeight="900" fontFamily="Inter,sans-serif">
+                  <text x={pos.x} y={pos.y + 0.5} textAnchor="middle" dominantBaseline="middle"
+                    fontSize={count >= 100 ? "5.5" : count >= 10 ? "7" : "8"} fill="white" fontWeight="900" fontFamily="Inter,sans-serif">
                     {count}
                   </text>
                 )}
-                {/* City label with white outline */}
+                {/* City label */}
                 <text
-                  x={pos.x} y={pos.y - r - (isHovered ? 8 : 5)}
-                  textAnchor="middle" fontSize="7.5"
-                  fill={isActive ? (isHovered ? "#4f46e5" : "#1e3a5f") : "#64748b"}
-                  fontWeight={isActive ? "700" : "400"}
+                  x={pos.x} y={pos.y - r - (isHovered ? 9 : 6)}
+                  textAnchor="middle" fontSize={isHovered ? "8.5" : "7.5"}
+                  fill={isActive ? (isHovered ? "#4f46e5" : "#1e293b") : "#64748b"}
+                  fontWeight={isActive ? (isHovered ? "800" : "700") : "500"}
                   fontFamily="Inter,sans-serif"
                   stroke="white" strokeWidth="3" paintOrder="stroke"
+                  style={{ transition: "font-size 0.2s ease" }}
                 >
                   {city}
                 </text>
 
-                {/* Tooltip on hover */}
+                {/* Enhanced tooltip on hover */}
                 {isHovered && isActive && (() => {
-                  const tw = 110, th = 36;
+                  const tw = 120, th = 50;
                   const tx = Math.min(Math.max(pos.x - tw / 2, 4), W - tw - 4);
-                  const ty = pos.y - r - 50;
+                  const ty = pos.y - r - 60;
                   return (
-                    <g>
-                      <rect x={tx} y={ty} width={tw} height={th} rx="5" fill="white" stroke="hsl(243,75%,59%)" strokeWidth="1.5" filter="url(#shadow)" />
-                      <text x={tx + tw / 2} y={ty + 13} textAnchor="middle" fontSize="8" fontWeight="700" fill="hsl(243,75%,59%)" fontFamily="Inter,sans-serif">{city}</text>
-                      <text x={tx + tw / 2} y={ty + 26} textAnchor="middle" fontSize="8" fill="#374151" fontFamily="Inter,sans-serif">{count} jamaah</text>
+                    <g filter="url(#glow)">
+                      <rect x={tx} y={ty} width={tw} height={th} rx="6" fill="white" stroke="hsl(243,75%,59%)" strokeWidth="2" opacity="0.98" />
+                      <text x={tx + tw / 2} y={ty + 15} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="hsl(243,75%,59%)" fontFamily="Inter,sans-serif">{city}</text>
+                      <text x={tx + tw / 2} y={ty + 32} textAnchor="middle" fontSize="9" fontWeight="700" fill="#1e293b" fontFamily="Inter,sans-serif">{count}</text>
+                      <text x={tx + tw / 2} y={ty + 45} textAnchor="middle" fontSize="7" fill="#64748b" fontFamily="Inter,sans-serif">anggota jamaah</text>
                     </g>
                   );
                 })()}
@@ -216,13 +266,34 @@ export default function AustraliaMap({ members }) {
             );
           })}
 
-          {/* Drop shadow filter */}
-          <defs>
-            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" />
-            </filter>
-          </defs>
+          {/* Animation styles */}
+          <style>{`
+            @keyframes pulse {
+              0%, 100% { opacity: 0; }
+              50% { opacity: 1; }
+            }
+          `}</style>
         </svg>
+      </div>
+
+      {/* Legend */}
+      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-400" />
+          <span className="text-muted-foreground">Populasi Kecil</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3.5 h-3.5 rounded-full bg-blue-500" />
+          <span className="text-muted-foreground">Menengah</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-full bg-primary" />
+          <span className="text-muted-foreground">Besar</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-primary" />
+          <span className="text-muted-foreground">Terbesar</span>
+        </div>
       </div>
 
       {activeCities.length > 0 && (
