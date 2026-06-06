@@ -83,14 +83,21 @@ function isPengurus(m) {
   return m.dapukan && m.dapukan !== "Jamaah Biasa" && m.dapukan !== "Jamaah";
 }
 
-// Helper: badge level mubaligh berdasarkan dapukan
-function getMubalighBadge(member) {
+// Helper: dapatkan label dapukan beserta tingkatannya
+function getDapukanLabel(member) {
   const d = member.dapukan || "";
-  if (d === "Muballigh 4S") return { label: "4S", color: "bg-violet-100 text-violet-700 border-violet-300" };
-  if (d === "Muballigh Daerah") return { label: "Daerah", color: "bg-violet-100 text-violet-700 border-violet-300" };
-  if (d === "Muballigh Desa") return { label: "Desa", color: "bg-violet-100 text-violet-700 border-violet-300" };
-  if (d === "Muballigh Kelompok") return { label: "Kelompok", color: "bg-violet-100 text-violet-700 border-violet-300" };
-  return null;
+  const level = member.dapukan_level || "";
+  if (!d || d === "Jamaah" || d === "Jamaah Biasa") return null;
+
+  // Mubaligh sudah mengandung level di nama dapukannya
+  if (d === "Muballigh 4S") return "Mubaligh - 4S";
+  if (d === "Muballigh Daerah") return "Mubaligh - Daerah";
+  if (d === "Muballigh Desa") return "Mubaligh - Desa";
+  if (d === "Muballigh Kelompok") return "Mubaligh - Kelompok";
+
+  // Dapukan lain: tambahkan level jika ada
+  if (level) return `${d} - ${level}`;
+  return d;
 }
 
 // Keimaman section: Ki kiri, Wakil numbered + sortable
@@ -110,10 +117,10 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
             {isWakil && (
               <span className="text-[9px] font-semibold text-primary/60">Wakil {idx + 1}</span>
             )}
-            {m.dapukan && m.dapukan !== "Jamaah" && m.dapukan !== "Jamaah Biasa" && (
-              <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-primary/5 text-primary border-primary/20">{m.dapukan}</Badge>
-            )}
           </div>
+          {getDapukanLabel(m) && (
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 mt-0.5 bg-primary/5 text-primary border-primary/20">{getDapukanLabel(m)}</Badge>
+          )}
           {isSuperAdmin && (
             editingId === m.id ? (
               <div className="flex items-center gap-1 mt-1">
@@ -166,10 +173,10 @@ function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId,
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-medium text-sm">{member.full_name}</span>
-            {member.dapukan && member.dapukan !== "Jamaah" && member.dapukan !== "Jamaah Biasa" && (
-              <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${badgeClass}`}>{member.dapukan}</Badge>
-            )}
           </div>
+          {getDapukanLabel(member) && (
+            <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 mt-0.5 ${badgeClass}`}>{getDapukanLabel(member)}</Badge>
+          )}
           {isSuperAdmin && !isOther && (
             editingId === member.id ? (
               <div className="flex items-center gap-1 mt-0.5">
