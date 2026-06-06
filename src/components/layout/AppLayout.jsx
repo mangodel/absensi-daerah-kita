@@ -9,7 +9,7 @@ export default function AppLayout({ isLoading = false }) {
         <div className="hidden md:block md:fixed md:left-0 md:top-0 md:h-screen md:w-64 md:overflow-y-auto">
           <Sidebar />
         </div>
-        <main className="w-full md:ml-64 pb-24 md:pb-8">
+        <main className="w-full md:ml-64 pb-28 md:pb-8">
           <div className="p-3 md:p-8">
             {isLoading ? (
               <div className="flex items-center justify-center min-h-screen">
