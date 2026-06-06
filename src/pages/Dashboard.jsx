@@ -164,20 +164,22 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{pt.dashboard || "Dashboard"}</h1>
-          <div className="flex items-center gap-2 mt-0.5">
-            <p className="text-sm text-muted-foreground">{pt.dashboard_subtitle || "Ringkasan data"}</p>
-            <Badge variant="outline" className="text-[10px] bg-primary/5 border-primary/20 text-primary">{scopeLabel}</Badge>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 pt-2">
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold text-foreground mb-2">{pt.dashboard || "Dashboard"}</h1>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <p className="text-base text-muted-foreground">{pt.dashboard_subtitle || "Ringkasan data"}</p>
+            <Badge variant="outline" className="text-[11px] bg-primary/5 border-primary/20 text-primary w-fit">{scopeLabel}</Badge>
           </div>
         </div>
-        <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {[currentYear, currentYear - 1, currentYear - 2].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="shrink-0">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[currentYear, currentYear - 1, currentYear - 2].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {urgentReminders.length > 0 && (
