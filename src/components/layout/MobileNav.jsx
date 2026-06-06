@@ -60,8 +60,8 @@ export default function MobileNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="flex justify-between items-center h-16 px-1 gap-1">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div className="flex justify-around items-center h-20 px-2 gap-0.5">
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             return (
@@ -77,14 +77,14 @@ export default function MobileNav() {
                     }
                   }}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-0.5 flex-1 rounded-lg text-[10px] font-medium transition-colors relative",
-                    isActive ? "text-primary" : "text-muted-foreground"
+                    "flex flex-col items-center justify-center gap-1 flex-1 rounded-lg text-xs font-medium transition-colors relative py-2 min-h-20",
+                    isActive ? "text-primary" : "text-gray-600"
                   )}
                 >
-                 <item.icon className="w-5 h-5" />
-                 <span className="truncate text-center leading-tight text-[9px]">{item.label}</span>
+                 <item.icon className="w-6 h-6" />
+                 <span className="truncate text-center leading-snug text-xs max-w-full">{item.label}</span>
                  {item.badge > 0 && (
-                   <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive text-white text-[7px] font-bold rounded-full flex items-center justify-center">
+                   <span className="absolute top-1 right-1 w-5 h-5 bg-destructive text-white text-xs font-bold rounded-full flex items-center justify-center">
                      {item.badge}
                    </span>
                  )}
@@ -93,10 +93,10 @@ export default function MobileNav() {
            })}
           <button
             onClick={() => setShowLogout(true)}
-            className="flex flex-col items-center justify-center gap-0.5 flex-1 rounded-lg text-[10px] font-medium transition-colors text-destructive"
+            className="flex flex-col items-center justify-center gap-1 flex-1 rounded-lg text-xs font-medium transition-colors text-destructive py-2 min-h-20"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="truncate text-center leading-tight text-[9px]">Keluar</span>
+            <LogOut className="w-6 h-6" />
+            <span className="truncate text-center leading-snug text-xs">Keluar</span>
           </button>
         </div>
       </nav>
