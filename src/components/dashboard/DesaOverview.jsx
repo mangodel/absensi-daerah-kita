@@ -1,6 +1,54 @@
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { Users, CheckCircle, XCircle, Home } from "lucide-react";
 
+const currentYear = new Date().getFullYear();
+const GENERUS_CATS = [
+  { key: "balita",    label: "Balita",     color: "#f9a8d4", minAge: 0,  maxAge: 4  },
+  { key: "paud",      label: "PAUD",       color: "#fdba74", minAge: 5,  maxAge: 6  },
+  { key: "caberawit", label: "Caberawit",  color: "#fde047", minAge: 7,  maxAge: 12 },
+  { key: "praremaja", label: "Pra-Remaja", color: "#86efac", minAge: 13, maxAge: 15 },
+  { key: "remaja",    label: "Remaja",     color: "#93c5fd", minAge: 16, maxAge: 18 },
+  { key: "pranikah",  label: "Pra-Nikah",  color: "#c4b5fd", minAge: 19, maxAge: 24 },
+];
+
+function GenerusMiniChart({ memberList }) {
+  const active = memberList.filter(m => m.birth_year && m.status === "Aktif");
+  const counts = GENERUS_CATS.map(c => ({
+    ...c,
+    count: active.filter(m => {
+      const age = currentYear - m.birth_year;
+      return age >= c.minAge && age <= c.maxAge;
+    }).length,
+  }));
+  const total = counts.reduce((s, c) => s + c.count, 0);
+  if (total === 0) return null;
+
+  return (
+    <div className="mt-3 space-y-1.5">
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Generus ({total})</p>
+      {/* Bar chart */}
+      <div className="flex h-3 rounded-full overflow-hidden gap-px bg-secondary">
+        {counts.map(c => c.count > 0 && (
+          <div
+            key={c.key}
+            style={{ width: `${(c.count / total) * 100}%`, backgroundColor: c.color }}
+            title={`${c.label}: ${c.count}`}
+          />
+        ))}
+      </div>
+      {/* Labels */}
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+        {counts.filter(c => c.count > 0).map(c => (
+          <span key={c.key} className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ backgroundColor: c.color }} />
+            {c.label} <strong className="text-foreground">{c.count}</strong>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function countKK(memberList) {
   // Setiap family_group unik = 1 KK; anggota tanpa family_group masing-masing = 1 KK
   const groups = new Set();
@@ -64,18 +112,22 @@ export default function DesaOverview({ members }) {
                   const kMembers = desaMembers.filter(m => m.kelompok === k);
                   const kKK = countKK(kMembers);
                   return (
-                    <div key={k} className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{k}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-muted-foreground flex items-center gap-0.5">
-                          <Home className="w-2.5 h-2.5" />{kKK} KK
-                        </span>
-                        <span className="font-medium text-foreground w-8 text-right">{kMembers.length}</span>
+                    <div key={k} className="text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">{k}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-muted-foreground flex items-center gap-0.5">
+                            <Home className="w-2.5 h-2.5" />{kKK} KK
+                          </span>
+                          <span className="font-medium text-foreground w-8 text-right">{kMembers.length}</span>
+                        </div>
                       </div>
+                      <GenerusMiniChart memberList={kMembers} />
                     </div>
                   );
                 })}
               </div>
+              <GenerusMiniChart memberList={desaMembers} />
             </div>
           );
         })}
