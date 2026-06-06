@@ -67,11 +67,8 @@ function getPengurusKategori(pengurusList) {
         !m.dapukan?.toLowerCase().includes("mubaligh")
       );
     } else if (kat.isMubaligh) {
-      members = pengurusList.filter(m =>
-        kat.dapukan.includes(m.dapukan) ||
-        m.dapukan?.toLowerCase().includes("muball") ||
-        m.dapukan?.toLowerCase().includes("mubaligh")
-      );
+      // Hanya tampilkan yang punya dapukan mubaligh eksplisit (4S/Daerah/Desa/Kelompok)
+      members = pengurusList.filter(m => kat.dapukan.includes(m.dapukan));
     } else {
       members = pengurusList.filter(m => kat.dapukan.includes(m.dapukan));
     }
@@ -86,15 +83,13 @@ function isPengurus(m) {
   return m.dapukan && m.dapukan !== "Jamaah Biasa" && m.dapukan !== "Jamaah";
 }
 
-// Helper: apakah mubaligh 4S (punya dapukan mubaligh level tertentu)
+// Helper: badge level mubaligh berdasarkan dapukan
 function getMubalighBadge(member) {
   const d = member.dapukan || "";
   if (d === "Muballigh 4S") return { label: "4S", color: "bg-violet-100 text-violet-700 border-violet-300" };
   if (d === "Muballigh Daerah") return { label: "Daerah", color: "bg-violet-100 text-violet-700 border-violet-300" };
   if (d === "Muballigh Desa") return { label: "Desa", color: "bg-violet-100 text-violet-700 border-violet-300" };
   if (d === "Muballigh Kelompok") return { label: "Kelompok", color: "bg-violet-100 text-violet-700 border-violet-300" };
-  // Mubaligh biasa (hanya dari muballigh_status, tanpa dapukan khusus)
-  if (member.muballigh_status === "Muballigh" || member.muballigh_status === "Muballighot") return null;
   return null;
 }
 
@@ -163,11 +158,9 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
 // Generic pengurus card for non-keimaman
 function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, isOther, isMubalighKat }) {
   const mubalighBadge = isMubalighKat ? getMubalighBadge(member) : null;
-  // Apakah mubaligh "biasa" (hanya dari muballigh_status, bukan dapukan 4S)
-  const isMubalighBiasa = isMubalighKat && !mubalighBadge && (member.muballigh_status === "Muballigh" || member.muballigh_status === "Muballighot");
 
   return (
-    <div className={`px-3 py-2.5 rounded-xl border bg-white/70 ${colorClass} ${isMubalighBiasa ? "opacity-75" : ""}`}>
+    <div className={`px-3 py-2.5 rounded-xl border bg-white/70 ${colorClass}`}>
       <div className="flex items-start gap-1">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -176,9 +169,6 @@ function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId,
               <Badge className={`text-[9px] px-1.5 py-0 ${mubalighBadge.color}`} variant="outline">
                 {mubalighBadge.label}
               </Badge>
-            )}
-            {isMubalighBiasa && (
-              <span className="text-[9px] text-muted-foreground italic">biasa</span>
             )}
           </div>
           {isSuperAdmin && !isOther && (
