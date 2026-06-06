@@ -1,0 +1,52 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "action_type": {
+      "type": "string",
+      "description": "Tipe aksi audit (contoh: DELETE_MEMBER)"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "ID member yang dihapus"
+    },
+    "target_name": {
+      "type": "string",
+      "description": "Nama member yang dihapus"
+    },
+    "performed_by": {
+      "type": "string",
+      "description": "Email admin yang melakukan penghapusan"
+    },
+    "performed_by_name": {
+      "type": "string",
+      "description": "Nama admin yang melakukan penghapusan"
+    },
+    "daerah_asal": {
+      "type": "string",
+      "description": "Daerah asal member yang dihapus"
+    },
+    "kelompok_asal": {
+      "type": "string",
+      "description": "Kelompok asal member yang dihapus"
+    },
+    "performed_at": {
+      "type": "string",
+      "description": "Waktu penghapusan (ISO string)"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Alasan penghapusan"
+    },
+    "backup_data": {
+      "type": "string",
+      "description": "JSON string berisi data lengkap member sebelum dihapus"
+    }
+  },
+  "required": [
+    "action_type",
+    "target_id",
+    "performed_by",
+    "performed_at"
+  ]
+}
