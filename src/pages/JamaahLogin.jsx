@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Loader2, Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAppConfig } from "@/lib/AppConfigContext";
 
 export default function JamaahLogin() {
   const navigate = useNavigate();
+  const { config } = useAppConfig();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -31,12 +33,39 @@ export default function JamaahLogin() {
     }
   };
 
+  const loginBgUrl = config.login_bg_url || "";
+  const loginBannerUrl = config.login_banner_url || "";
+  const loginLogoUrl = config.login_logo_url || "";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: loginBgUrl ? `url(${loginBgUrl})` : "linear-gradient(to bottom right, rgb(243 232 255), rgb(240 249 255))",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed"
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40" />
+      
+      <Card className="w-full max-w-md relative z-10">
+        {loginBannerUrl && (
+          <div className="w-full h-32 overflow-hidden rounded-t-lg">
+            <img src={loginBannerUrl} alt="Banner" className="w-full h-full object-cover" />
+          </div>
+        )}
         <CardHeader className="pb-3">
-          <CardTitle className="text-2xl text-center">Portal Jamaah</CardTitle>
-          <p className="text-sm text-muted-foreground text-center mt-1">Login untuk mengakses data Anda</p>
+          <div className="flex flex-col items-center gap-3">
+            {loginLogoUrl && (
+              <img src={loginLogoUrl} alt="Logo" className="h-12 object-contain" />
+            )}
+            <div className="text-center">
+              <CardTitle className="text-2xl">Portal Jamaah</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Login untuk mengakses data Anda</p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
