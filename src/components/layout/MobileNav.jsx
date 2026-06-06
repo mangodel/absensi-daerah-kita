@@ -44,17 +44,14 @@ export default function MobileNav() {
   // Limit to 5 items + logout to avoid overflow; show most important first
   const visibleNavItems = navItems.slice(0, 5);
 
-  // Handle tab press with stack reset on double-tap
+  // Handle tab press with stack reset on double-tap (no full reload)
   const handleTabPress = (path) => {
     const currentPath = location.pathname;
     const isCurrentTab = currentPath === path || currentPath.startsWith(path + '/');
     
     if (isCurrentTab && tabStacks[path]) {
-      // Double tap: reset stack
+      // Double tap: reset stack by navigating to root of this tab (React Router handles it)
       setTabStacks(prev => ({ ...prev, [path]: false }));
-      // Optionally navigate to root of this tab
-      window.history.pushState(null, '', path);
-      window.location.reload();
     } else if (!isCurrentTab) {
       // New tab: save as current
       setTabStacks(prev => ({ ...prev, [path]: true }));
@@ -63,25 +60,27 @@ export default function MobileNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 px-2 py-1 safe-area-pb">
-        <div className="flex justify-around overflow-x-auto scrollbar-hide">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 px-1 py-1 safe-area-inset-bottom">
+        <div className="flex justify-around overflow-x-auto scrollbar-hide gap-0.5">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             return (
               <Link 
-                key={item.path} 
-                to={item.path} 
-                onClick={(e) => {
-                  if (isActive) {
-                    e.preventDefault();
-                    handleTabPress(item.path);
-                  }
-                }}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors relative shrink-0 min-h-[56px]",
-                  isActive ? "text-primary" : "text-muted-foreground"
-                )}
-              >
+                 key={item.path} 
+                 to={item.path} 
+                 onClick={(e) => {
+                   if (isActive) {
+                     e.preventDefault();
+                     handleTabPress(item.path);
+                   } else {
+                     handleTabPress(item.path);
+                   }
+                 }}
+                 className={cn(
+                   "flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg text-[10px] font-medium transition-colors relative shrink-0 min-h-[56px] min-w-[50px]",
+                   isActive ? "text-primary" : "text-muted-foreground"
+                 )}
+               >
                 <item.icon className="w-6 h-6" />
                 <span className="truncate max-w-[48px] text-center leading-tight">{item.label}</span>
                 {item.badge > 0 && (
@@ -94,7 +93,7 @@ export default function MobileNav() {
           })}
           <button
             onClick={() => setShowLogout(true)}
-            className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors text-destructive shrink-0 min-h-[56px]"
+            className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg text-[10px] font-medium transition-colors text-destructive shrink-0 min-h-[56px] min-w-[50px]"
           >
             <LogOut className="w-6 h-6" />
             <span className="truncate max-w-[48px] text-center leading-tight">Keluar</span>

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useMemo } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import QREventTab from "@/components/attendance/QREventTab";
+import PullToRefresh from "@/components/PullToRefresh";
+import { MobileSelect } from "@/components/ui/mobile-select";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const levelColors = {
   "Daerah": "bg-primary/10 text-primary border-primary/20",
@@ -23,6 +26,7 @@ const levelColors = {
 };
 
 export default function Attendance() {
+  const isMobile = useIsMobile();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
@@ -143,9 +147,29 @@ export default function Attendance() {
     setAttendanceData(prev => ({ ...prev, [memberId]: status }));
   };
 
+  const saveMutation = useMutation({
+    mutationFn: async (records) => {
+      if (records.length > 0) {
+        await base44.entities.Attendance.bulkCreate(records);
+      }
+    },
+    onMutate: async (records) => {
+      await queryClient.cancelQueries({ queryKey: ["attendances"] });
+      const prevData = queryClient.getQueryData(["attendances"]);
+      queryClient.setQueryData(["attendances"], old => [...(old || []), ...records]);
+      return { prevData };
+    },
+    onError: (err, newData, context) => {
+      if (context?.prevData) queryClient.setQueryData(["attendances"], context.prevData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendances"] });
+      setAttendanceData({});
+    },
+  });
+
   const handleSave = async () => {
     if (!selectedEvent) return;
-    setSaving(true);
 
     const date = selectedEvent.date;
     const dateObj = new Date(date);
@@ -169,15 +193,11 @@ export default function Attendance() {
       };
     });
 
-    if (records.length > 0) {
-      await base44.entities.Attendance.bulkCreate(records);
-      queryClient.invalidateQueries({ queryKey: ["attendances"] });
-      setAttendanceData({});
-    }
-    setSaving(false);
+    saveMutation.mutate(records);
   };
 
   const filledCount = Object.keys(attendanceData).length;
+  const isSaving = saveMutation.isPending;
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
@@ -259,59 +279,80 @@ export default function Attendance() {
               <div className="flex flex-wrap gap-3">
                 {/* Filter Desa & Kelompok hanya tampil untuk event Daerah */}
                 {selectedEvent.level === "Daerah" && (
-                  <>
-                    <Select value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }}>
-                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Semua Desa</SelectItem>
-                        {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={filterKelompok} onValueChange={setFilterKelompok}>
-                      <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Semua Kelompok</SelectItem>
-                        {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </>
-                )}
-                <Select value={filterVisa} onValueChange={setFilterVisa}>
-                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Visa</SelectItem>
-                    {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
-                  <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Seluruh Jamaah</SelectItem>
-                    <SelectItem value="muballigh_both">Mubaligh &amp; Mubalighot</SelectItem>
-                    <SelectItem value="muballigh_only">Mubaligh Saja</SelectItem>
-                    <SelectItem value="muballighot_only">Mubalighot Saja</SelectItem>
-                  </SelectContent>
-                </Select>
-                {selectedEvent.level === "Daerah" && (
-                  <Select value={filterDapukan} onValueChange={setFilterDapukan}>
-                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Semua Dapukan</SelectItem>
-                      {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )}
-                <Button onClick={handleSave} disabled={saving || filledCount === 0} className="ml-auto">
-                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                  Simpan ({filledCount})
-                </Button>
+                    isMobile ? (
+                      <>
+                        <MobileSelect value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }} label="Desa" options={["all", ...desaList]} placeholder="Desa" />
+                        <MobileSelect value={filterKelompok} onValueChange={setFilterKelompok} label="Kelompok" options={["all", ...kelompokList]} placeholder="Kelompok" />
+                      </>
+                    ) : (
+                      <>
+                        <Select value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }}>
+                          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Semua Desa</SelectItem>
+                            {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <Select value={filterKelompok} onValueChange={setFilterKelompok}>
+                          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Semua Kelompok</SelectItem>
+                            {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )
+                  )}
+                  {isMobile ? (
+                    <>
+                      <MobileSelect value={filterVisa} onValueChange={setFilterVisa} label="Visa" options={["all", ...VISA_STATUS_LIST]} placeholder="Visa" />
+                      <MobileSelect value={filterMuballigh} onValueChange={setFilterMuballigh} label="Muballigh" options={["all", "muballigh_both", "muballigh_only", "muballighot_only"]} placeholder="Muballigh" />
+                      {selectedEvent.level === "Daerah" && (
+                        <MobileSelect value={filterDapukan} onValueChange={setFilterDapukan} label="Dapukan" options={["all", ...DAPUKAN_LIST]} placeholder="Dapukan" />
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Select value={filterVisa} onValueChange={setFilterVisa}>
+                        <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Semua Visa</SelectItem>
+                          {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
+                        <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Seluruh Jamaah</SelectItem>
+                          <SelectItem value="muballigh_both">Mubaligh &amp; Mubalighot</SelectItem>
+                          <SelectItem value="muballigh_only">Mubaligh Saja</SelectItem>
+                          <SelectItem value="muballighot_only">Mubalighot Saja</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {selectedEvent.level === "Daerah" && (
+                        <Select value={filterDapukan} onValueChange={setFilterDapukan}>
+                          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Semua Dapukan</SelectItem>
+                            {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </>
+                  )}
+                  <Button onClick={handleSave} disabled={isSaving || filledCount === 0} className="ml-auto">
+                    {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    Simpan ({filledCount})
+                  </Button>
               </div>
 
-              <AttendanceTable
-                members={filteredMembers}
-                attendanceData={attendanceData}
-                onStatusChange={handleStatusChange}
-              />
+              <PullToRefresh onRefresh={() => queryClient.invalidateQueries({ queryKey: ["attendances"] })}>
+                <AttendanceTable
+                  members={filteredMembers}
+                  attendanceData={attendanceData}
+                  onStatusChange={handleStatusChange}
+                />
+              </PullToRefresh>
             </>
           )}
 

@@ -14,8 +14,12 @@ import FamilyGroupView from "@/components/members/FamilyGroupView";
 import MemberSummaryBar from "@/components/members/MemberSummaryBar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUserRole } from "@/lib/useUserRole";
+import PullToRefresh from "@/components/PullToRefresh";
+import { MobileSelect } from "@/components/ui/mobile-select";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Members() {
+  const isMobile = useIsMobile();
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
   const desaList = config.desa_list || [];
@@ -47,16 +51,43 @@ export default function Members() {
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Member.create(data),
+    onMutate: async (newData) => {
+      await queryClient.cancelQueries({ queryKey: ["members"] });
+      const prevData = queryClient.getQueryData(["members"]);
+      queryClient.setQueryData(["members"], old => [...(old || []), { ...newData, id: Date.now().toString() }]);
+      return { prevData };
+    },
+    onError: (err, newData, context) => {
+      if (context?.prevData) queryClient.setQueryData(["members"], context.prevData);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["members"] }); setFormOpen(false); },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Member.update(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ["members"] });
+      const prevData = queryClient.getQueryData(["members"]);
+      queryClient.setQueryData(["members"], old => old?.map(m => m.id === id ? { ...m, ...data } : m) || []);
+      return { prevData };
+    },
+    onError: (err, newData, context) => {
+      if (context?.prevData) queryClient.setQueryData(["members"], context.prevData);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["members"] }); setFormOpen(false); setEditMember(null); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Member.delete(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["members"] });
+      const prevData = queryClient.getQueryData(["members"]);
+      queryClient.setQueryData(["members"], old => old?.filter(m => m.id !== id) || []);
+      return { prevData };
+    },
+    onError: (err, id, context) => {
+      if (context?.prevData) queryClient.setQueryData(["members"], context.prevData);
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["members"] }); setDeleteMember(null); },
   });
 
@@ -147,49 +178,62 @@ export default function Members() {
       {/* Advanced Filters Panel */}
       {showAdvanced && (
         <div className="bg-secondary/40 rounded-2xl border border-border p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          <Select value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Desa" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Desa</SelectItem>
-              {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterKelompok} onValueChange={setFilterKelompok}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Kelompok" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Kelompok</SelectItem>
-              {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Status</SelectItem>
-              <SelectItem value="Aktif">Aktif</SelectItem>
-              <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterVisa} onValueChange={setFilterVisa}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Visa" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Visa</SelectItem>
-              {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Muballigh" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua</SelectItem>
-              {MUBALLIGH_STATUS_LIST.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterDapukan} onValueChange={setFilterDapukan}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Dapukan" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Dapukan</SelectItem>
-              {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          {isMobile ? (
+            <>
+              <MobileSelect value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }} label="Desa" options={["all", ...desaList]} placeholder="Desa" />
+              <MobileSelect value={filterKelompok} onValueChange={setFilterKelompok} label="Kelompok" options={["all", ...kelompokList]} placeholder="Kelompok" />
+              <MobileSelect value={filterStatus} onValueChange={setFilterStatus} label="Status" options={["all", "Aktif", "Tidak Aktif"]} placeholder="Status" />
+              <MobileSelect value={filterVisa} onValueChange={setFilterVisa} label="Visa" options={["all", ...VISA_STATUS_LIST]} placeholder="Visa" />
+              <MobileSelect value={filterMuballigh} onValueChange={setFilterMuballigh} label="Muballigh" options={["all", ...MUBALLIGH_STATUS_LIST]} placeholder="Muballigh" />
+              <MobileSelect value={filterDapukan} onValueChange={setFilterDapukan} label="Dapukan" options={["all", ...DAPUKAN_LIST]} placeholder="Dapukan" />
+            </>
+          ) : (
+            <>
+              <Select value={filterDesa} onValueChange={v => { setFilterDesa(v); setFilterKelompok("all"); }}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Desa" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Desa</SelectItem>
+                  {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterKelompok} onValueChange={setFilterKelompok}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Kelompok" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Kelompok</SelectItem>
+                  {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="Aktif">Aktif</SelectItem>
+                  <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterVisa} onValueChange={setFilterVisa}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Visa" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Visa</SelectItem>
+                  {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterMuballigh} onValueChange={setFilterMuballigh}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Muballigh" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua</SelectItem>
+                  {MUBALLIGH_STATUS_LIST.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterDapukan} onValueChange={setFilterDapukan}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Dapukan" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Dapukan</SelectItem>
+                  {DAPUKAN_LIST.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </>
+          )}
           <Input
             placeholder="Tahun Lahir (cth: 1990)"
             className="h-8 text-xs"
@@ -206,23 +250,25 @@ export default function Members() {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-        </div>
-      ) : viewMode === "family" ? (
-        <FamilyGroupView
-          members={filtered}
-          onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
-          onDelete={canManageMembers ? setDeleteMember : null}
-        />
-      ) : (
-        <MemberTable
-          members={filtered}
-          onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
-          onDelete={canManageMembers ? setDeleteMember : null}
-        />
-      )}
+      <PullToRefresh onRefresh={() => queryClient.invalidateQueries({ queryKey: ["members"] })}>
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : viewMode === "family" ? (
+          <FamilyGroupView
+            members={filtered}
+            onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
+            onDelete={canManageMembers ? setDeleteMember : null}
+          />
+        ) : (
+          <MemberTable
+            members={filtered}
+            onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
+            onDelete={canManageMembers ? setDeleteMember : null}
+          />
+        )}
+      </PullToRefresh>
 
       <MemberSummaryBar members={filtered} />
 
