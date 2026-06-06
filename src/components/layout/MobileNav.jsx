@@ -60,7 +60,7 @@ export default function MobileNav() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-white border-t border-gray-200 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 block md:hidden">
         <div className="flex justify-around items-center h-20 px-1 gap-0.5">
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
