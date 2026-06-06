@@ -101,7 +101,7 @@ function getDapukanLabel(member) {
 }
 
 // Keimaman section: Ki kiri, Wakil numbered + sortable
-function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, onMoveUp, onMoveDown }) {
+function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, onMoveUp, onMoveDown, level }) {
   const ki = members.filter(m => m.dapukan === "Ki");
   // Sort wakil by sort_order
   const wakil = members
@@ -115,7 +115,7 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-medium text-sm">{m.full_name}</span>
             {isWakil && (
-              <span className="text-[9px] font-semibold text-primary/60">Wakil {idx + 1} - Ki</span>
+              <span className="text-[9px] font-semibold text-primary/60">Wakil {idx + 1} - Ki{level ? ` - ${level}` : ""}</span>
             )}
           </div>
           {getDapukanLabel(m) && (
@@ -173,7 +173,7 @@ function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId,
   );
 }
 
-function KategoriSection({ kategoriList, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, onMoveUp, onMoveDown }) {
+function KategoriSection({ kategoriList, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, onMoveUp, onMoveDown, level }) {
   if (kategoriList.length === 0) return null;
   return (
     <div className="space-y-3">
@@ -192,6 +192,7 @@ function KategoriSection({ kategoriList, isSuperAdmin, editingId, editDapukan, o
               setEditDapukan={setEditDapukan}
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
+              level={level}
             />
           );
         }
@@ -337,7 +338,7 @@ export default function Structure() {
             <Shield className="w-4 h-4 text-primary" /> Tingkat Daerah
           </h2>
           {daerahKategori.length > 0 ? (
-            <KategoriSection kategoriList={daerahKategori} {...editProps} />
+            <KategoriSection kategoriList={daerahKategori} {...editProps} level="Daerah" />
           ) : (
             <p className="text-xs text-muted-foreground">Belum ada pengurus tingkat daerah.</p>
           )}
@@ -372,7 +373,7 @@ export default function Structure() {
                     <Shield className="w-4 h-4 text-accent" /> Pengurus {desa}
                   </h3>
                   {desaKategori.length > 0 ? (
-                    <KategoriSection kategoriList={desaKategori} {...editProps} />
+                    <KategoriSection kategoriList={desaKategori} {...editProps} level="Desa" />
                   ) : (
                     <p className="text-xs text-muted-foreground">Belum ada pengurus desa.</p>
                   )}
@@ -447,7 +448,7 @@ export default function Structure() {
                       </div>
 
                       {kelompokKategori.length > 0 && (
-                        <KategoriSection kategoriList={kelompokKategori} {...editProps} />
+                        <KategoriSection kategoriList={kelompokKategori} {...editProps} level="Kelompok" />
                       )}
 
                       {subKelompoks.length > 0 && (
