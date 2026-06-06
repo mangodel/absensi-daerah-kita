@@ -95,6 +95,12 @@ function getDapukanLabel(member) {
   if (d === "Muballigh Desa") return "Mubaligh - Desa";
   if (d === "Muballigh Kelompok") return "Mubaligh - Kelompok";
 
+  // Wakil Ki: tampilkan "Wakil Ki - Level"
+  if (d === "Wakil") {
+    if (level) return `Wakil Ki - ${level}`;
+    return "Wakil Ki";
+  }
+
   // Dapukan lain: tambahkan level jika ada
   if (level) return `${d} - ${level}`;
   return d;
