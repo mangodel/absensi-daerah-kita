@@ -9,7 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -49,6 +58,8 @@ export default function JamaahPortal() {
   const [editData, setEditData] = useState({});
   const [emailError, setEmailError] = useState("");
   const [registeringEmail, setRegisteringEmail] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // Cari data member berdasarkan email user
   const { data: members = [], isLoading: loadingMembers } = useQuery({
@@ -133,6 +144,24 @@ export default function JamaahPortal() {
   const handleLogout = () => {
     window.location.href = "/login";
     base44.auth.logout();
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setDeletingAccount(true);
+      // Delete member data
+      if (myMember?.id) {
+        await base44.entities.Member.delete(myMember.id);
+      }
+      // Logout
+      await base44.auth.logout();
+      toast.success("Akun berhasil dihapus");
+      window.location.href = "/login";
+    } catch (err) {
+      toast.error("Gagal menghapus akun: " + err.message);
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   if (loadingMembers) {
@@ -317,6 +346,25 @@ export default function JamaahPortal() {
           )}
         </div>
 
+        {/* Danger Zone */}
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-destructive">Zona Berbahaya</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">Menghapus akun akan menghapus semua data pribadi Anda secara permanen.</p>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="w-full gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Hapus Akun Saya
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Navigasi ke halaman terpisah */}
         <div className="grid grid-cols-2 gap-3">
           <Link to="/jamaah/survey">
@@ -348,6 +396,29 @@ export default function JamaahPortal() {
             </Card>
           </Link>
         </div>
+
+        {/* Delete Account Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus Akun?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tindakan ini tidak dapat dibatalkan. Semua data pribadi dan riwayat aktivitas Anda akan dihapus secara permanen.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex gap-3">
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {deletingAccount ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Hapus Permanen
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
