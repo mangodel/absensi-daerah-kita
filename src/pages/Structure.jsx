@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
-import { Building2, Users, Shield, Phone, Home, Filter, Pencil, Check, X } from "lucide-react";
+import { Building2, Users, Shield, Phone, Home, Filter, Pencil, Check, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -86,32 +86,66 @@ function isPengurus(m) {
   return m.dapukan && m.dapukan !== "Jamaah Biasa" && m.dapukan !== "Jamaah";
 }
 
-// Keimaman section: Ki kiri, Wakil numbered + editable
-function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan }) {
-  const ki = members.filter(m => m.dapukan === "Ki");
-  const wakil = members.filter(m => m.dapukan !== "Ki");
+// Helper: apakah mubaligh 4S (punya dapukan mubaligh level tertentu)
+function getMubalighBadge(member) {
+  const d = member.dapukan || "";
+  if (d === "Muballigh 4S") return { label: "4S", color: "bg-violet-100 text-violet-700 border-violet-300" };
+  if (d === "Muballigh Daerah") return { label: "Daerah", color: "bg-violet-100 text-violet-700 border-violet-300" };
+  if (d === "Muballigh Desa") return { label: "Desa", color: "bg-violet-100 text-violet-700 border-violet-300" };
+  if (d === "Muballigh Kelompok") return { label: "Kelompok", color: "bg-violet-100 text-violet-700 border-violet-300" };
+  // Mubaligh biasa (hanya dari muballigh_status, tanpa dapukan khusus)
+  if (member.muballigh_status === "Muballigh" || member.muballigh_status === "Muballighot") return null;
+  return null;
+}
 
-  const renderMember = (m) => (
+// Keimaman section: Ki kiri, Wakil numbered + sortable
+function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, onMoveUp, onMoveDown }) {
+  const ki = members.filter(m => m.dapukan === "Ki");
+  // Sort wakil by sort_order
+  const wakil = members
+    .filter(m => m.dapukan !== "Ki")
+    .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+
+  const renderMember = (m, idx, isWakil, totalWakil) => (
     <div key={m.id} className="px-3 py-2.5 rounded-xl border bg-white/70 border-primary/20">
-      <span className="font-medium text-sm block">{m.full_name}</span>
-      {isSuperAdmin && (
-        editingId === m.id ? (
-          <div className="flex items-center gap-1 mt-1">
-            <Input className="h-5 text-[10px] px-1 py-0" value={editDapukan} onChange={e => setEditDapukan(e.target.value)} autoFocus />
-            <button onClick={() => onSaveEdit(m.id)} className="text-accent"><Check className="w-3 h-3" /></button>
-            <button onClick={onCancelEdit} className="text-muted-foreground"><X className="w-3 h-3" /></button>
+      <div className="flex items-start gap-1">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-medium text-sm">{m.full_name}</span>
+            {isWakil && (
+              <span className="text-[9px] font-semibold text-primary/60">Wakil {idx + 1}</span>
+            )}
           </div>
-        ) : (
-          <div className="flex items-center gap-1 mt-0.5">
-            <Badge className="text-[9px] bg-primary/10 text-primary border-primary/20">{m.dapukan}</Badge>
-            <button onClick={() => onStartEdit(m.id, m.dapukan)} className="text-muted-foreground hover:text-primary">
-              <Pencil className="w-2.5 h-2.5" />
-            </button>
+          {isSuperAdmin && (
+            editingId === m.id ? (
+              <div className="flex items-center gap-1 mt-1">
+                <Input className="h-5 text-[10px] px-1 py-0" value={editDapukan} onChange={e => setEditDapukan(e.target.value)} autoFocus />
+                <button onClick={() => onSaveEdit(m.id)} className="text-accent"><Check className="w-3 h-3" /></button>
+                <button onClick={onCancelEdit} className="text-muted-foreground"><X className="w-3 h-3" /></button>
+              </div>
+            ) : (
+              <button onClick={() => onStartEdit(m.id, m.dapukan)} className="text-muted-foreground hover:text-primary mt-0.5">
+                <Pencil className="w-2.5 h-2.5" />
+              </button>
+            )
+          )}
+          {m.phone && <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground"><Phone className="w-2.5 h-2.5" />{m.phone}</div>}
+        </div>
+        {isSuperAdmin && isWakil && (
+          <div className="flex flex-col gap-0.5 shrink-0">
+            <button
+              disabled={idx === 0}
+              onClick={() => onMoveUp(m, wakil)}
+              className="text-muted-foreground hover:text-primary disabled:opacity-20"
+            ><ChevronUp className="w-3.5 h-3.5" /></button>
+            <button
+              disabled={idx === totalWakil - 1}
+              onClick={() => onMoveDown(m, wakil)}
+              className="text-muted-foreground hover:text-primary disabled:opacity-20"
+            ><ChevronDown className="w-3.5 h-3.5" /></button>
           </div>
-        )
-      )}
-      {!isSuperAdmin && <Badge className="text-[9px] mt-0.5 bg-primary/10 text-primary border-primary/20">{m.dapukan}</Badge>}
-      {m.phone && <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground"><Phone className="w-2.5 h-2.5" />{m.phone}</div>}
+        )}
+      </div>
     </div>
   );
 
@@ -119,41 +153,55 @@ function KeimananSection({ members, isSuperAdmin, editingId, editDapukan, onStar
     <div className="rounded-xl border bg-primary/5 border-primary/20 px-3 py-2">
       <div className="text-[10px] font-semibold text-muted-foreground mb-2">Keimaman</div>
       <div className="flex flex-wrap gap-2">
-        {ki.map(m => renderMember(m))}
-        {wakil.map(m => renderMember(m))}
+        {ki.map(m => renderMember(m, 0, false, 0))}
+        {wakil.map((m, idx) => renderMember(m, idx, true, wakil.length))}
       </div>
     </div>
   );
 }
 
 // Generic pengurus card for non-keimaman
-function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, isOther }) {
+function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, isOther, isMubalighKat }) {
+  const mubalighBadge = isMubalighKat ? getMubalighBadge(member) : null;
+  // Apakah mubaligh "biasa" (hanya dari muballigh_status, bukan dapukan 4S)
+  const isMubalighBiasa = isMubalighKat && !mubalighBadge && (member.muballigh_status === "Muballigh" || member.muballigh_status === "Muballighot");
+
   return (
-    <div className={`px-3 py-2.5 rounded-xl border bg-white/70 ${colorClass}`}>
-      <span className="font-medium text-sm block">{member.full_name}</span>
-      {isSuperAdmin && !isOther && (
-        editingId === member.id ? (
-          <div className="flex items-center gap-1 mt-0.5">
-            <Input className="h-5 text-[10px] px-1 py-0" value={editDapukan} onChange={e => setEditDapukan(e.target.value)} autoFocus />
-            <button onClick={() => onSaveEdit(member.id)} className="text-accent"><Check className="w-3 h-3" /></button>
-            <button onClick={onCancelEdit} className="text-muted-foreground"><X className="w-3 h-3" /></button>
+    <div className={`px-3 py-2.5 rounded-xl border bg-white/70 ${colorClass} ${isMubalighBiasa ? "opacity-75" : ""}`}>
+      <div className="flex items-start gap-1">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-medium text-sm">{member.full_name}</span>
+            {mubalighBadge && (
+              <Badge className={`text-[9px] px-1.5 py-0 ${mubalighBadge.color}`} variant="outline">
+                {mubalighBadge.label}
+              </Badge>
+            )}
+            {isMubalighBiasa && (
+              <span className="text-[9px] text-muted-foreground italic">biasa</span>
+            )}
           </div>
-        ) : (
-          <div className="flex items-center gap-1 mt-0.5">
-            <Badge className={`text-[9px] ${badgeClass}`}>{member.dapukan}</Badge>
-            <button onClick={() => onStartEdit(member.id, member.dapukan)} className="text-muted-foreground hover:text-primary">
-              <Pencil className="w-2.5 h-2.5" />
-            </button>
-          </div>
-        )
-      )}
-      {(!isSuperAdmin || isOther) && <Badge className={`text-[9px] mt-0.5 ${badgeClass}`}>{member.dapukan}</Badge>}
-      {member.phone && <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground"><Phone className="w-2.5 h-2.5" />{member.phone}</div>}
+          {isSuperAdmin && !isOther && (
+            editingId === member.id ? (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Input className="h-5 text-[10px] px-1 py-0" value={editDapukan} onChange={e => setEditDapukan(e.target.value)} autoFocus />
+                <button onClick={() => onSaveEdit(member.id)} className="text-accent"><Check className="w-3 h-3" /></button>
+                <button onClick={onCancelEdit} className="text-muted-foreground"><X className="w-3 h-3" /></button>
+              </div>
+            ) : (
+              <button onClick={() => onStartEdit(member.id, member.dapukan)} className="text-muted-foreground hover:text-primary mt-0.5">
+                <Pencil className="w-2.5 h-2.5" />
+              </button>
+            )
+          )}
+          {member.phone && <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground"><Phone className="w-2.5 h-2.5" />{member.phone}</div>}
+        </div>
+      </div>
     </div>
   );
 }
 
-function KategoriSection({ kategoriList, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan }) {
+function KategoriSection({ kategoriList, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, onMoveUp, onMoveDown }) {
   if (kategoriList.length === 0) return null;
   return (
     <div className="space-y-3">
@@ -170,6 +218,8 @@ function KategoriSection({ kategoriList, isSuperAdmin, editingId, editDapukan, o
               onSaveEdit={onSaveEdit}
               onCancelEdit={onCancelEdit}
               setEditDapukan={setEditDapukan}
+              onMoveUp={onMoveUp}
+              onMoveDown={onMoveDown}
             />
           );
         }
@@ -194,6 +244,7 @@ function KategoriSection({ kategoriList, isSuperAdmin, editingId, editDapukan, o
                   onCancelEdit={onCancelEdit}
                   setEditDapukan={setEditDapukan}
                   isOther={kat.isOther}
+                  isMubalighKat={kat.isMubaligh}
                 />
               ))}
             </div>
@@ -231,6 +282,28 @@ export default function Structure() {
     setEditingMemberId(null);
   };
 
+  // Geser wakil naik: tukar sort_order dengan item sebelumnya
+  const handleMoveUp = (member, sortedWakil) => {
+    const idx = sortedWakil.findIndex(m => m.id === member.id);
+    if (idx <= 0) return;
+    const prev = sortedWakil[idx - 1];
+    const prevOrder = prev.sort_order ?? idx - 1;
+    const curOrder = member.sort_order ?? idx;
+    updateMutation.mutate({ id: member.id, data: { sort_order: prevOrder } });
+    updateMutation.mutate({ id: prev.id, data: { sort_order: curOrder } });
+  };
+
+  // Geser wakil turun: tukar sort_order dengan item berikutnya
+  const handleMoveDown = (member, sortedWakil) => {
+    const idx = sortedWakil.findIndex(m => m.id === member.id);
+    if (idx >= sortedWakil.length - 1) return;
+    const next = sortedWakil[idx + 1];
+    const nextOrder = next.sort_order ?? idx + 1;
+    const curOrder = member.sort_order ?? idx;
+    updateMutation.mutate({ id: member.id, data: { sort_order: nextOrder } });
+    updateMutation.mutate({ id: next.id, data: { sort_order: curOrder } });
+  };
+
   const editProps = {
     isSuperAdmin,
     editingId: editingMemberId,
@@ -239,6 +312,8 @@ export default function Structure() {
     onSaveEdit: handleSaveDapukan,
     onCancelEdit: () => setEditingMemberId(null),
     setEditDapukan,
+    onMoveUp: handleMoveUp,
+    onMoveDown: handleMoveDown,
   };
 
   // Scope filter based on role
