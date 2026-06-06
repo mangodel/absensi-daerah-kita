@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { EVENT_LEVEL_LIST, DAPUKAN_LIST } from "@/lib/constants";
+import { EVENT_LEVEL_LIST, DAPUKAN_LIST, DAPUKAN_4S } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { Users, X, CheckSquare } from "lucide-react";
 
@@ -22,6 +22,7 @@ const currentYear = new Date().getFullYear();
 
 function applyParticipantFilter(pool, filter) {
   if (!filter) return pool;
+  if (filter === "4s") return pool.filter(m => DAPUKAN_4S.includes(m.dapukan));
   if (filter === "mubaligh_both") return pool.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot");
   if (filter === "mubaligh_only") return pool.filter(m => m.muballigh_status === "Muballigh");
   if (filter === "mubalighot_only") return pool.filter(m => m.muballigh_status === "Muballighot");
@@ -58,6 +59,7 @@ function getEligibleCount(members, dapukanList, participantFilter, desa, kelompo
 }
 
 const PRESET_FILTERS = [
+  { value: "4s", label: "4S (Keimaman, PKU/KU, Penerobos, Aghniya, Mubaligh)" },
   { value: "mubaligh_both", label: "Semua Mubaligh & Mubalighot" },
   { value: "mubaligh_only", label: "Mubaligh Saja" },
   { value: "mubalighot_only", label: "Mubalighot Saja" },

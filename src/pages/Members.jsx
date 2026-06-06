@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Upload, Search, SlidersHorizontal, X } from "lucide-react";
 import { useAppConfig } from "@/lib/AppConfigContext";
-import { VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, DAPUKAN_LIST } from "@/lib/constants";
+import { VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, DAPUKAN_LIST, DAPUKAN_4S } from "@/lib/constants";
 import MemberFormDialog from "@/components/members/MemberFormDialog";
 import CsvUploadDialog from "@/components/members/CsvUploadDialog";
 import MemberTable from "@/components/members/MemberTable";
@@ -33,6 +33,7 @@ export default function Members() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterBirthYear, setFilterBirthYear] = useState("");
   const [filterDapukan, setFilterDapukan] = useState("all");
+  const [filter4S, setFilter4S] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [viewMode, setViewMode] = useState("table"); // "table" | "family"
 
@@ -76,14 +77,15 @@ export default function Members() {
     const matchStatus = filterStatus === "all" || m.status === filterStatus;
     const matchBirthYear = !filterBirthYear || String(m.birth_year) === filterBirthYear;
     const matchDapukan = filterDapukan === "all" || m.dapukan === filterDapukan;
-    return matchSearch && matchDesa && matchKelompok && matchVisa && matchMuballigh && matchStatus && matchBirthYear && matchDapukan;
+    const match4S = !filter4S || DAPUKAN_4S.includes(m.dapukan);
+    return matchSearch && matchDesa && matchKelompok && matchVisa && matchMuballigh && matchStatus && matchBirthYear && matchDapukan && match4S;
   });
 
-  const activeFilterCount = [filterDesa, filterKelompok, filterVisa, filterMuballigh, filterStatus, filterDapukan].filter(v => v !== "all").length + (filterBirthYear ? 1 : 0);
+  const activeFilterCount = [filterDesa, filterKelompok, filterVisa, filterMuballigh, filterStatus, filterDapukan].filter(v => v !== "all").length + (filterBirthYear ? 1 : 0) + (filter4S ? 1 : 0);
 
   const resetFilters = () => {
     setFilterDesa("all"); setFilterKelompok("all"); setFilterVisa("all");
-    setFilterMuballigh("all"); setFilterStatus("all"); setFilterBirthYear(""); setFilterDapukan("all");
+    setFilterMuballigh("all"); setFilterStatus("all"); setFilterBirthYear(""); setFilterDapukan("all"); setFilter4S(false);
   };
 
   return (
@@ -194,6 +196,13 @@ export default function Members() {
             value={filterBirthYear}
             onChange={e => setFilterBirthYear(e.target.value)}
           />
+          <button
+            type="button"
+            onClick={() => setFilter4S(v => !v)}
+            className={`h-8 text-xs px-3 rounded-md border transition-colors ${filter4S ? "bg-primary text-primary-foreground border-primary" : "border-input bg-transparent hover:bg-secondary text-foreground"}`}
+          >
+            4S Saja
+          </button>
         </div>
       )}
 

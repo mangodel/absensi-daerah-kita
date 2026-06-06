@@ -45,6 +45,11 @@ export const EMPLOYMENT_LIST = ["Bekerja", "Tidak Bekerja", "Belum Bekerja", "St
 export const ATTENDANCE_STATUS_LIST = ["Hadir", "Izin Sekolah", "Izin Kerja", "Alpa"];
 export const MEMBER_STATUS_LIST = ["Aktif", "Tidak Aktif"];
 
+export const DAPUKAN_4S = [
+  "Ki", "Wakil", "KU", "PKU", "Penerobos", "Aghnia",
+  "Muballigh 4S", "Muballigh Daerah", "Muballigh Desa", "Muballigh Kelompok",
+];
+
 export const EVENT_LEVEL_LIST = ["Daerah", "Desa", "Kelompok"];
 
 export const MONTHS = [
