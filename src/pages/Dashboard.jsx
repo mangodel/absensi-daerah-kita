@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
+import GenerusBreakdown from "@/components/dashboard/GenerusBreakdown";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import DesaOverview from "@/components/dashboard/DesaOverview";
 import AustraliaMap from "@/components/dashboard/AustraliaMap";
@@ -194,6 +195,8 @@ export default function Dashboard() {
         <StatCard title="Total KK" value={totalKK} icon={Home} color="warning" />
         <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="primary" />
       </div>
+
+      <GenerusBreakdown members={members} />
 
       {upcomingEvents.length > 0 && (
         <div className="bg-card border border-border rounded-2xl p-5">
