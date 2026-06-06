@@ -61,8 +61,8 @@ export default function MobileNav() {
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 px-1 py-1 safe-area-inset-bottom">
-        <div className="flex justify-around overflow-x-auto scrollbar-hide gap-0.5">
-          {navItems.map((item) => {
+        <div className="flex justify-around scrollbar-hide gap-0.5">
+          {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             return (
               <Link 
