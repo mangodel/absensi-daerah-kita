@@ -90,19 +90,19 @@ function getDapukanLabel(member) {
   if (!d || d === "Jamaah" || d === "Jamaah Biasa") return null;
 
   // Mubaligh sudah mengandung level di nama dapukannya
-  if (d === "Muballigh 4S") return "Mubaligh - 4S";
-  if (d === "Muballigh Daerah") return "Mubaligh - Daerah";
-  if (d === "Muballigh Desa") return "Mubaligh - Desa";
-  if (d === "Muballigh Kelompok") return "Mubaligh - Kelompok";
+  if (d === "Muballigh 4S") return "Mubaligh 4S";
+  if (d === "Muballigh Daerah") return "Mubaligh Daerah";
+  if (d === "Muballigh Desa") return "Mubaligh Desa";
+  if (d === "Muballigh Kelompok") return "Mubaligh Kelompok";
 
-  // Wakil Ki: tampilkan "Wakil Ki - Level"
+  // Wakil Ki: tampilkan "Wakil Ki Level"
   if (d === "Wakil") {
-    if (level) return `Wakil Ki - ${level}`;
+    if (level) return `Wakil Ki ${level}`;
     return "Wakil Ki";
   }
 
   // Dapukan lain: tambahkan level jika ada
-  if (level) return `${d} - ${level}`;
+  if (level) return `${d} ${level}`;
   return d;
 }
 
