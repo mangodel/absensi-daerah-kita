@@ -58,8 +58,8 @@ export default function MobileNav() {
 
   return (
     <>
-      <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden safe-area-inset-bottom">
-        <div className="overflow-x-auto flex items-center h-20 px-1 gap-0.5 w-full scrollbar-hide">
+      <nav className="md:hidden fixed bottom-12 left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden">
+        <div className="overflow-x-auto flex items-center h-24 px-1 gap-0.5 w-full scrollbar-hide">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             return (
