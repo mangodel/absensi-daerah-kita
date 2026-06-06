@@ -8,22 +8,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
+const COUNTRY_CODES = [
+  { label: "Indonesia (+62)", value: "Indonesia" },
+  { label: "Australia (+61)", value: "Australia" },
+  { label: "New Zealand (+64)", value: "New Zealand" },
+  { label: "Cook Islands (+682)", value: "Cook Islands" },
+];
+
 const EDITABLE_FIELDS = [
-  { key: "phone", label: "Nomor Telepon", type: "text", placeholder: "08xxx" },
-  { key: "notes", label: "Catatan / Informasi Tambahan", type: "textarea", placeholder: "Catatan opsional..." },
+  { key: "full_name", label: "Nama Lengkap", type: "text", placeholder: "Nama lengkap Anda" },
+  { key: "gender", label: "Jenis Kelamin", type: "select", options: ["Laki-laki", "Perempuan"] },
+  { key: "marital_status", label: "Status Pernikahan", type: "select", options: ["Menikah", "Belum Menikah", "Cerai", "Janda/Duda"] },
+  { key: "birth_year", label: "Tahun Lahir", type: "number", placeholder: "1990" },
+  { key: "visa_status", label: "Status Visa", type: "select", options: ["PR", "Citizen", "Student", "Sponsor", "Bridging", "WHV", "Tourist", "Partner", "Lainnya"] },
+  { key: "employment", label: "Jenis Pekerjaan", type: "select", options: ["Bekerja", "Tidak Bekerja", "Belum Bekerja", "Student", "Retired"] },
+  { key: "address", label: "Alamat", type: "textarea", placeholder: "Alamat Anda" },
+  { key: "phone", label: "Nomor Telepon", type: "phone", placeholder: "08xxxx / 02xxxx" },
+  { key: "whatsapp", label: "Nomor WhatsApp", type: "phone", placeholder: "08xxxx / 02xxxx" },
+  { key: "emergency_contact", label: "Kontak Darurat (Nama)", type: "text", placeholder: "Nama orang yang dapat dihubungi" },
+  { key: "emergency_phone", label: "Nomor Telepon Kontak Darurat", type: "phone", placeholder: "08xxxx / 02xxxx" },
 ];
 
 const READONLY_FIELDS = [
   { key: "full_name", label: "Nama Lengkap" },
-  { key: "gender", label: "Jenis Kelamin" },
   { key: "desa", label: "Desa" },
   { key: "kelompok", label: "Kelompok" },
   { key: "dapukan", label: "Dapukan" },
-  { key: "status", label: "Status" },
   { key: "visa_status", label: "Status Visa" },
   { key: "employment", label: "Pekerjaan" },
 ];
@@ -32,6 +47,8 @@ export default function JamaahPortal() {
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
   const [editData, setEditData] = useState({});
+  const [emailError, setEmailError] = useState("");
+  const [registeringEmail, setRegisteringEmail] = useState(false);
 
   // Cari data member berdasarkan email user
   const { data: members = [], isLoading: loadingMembers } = useQuery({
@@ -48,8 +65,20 @@ export default function JamaahPortal() {
   useEffect(() => {
     if (myMember) {
       setEditData({
+        full_name: myMember.full_name || "",
+        gender: myMember.gender || "",
+        marital_status: myMember.marital_status || "",
+        birth_year: myMember.birth_year || "",
+        visa_status: myMember.visa_status || "",
+        employment: myMember.employment || "",
+        address: myMember.address || "",
         phone: myMember.phone || "",
-        notes: myMember.notes || "",
+        phone_country_code: myMember.phone_country_code || "Indonesia",
+        whatsapp: myMember.whatsapp || "",
+        whatsapp_country_code: myMember.whatsapp_country_code || "Indonesia",
+        emergency_contact: myMember.emergency_contact || "",
+        emergency_phone: myMember.emergency_phone || "",
+        emergency_phone_country_code: myMember.emergency_phone_country_code || "Indonesia",
       });
     }
   }, [myMember?.id]);
@@ -66,6 +95,39 @@ export default function JamaahPortal() {
   const handleSave = () => {
     if (!myMember) return;
     updateMutation.mutate(editData);
+  };
+
+  const generateEmailFromName = (name) => {
+    if (!name) return "";
+    return name.toLowerCase().replace(/\s+/g, ".").substring(0, 20);
+  };
+
+  const handleRegisterEmail = async () => {
+    try {
+      setEmailError("");
+      setRegisteringEmail(true);
+      const suggestedEmail = generateEmailFromName(editData.full_name);
+      if (!suggestedEmail) {
+        setEmailError("Isikan nama lengkap terlebih dahulu");
+        return;
+      }
+
+      // Check duplikasi email
+      const existingUsers = await base44.entities.User.list();
+      const emailExists = existingUsers.some(u => u.email.startsWith(suggestedEmail));
+      if (emailExists) {
+        setEmailError("Email sudah terdaftar. Silakan gunakan nama yang berbeda.");
+        return;
+      }
+
+      // Update user email
+      await base44.auth.updateMe({ email: suggestedEmail });
+      toast.success(`Email terdaftar: ${suggestedEmail}`);
+    } catch (err) {
+      setEmailError(err.message || "Gagal mendaftarkan email");
+    } finally {
+      setRegisteringEmail(false);
+    }
   };
 
   const handleLogout = () => {
@@ -148,30 +210,99 @@ export default function JamaahPortal() {
                   <CardTitle className="text-sm font-semibold">Data Pribadi (Dapat Diedit)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {EDITABLE_FIELDS.map(f => (
-                    <div key={f.key} className="space-y-1.5">
-                      <Label className="text-xs">{f.label}</Label>
-                      {f.type === "textarea" ? (
-                        <Textarea
-                          value={editData[f.key] || ""}
-                          onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
-                          placeholder={f.placeholder}
-                          rows={3}
-                          className="text-sm"
-                        />
-                      ) : (
-                        <Input
-                          value={editData[f.key] || ""}
-                          onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
-                          placeholder={f.placeholder}
-                          className="text-sm"
-                        />
-                      )}
-                    </div>
-                  ))}
+                  {EDITABLE_FIELDS.map(f => {
+                    const isPhoneField = f.type === "phone";
+                    const countryCodeKey = isPhoneField ? f.key.replace("phone", "country_code").replace("_phone", "_phone_country_code") : null;
+                    
+                    return (
+                      <div key={f.key} className="space-y-1.5">
+                        <Label className="text-xs">{f.label}</Label>
+                        {f.type === "textarea" ? (
+                          <Textarea
+                            value={editData[f.key] || ""}
+                            onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
+                            placeholder={f.placeholder}
+                            rows={3}
+                            className="text-sm"
+                          />
+                        ) : f.type === "select" ? (
+                          <Select value={editData[f.key] || ""} onValueChange={val => setEditData(prev => ({ ...prev, [f.key]: val }))}>
+                            <SelectTrigger className="text-sm">
+                              <SelectValue placeholder={`Pilih ${f.label.toLowerCase()}`} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {f.options.map(opt => (
+                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : f.type === "number" ? (
+                          <Input
+                            type="number"
+                            value={editData[f.key] || ""}
+                            onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value ? parseInt(e.target.value) : "" }))}
+                            placeholder={f.placeholder}
+                            className="text-sm"
+                          />
+                        ) : isPhoneField ? (
+                          <div className="flex gap-2">
+                            <Select value={editData[countryCodeKey] || "Indonesia"} onValueChange={val => setEditData(prev => ({ ...prev, [countryCodeKey]: val }))}>
+                              <SelectTrigger className="w-32 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {COUNTRY_CODES.map(c => (
+                                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              value={editData[f.key] || ""}
+                              onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
+                              placeholder={f.placeholder}
+                              className="text-sm flex-1"
+                            />
+                          </div>
+                        ) : (
+                          <Input
+                            value={editData[f.key] || ""}
+                            onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
+                            placeholder={f.placeholder}
+                            className="text-sm"
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
                   <Button onClick={handleSave} disabled={updateMutation.isPending} className="w-full">
                     {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                     Simpan Perubahan
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Email Registration */}
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Pendaftaran Email</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs text-muted-foreground">Email akan dibuat otomatis dari nama lengkap Anda untuk keamanan (tidak dapat dirubah).</p>
+                  <div className="bg-white rounded-md p-3 border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">Email yang akan didaftarkan:</p>
+                    <p className="text-sm font-semibold text-foreground">{generateEmailFromName(editData.full_name) || "—"}</p>
+                  </div>
+                  {emailError && (
+                    <div className="text-xs text-destructive bg-destructive/10 p-2 rounded-md">{emailError}</div>
+                  )}
+                  <Button 
+                    onClick={handleRegisterEmail} 
+                    disabled={registeringEmail || !editData.full_name} 
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    {registeringEmail ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Daftarkan Email
                   </Button>
                 </CardContent>
               </Card>

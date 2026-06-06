@@ -69,15 +69,6 @@
       ],
       "description": "Status visa"
     },
-    "muballigh_status": {
-      "type": "string",
-      "enum": [
-        "Muballigh",
-        "Muballighot",
-        "Bukan Muballigh"
-      ],
-      "description": "Status Muballigh/Muballighot"
-    },
     "employment": {
       "type": "string",
       "enum": [
@@ -88,6 +79,15 @@
         "Retired"
       ],
       "description": "Status pekerjaan"
+    },
+    "muballigh_status": {
+      "type": "string",
+      "enum": [
+        "Muballigh",
+        "Muballighot",
+        "Bukan Muballigh"
+      ],
+      "description": "Status Muballigh/Muballighot"
     },
     "dapukan": {
       "type": "string",
@@ -121,6 +121,52 @@
     "phone": {
       "type": "string",
       "description": "Nomor telepon"
+    },
+    "phone_country_code": {
+      "type": "string",
+      "enum": [
+        "Indonesia",
+        "Australia",
+        "New Zealand",
+        "Cook Islands"
+      ],
+      "description": "Kode negara nomor telepon"
+    },
+    "whatsapp": {
+      "type": "string",
+      "description": "Nomor WhatsApp"
+    },
+    "whatsapp_country_code": {
+      "type": "string",
+      "enum": [
+        "Indonesia",
+        "Australia",
+        "New Zealand",
+        "Cook Islands"
+      ],
+      "description": "Kode negara nomor WhatsApp"
+    },
+    "address": {
+      "type": "string",
+      "description": "Alamat"
+    },
+    "emergency_contact": {
+      "type": "string",
+      "description": "Nama kontak darurat"
+    },
+    "emergency_phone": {
+      "type": "string",
+      "description": "Nomor telepon kontak darurat"
+    },
+    "emergency_phone_country_code": {
+      "type": "string",
+      "enum": [
+        "Indonesia",
+        "Australia",
+        "New Zealand",
+        "Cook Islands"
+      ],
+      "description": "Kode negara nomor kontak darurat"
     },
     "notes": {
       "type": "string",
