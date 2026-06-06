@@ -37,6 +37,11 @@ function applyParticipantFilter(pool, filter) {
     const age = currentYear - (m.birth_year || currentYear);
     return age >= 18 && (m.marital_status === "Belum Menikah" || !m.marital_status);
   });
+  // Ibu-ibu: wanita yang sudah menikah, cerai, atau janda/duda
+  if (filter === "ibu_ibu") return pool.filter(m =>
+    m.gender === "Perempuan" &&
+    ["Menikah", "Cerai", "Janda/Duda"].includes(m.marital_status)
+  );
   return pool;
 }
 
@@ -56,6 +61,7 @@ const PRESET_FILTERS = [
   { value: "generus_smp", label: "Generus SMP (12–14 thn)" },
   { value: "generus_sma", label: "Generus SMA (15–17 thn)" },
   { value: "usia_nikah", label: "Usia Nikah (Lajang 18+)" },
+  { value: "ibu_ibu", label: "Ibu-ibu (Menikah/Cerai/Janda)" },
 ];
 
 export default function EventFormDialog({ open, onOpenChange, event, prefilledDate, onSave }) {

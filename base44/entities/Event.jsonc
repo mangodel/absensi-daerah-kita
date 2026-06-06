@@ -60,7 +60,8 @@
         "mubalighot_only",
         "generus_smp",
         "generus_sma",
-        "usia_nikah"
+        "usia_nikah",
+        "ibu_ibu"
       ],
       "description": "Filter peserta berbasis kriteria khusus"
     },

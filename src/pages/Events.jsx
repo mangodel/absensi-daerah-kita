@@ -23,6 +23,7 @@ export default function Events() {
   const [filterDesa, setFilterDesa] = useState("all");
   const [filterKelompok, setFilterKelompok] = useState("all");
   const [filterMubaligh, setFilterMubaligh] = useState("all");
+  const [filterIbuIbu, setFilterIbuIbu] = useState("all");
   const navigate = useNavigate();
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
@@ -81,7 +82,15 @@ export default function Events() {
       else if (filterMubaligh === "mubaligh") matchMubaligh = e.participant_dapukan.some(d => d === "Muballigh" || d.toLowerCase().includes("muballigh"));
       else if (filterMubaligh === "mubalighot") matchMubaligh = e.participant_dapukan.some(d => d === "Muballighot" || d.toLowerCase().includes("muballighot"));
     }
-    return matchLevel && matchDesa && matchKelompok && matchMubaligh;
+    // Filter ibu-ibu: kegiatan khusus wanita yang sudah/pernah menikah
+    // Logika: event dianggap "ibu-ibu" bila participant_filter = ibu_ibu, atau
+    // tidak ada filter dapukan khusus selain perempuan dewasa (pendekatan: tidak ada filter mubaligh)
+    let matchIbuIbu = true;
+    if (filterIbuIbu === "ibu_ibu") {
+      matchIbuIbu = e.participant_filter === "ibu_ibu" ||
+        (e.participant_dapukan && e.participant_dapukan.some(d => d.toLowerCase().includes("ibu")));
+    }
+    return matchLevel && matchDesa && matchKelompok && matchMubaligh && matchIbuIbu;
   });
 
   // Group by level for display
@@ -161,6 +170,13 @@ export default function Events() {
                 <SelectItem value="both">Mubaligh &amp; Mubalighot</SelectItem>
                 <SelectItem value="mubaligh">Mubaligh Saja</SelectItem>
                 <SelectItem value="mubalighot">Mubalighot Saja</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterIbuIbu} onValueChange={setFilterIbuIbu}>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Gender</SelectItem>
+                <SelectItem value="ibu_ibu">Ibu-ibu (menikah/janda)</SelectItem>
               </SelectContent>
             </Select>
           </div>
