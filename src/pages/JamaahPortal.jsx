@@ -52,7 +52,7 @@ const READONLY_FIELDS = [
 ];
 
 export default function JamaahPortal() {
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const queryClient = useQueryClient();
   const [editData, setEditData] = useState({});
   const [emailError, setEmailError] = useState("");
@@ -200,7 +200,7 @@ export default function JamaahPortal() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {user && user.email ? (
+            {isAuthenticated && user?.email ? (
               <Button
                 variant="ghost"
                 size="sm"
