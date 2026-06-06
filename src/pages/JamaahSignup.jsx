@@ -4,18 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle, Loader2, Mail, User } from "lucide-react";
+import { AlertCircle, CheckCircle, Loader2, Mail, User, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 export default function JamaahSignup() {
   const navigate = useNavigate();
-  const [step, setStep] = useState("register"); // "register" | "match" | "claim" | "success"
+  const [step, setStep] = useState("register"); // "register" | "match" | "claim" | "family" | "success"
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ fullName: "", email: "", password: "" });
   const [matchedMembers, setMatchedMembers] = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
   const [registeredUser, setRegisteredUser] = useState(null);
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [familyForm, setFamilyForm] = useState({ full_name: "", gender: "", marital_status: "" });
 
   // Fungsi untuk mencocokkan nama (fuzzy match sederhana)
   const fuzzyMatch = (str1, str2) => {
@@ -61,7 +63,7 @@ export default function JamaahSignup() {
       if (matched.length > 0) {
         setStep("match");
       } else {
-        setStep("success");
+        setStep("family");
       }
     } catch (err) {
       toast.error(err.message || "Registrasi gagal");
@@ -94,10 +96,10 @@ export default function JamaahSignup() {
           full_name: selectedMember.full_name
         });
         
-        toast.success("Data berhasil diklaim! Anda bisa login sekarang.");
+        toast.success("Data kepala keluarga berhasil diklaim!");
       }
       
-      setStep("success");
+      setStep("family");
     } catch (err) {
       toast.error(err.message || "Gagal mengklaim data");
     } finally {
@@ -105,9 +107,87 @@ export default function JamaahSignup() {
     }
   };
 
-  // Step 3: Skip claim (buat user baru tanpa member)
+  // Step 2b: Skip claim (buat user baru tanpa member)
   const handleSkipClaim = () => {
-    setStep("success");
+    setStep("family");
+  };
+
+  // Add family member
+  const handleAddFamilyMember = () => {
+    if (!familyForm.full_name) {
+      toast.error("Masukkan nama anggota keluarga");
+      return;
+    }
+    setFamilyMembers(prev => [...prev, { ...familyForm, id: Date.now() }]);
+    setFamilyForm({ full_name: "", gender: "", marital_status: "" });
+  };
+
+  // Remove family member
+  const handleRemoveFamilyMember = (id) => {
+    setFamilyMembers(prev => prev.filter(m => m.id !== id));
+  };
+
+  // Submit family members
+  const handleSaveFamily = async () => {
+    setLoading(true);
+    try {
+      // Tunggu user terdaftar
+      await new Promise(r => setTimeout(r, 1000));
+      
+      // Cari user yang baru register
+      const allUsers = await base44.entities.User.list();
+      const newUser = allUsers.find(u => u.email?.toLowerCase() === registeredUser.email.toLowerCase());
+      
+      if (!newUser) throw new Error("User tidak ditemukan");
+
+      // Get desa & kelompok dari claimed member atau gunakan default
+      let desa = "Default";
+      let kelompok = "Default";
+      let family_group = formData.fullName;
+
+      if (selectedMember) {
+        desa = selectedMember.desa;
+        kelompok = selectedMember.kelompok;
+        family_group = selectedMember.family_group || formData.fullName;
+      }
+
+      // Buat member records untuk setiap anggota keluarga
+      const memberRecords = [
+        {
+          full_name: formData.fullName,
+          email: registeredUser.email,
+          desa,
+          kelompok,
+          family_group,
+          status: "Aktif"
+        },
+        ...familyMembers.map(m => ({
+          full_name: m.full_name,
+          gender: m.gender || undefined,
+          marital_status: m.marital_status || undefined,
+          desa,
+          kelompok,
+          family_group,
+          status: "Aktif"
+        }))
+      ];
+
+      // Batch create members (atau create satu per satu jika tidak ada bulkCreate)
+      for (const memberData of memberRecords) {
+        try {
+          await base44.entities.Member.create(memberData);
+        } catch (err) {
+          console.error("Error creating member:", err);
+        }
+      }
+
+      toast.success(`Pendaftaran berhasil! ${memberRecords.length} anggota keluarga terdaftar.`);
+      setStep("success");
+    } catch (err) {
+      toast.error(err.message || "Gagal menyimpan data keluarga");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -201,6 +281,101 @@ export default function JamaahSignup() {
                 </Button>
                 <Button variant="outline" onClick={handleSkipClaim} disabled={loading} className="flex-1">
                   Skip
+                </Button>
+              </div>
+            </CardContent>
+          </>
+        )}
+
+        {step === "family" && (
+          <>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Daftarkan Anggota Keluarga</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Opsional: Tambahkan data istri, anak, dan keluarga lainnya</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Kepala keluarga info */}
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground mb-1">Kepala Keluarga:</p>
+                <p className="font-semibold text-sm">{formData.fullName}</p>
+              </div>
+
+              {/* Form tambah anggota */}
+              <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
+                <p className="text-xs font-semibold">Tambah Anggota Keluarga</p>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Nama lengkap"
+                    value={familyForm.full_name}
+                    onChange={e => setFamilyForm(prev => ({ ...prev, full_name: e.target.value }))}
+                    className="text-sm"
+                  />
+                  <select
+                    value={familyForm.gender}
+                    onChange={e => setFamilyForm(prev => ({ ...prev, gender: e.target.value }))}
+                    className="w-full text-sm rounded-md border border-input bg-transparent px-3 py-2"
+                  >
+                    <option value="">Jenis Kelamin</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                  <select
+                    value={familyForm.marital_status}
+                    onChange={e => setFamilyForm(prev => ({ ...prev, marital_status: e.target.value }))}
+                    className="w-full text-sm rounded-md border border-input bg-transparent px-3 py-2"
+                  >
+                    <option value="">Status Pernikahan</option>
+                    <option value="Menikah">Menikah</option>
+                    <option value="Belum Menikah">Belum Menikah</option>
+                    <option value="Cerai">Cerai</option>
+                    <option value="Janda/Duda">Janda/Duda</option>
+                  </select>
+                  <Button
+                    type="button"
+                    onClick={handleAddFamilyMember}
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-sm gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Tambah Anggota
+                  </Button>
+                </div>
+              </div>
+
+              {/* List anggota yang sudah ditambah */}
+              {familyMembers.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold">Anggota Keluarga ({familyMembers.length}):</p>
+                  {familyMembers.map(member => (
+                    <div key={member.id} className="p-2.5 rounded-lg border border-border bg-card flex items-center justify-between text-sm">
+                      <div className="flex-1">
+                        <p className="font-medium">{member.full_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {member.gender && `${member.gender}`}
+                          {member.gender && member.marital_status && ' • '}
+                          {member.marital_status}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveFamilyMember(member.id)}
+                        className="text-destructive hover:bg-destructive/10 p-1.5 rounded"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={handleSaveFamily}
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                  {familyMembers.length > 0 ? `Simpan ${familyMembers.length + 1} Anggota` : "Lanjut Tanpa Anggota"}
                 </Button>
               </div>
             </CardContent>
