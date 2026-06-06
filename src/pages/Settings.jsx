@@ -6,18 +6,19 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, Save, Loader2, Plus, Trash2, Upload, Image, Users, ShieldCheck, GripVertical } from "lucide-react";
+import { Settings as SettingsIcon, Save, Loader2, Plus, Trash2, Upload, Image, Users, ShieldCheck, GripVertical, ClipboardList } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserRoleManager from "@/components/settings/UserRoleManager";
 import GoogleSheetSync from "@/components/settings/GoogleSheetSync";
+import SurveyManager from "@/components/settings/SurveyManager";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const PAGE_TITLE_FIELDS = [
   { key: "dashboard", label: "Dashboard — Judul" },
   { key: "dashboard_subtitle", label: "Dashboard — Subtitle" },
-  { key: "members", label: "Anggota — Judul" },
-  { key: "members_subtitle", label: "Anggota — Subtitle" },
+  { key: "members", label: "Jamaah — Judul" },
+  { key: "members_subtitle", label: "Jamaah — Subtitle" },
   { key: "events", label: "Kegiatan — Judul" },
   { key: "events_subtitle", label: "Kegiatan — Subtitle" },
   { key: "attendance", label: "Absensi — Judul" },
@@ -181,6 +182,7 @@ export default function Settings() {
       <Tabs defaultValue="general">
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="general" className="flex items-center gap-1.5"><SettingsIcon className="w-3.5 h-3.5" /> Umum</TabsTrigger>
+          <TabsTrigger value="surveys" className="flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Survei</TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Akses Pengguna</TabsTrigger>
           <TabsTrigger value="gsheet" className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Google Sheet</TabsTrigger>
         </TabsList>
@@ -338,6 +340,11 @@ export default function Settings() {
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Simpan Pengaturan
           </Button>
+        </TabsContent>
+
+        {/* ---- TAB SURVEI ---- */}
+        <TabsContent value="surveys" className="mt-4">
+          <SurveyManager />
         </TabsContent>
 
         {/* ---- TAB AKSES PENGGUNA ---- */}
