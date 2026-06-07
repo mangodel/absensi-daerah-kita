@@ -12,9 +12,33 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const LEVEL_COLORS = {
-  Daerah: "bg-primary/10 text-primary border-primary/20",
-  Desa: "bg-accent/10 text-accent border-accent/20",
-  Kelompok: "bg-orange-100 text-orange-700 border-orange-200",
+  Daerah: "bg-indigo-100 text-indigo-700 border-indigo-300",
+  Desa: "bg-emerald-100 text-emerald-700 border-emerald-300",
+  Kelompok: "bg-amber-100 text-amber-700 border-amber-300",
+};
+
+const LEVEL_DOT = {
+  Daerah: "bg-indigo-500",
+  Desa: "bg-emerald-500",
+  Kelompok: "bg-amber-500",
+};
+
+const LEVEL_ICON_BG = {
+  Daerah: "bg-indigo-100",
+  Desa: "bg-emerald-100",
+  Kelompok: "bg-amber-100",
+};
+
+const LEVEL_ICON_COLOR = {
+  Daerah: "text-indigo-600",
+  Desa: "text-emerald-600",
+  Kelompok: "text-amber-600",
+};
+
+const LEVEL_CARD_BORDER = {
+  Daerah: "border-indigo-200 bg-indigo-50/40",
+  Desa: "border-emerald-200 bg-emerald-50/40",
+  Kelompok: "border-amber-200 bg-amber-50/40",
 };
 
 export default function JamaahEvents() {
@@ -264,16 +288,26 @@ export default function JamaahEvents() {
                     ${isSelected && !isToday(day) ? "bg-primary/20 text-primary" : ""}
                   `}>{format(day, "d")}</span>
                   {dayEvents.length > 0 && (
-                    <div className="flex gap-0.5">
-                      {dayEvents.slice(0, 3).map((ev, i) => (
-                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${ev.level === "Daerah" ? "bg-primary" : ev.level === "Desa" ? "bg-accent" : "bg-orange-500"}`} />
-                      ))}
-                    </div>
+                  <div className="flex gap-0.5">
+                    {dayEvents.slice(0, 3).map((ev, i) => (
+                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${LEVEL_DOT[ev.level] || "bg-gray-400"}`} />
+                    ))}
+                  </div>
                   )}
                 </button>
               );
             })}
           </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-4 mb-4">
+          {[["Daerah", "bg-indigo-500"], ["Desa", "bg-emerald-500"], ["Kelompok", "bg-amber-500"]].map(([label, dot]) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full ${dot}`} />
+              <span className="text-[11px] text-muted-foreground">{label}</span>
+            </div>
+          ))}
         </div>
 
         {/* Selected day events */}
@@ -370,9 +404,9 @@ function EventCard({ event, myMember, myAttendances, onCheckin, isPending }) {
   const alreadyCheckedIn = myAttendances?.some(a => a.event_id === event.id && a.date === event.date);
 
   return (
-    <div className={`bg-card border rounded-xl p-3 flex items-start gap-3 ${isToday ? "border-primary/30 bg-primary/5" : "border-border"}`}>
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${event.level === "Daerah" ? "bg-primary/10" : event.level === "Desa" ? "bg-accent/10" : "bg-orange-100"}`}>
-        <CalendarDays className={`w-5 h-5 ${event.level === "Daerah" ? "text-primary" : event.level === "Desa" ? "text-accent" : "text-orange-500"}`} />
+    <div className={`border rounded-xl p-3 flex items-start gap-3 ${isToday ? "ring-2 ring-offset-1 ring-indigo-400" : ""} ${LEVEL_CARD_BORDER[event.level] || "border-border bg-card"}`}>
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${LEVEL_ICON_BG[event.level]}`}>
+        <CalendarDays className={`w-5 h-5 ${LEVEL_ICON_COLOR[event.level]}`} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
