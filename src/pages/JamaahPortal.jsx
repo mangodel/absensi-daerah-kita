@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, X } from "lucide-react";
+import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, X, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -496,6 +496,20 @@ export default function JamaahPortal() {
                 <div>
                   <p className="text-sm font-semibold">Absensi QR</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">Scan QR untuk hadir</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/jamaah/events" className="col-span-2">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow border-orange-200 hover:border-orange-400 bg-orange-50/50">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                  <CalendarDays className="w-6 h-6 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">Kalender Kegiatan</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Lihat jadwal kegiatan daerah, desa & kelompok. Scan QR event untuk absensi.</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>

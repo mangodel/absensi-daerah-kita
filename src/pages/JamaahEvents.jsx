@@ -1,0 +1,404 @@
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, CalendarDays, QrCode, CheckCircle, Loader2, Camera, X, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
+import { format, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, isSameDay } from "date-fns";
+import { id } from "date-fns/locale";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const LEVEL_COLORS = {
+  Daerah: "bg-primary/10 text-primary border-primary/20",
+  Desa: "bg-accent/10 text-accent border-accent/20",
+  Kelompok: "bg-orange-100 text-orange-700 border-orange-200",
+};
+
+export default function JamaahEvents() {
+  const queryClient = useQueryClient();
+  const [jamaahUser, setJamaahUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [scanEvent, setScanEvent] = useState(null); // event being scanned for
+  const [scanResult, setScanResult] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [checkinSuccess, setCheckinSuccess] = useState(null);
+  const scannerRef = useRef(null);
+  const html5QrRef = useRef(null);
+
+  useEffect(() => {
+    base44.auth.me().then(u => setJamaahUser(u)).catch(() => setJamaahUser(null)).finally(() => setCheckingAuth(false));
+  }, []);
+
+  const { data: members = [] } = useQuery({
+    queryKey: ["my-member-events", jamaahUser?.email],
+    queryFn: () => base44.entities.Member.list(),
+    enabled: !!jamaahUser,
+  });
+
+  const myMember = jamaahUser?.email
+    ? members.find(m => m.email?.toLowerCase() === jamaahUser.email?.toLowerCase())
+    : null;
+
+  const { data: allEvents = [], isLoading } = useQuery({
+    queryKey: ["events-public"],
+    queryFn: () => base44.entities.Event.list("-date"),
+    enabled: !!jamaahUser,
+  });
+
+  // Filter events based on member's desa/kelompok
+  const visibleEvents = allEvents.filter(ev => {
+    if (ev.level === "Daerah") return true;
+    if (ev.level === "Desa") return myMember && ev.desa === myMember.desa;
+    if (ev.level === "Kelompok") return myMember && ev.desa === myMember.desa && ev.kelompok === myMember.kelompok;
+    return false;
+  });
+
+  // Events this month
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const firstDayOffset = (getDay(monthStart) + 6) % 7; // Monday start
+
+  const getEventsForDay = (day) =>
+    visibleEvents.filter(ev => ev.date && isSameDay(new Date(ev.date), day));
+
+  const selectedDayEvents = selectedDay ? getEventsForDay(selectedDay) : [];
+
+  // Check existing attendance for today
+  const { data: myAttendances = [] } = useQuery({
+    queryKey: ["my-attendances", myMember?.id],
+    queryFn: () => base44.entities.Attendance.filter({ member_id: myMember.id }),
+    enabled: !!myMember,
+  });
+
+  const checkinMutation = useMutation({
+    mutationFn: async ({ eventId, eventName, eventLevel }) => {
+      if (!myMember) throw new Error("Data anggota tidak ditemukan");
+      const event = allEvents.find(e => e.id === eventId);
+      if (!event) throw new Error("Event tidak ditemukan");
+
+      // Check if already checked in
+      const today = new Date().toISOString().slice(0, 10);
+      const alreadyIn = myAttendances.find(a => a.event_id === eventId && a.date === today);
+      if (alreadyIn) throw new Error("Anda sudah mengisi absensi untuk event ini hari ini");
+
+      return base44.entities.Attendance.create({
+        member_id: myMember.id,
+        member_name: myMember.full_name,
+        desa: myMember.desa,
+        kelompok: myMember.kelompok,
+        date: event.date || today,
+        status: "Hadir",
+        month: new Date(event.date || today).getMonth() + 1,
+        year: new Date(event.date || today).getFullYear(),
+        event_id: eventId,
+        event_name: eventName,
+        event_level: eventLevel,
+      });
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["my-attendances"] });
+      setCheckinSuccess(vars.eventName);
+      setScanOpen(false);
+      stopScanner();
+      toast.success("Absensi berhasil dicatat!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Gagal mencatat absensi");
+    },
+  });
+
+  const startScanner = async (eventForScan) => {
+    setScanEvent(eventForScan);
+    setScanResult(null);
+    setScanOpen(true);
+  };
+
+  useEffect(() => {
+    if (!scanOpen) { stopScanner(); return; }
+    // Small delay for DOM
+    const timer = setTimeout(() => initScanner(), 300);
+    return () => clearTimeout(timer);
+  }, [scanOpen]);
+
+  const initScanner = async () => {
+    if (!scannerRef.current) return;
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      html5QrRef.current = new Html5Qrcode("event-qr-scanner");
+      setScanning(true);
+      await html5QrRef.current.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 220 },
+        async (decodedText) => {
+          if (decodedText.startsWith("EVENT:")) {
+            const eventId = decodedText.replace("EVENT:", "");
+            const found = allEvents.find(e => e.id === eventId);
+            if (!found) { toast.error("QR event tidak valid"); return; }
+            setScanResult(found);
+            stopScanner();
+          } else {
+            toast.error("QR ini bukan QR absensi event");
+          }
+        },
+        () => {}
+      );
+    } catch (e) {
+      console.error("Scanner init error", e);
+      setScanning(false);
+    }
+  };
+
+  const stopScanner = () => {
+    if (html5QrRef.current) {
+      html5QrRef.current.stop().catch(() => {}).finally(() => {
+        html5QrRef.current = null;
+        setScanning(false);
+      });
+    }
+  };
+
+  const handleScanClose = () => {
+    stopScanner();
+    setScanOpen(false);
+    setScanResult(null);
+    setScanEvent(null);
+  };
+
+  const handleDirectCheckin = (event) => {
+    checkinMutation.mutate({ eventId: event.id, eventName: event.name, eventLevel: event.level });
+  };
+
+  const handleConfirmScanCheckin = () => {
+    if (!scanResult) return;
+    checkinMutation.mutate({ eventId: scanResult.id, eventName: scanResult.name, eventLevel: scanResult.level });
+  };
+
+  const prevMonth = () => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1));
+  const nextMonth = () => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1));
+
+  if (checkingAuth) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+
+  if (!jamaahUser) return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-sm">
+        <CardContent className="py-10 text-center space-y-3">
+          <p className="text-sm text-muted-foreground">Silakan login untuk melihat kegiatan</p>
+          <Link to="/jamaah-login"><Button className="w-full">Masuk</Button></Link>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="bg-card border-b border-border sticky top-0 z-30 px-4 py-3">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/jamaah">
+              <Button variant="ghost" size="icon" className="h-8 w-8"><ArrowLeft className="w-4 h-4" /></Button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold">Kegiatan</span>
+            </div>
+          </div>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => startScanner(null)}>
+            <QrCode className="w-3.5 h-3.5" /> Scan QR
+          </Button>
+        </div>
+      </header>
+
+      <div className="max-w-2xl mx-auto px-4 py-4">
+        {/* Info scope */}
+        {myMember && (
+          <div className="mb-3 p-3 bg-primary/5 rounded-xl border border-primary/10 flex items-center gap-2">
+            <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Menampilkan kegiatan untuk: <span className="font-semibold text-foreground">{myMember.desa}</span>
+              {myMember.kelompok && <> · <span className="font-semibold text-foreground">{myMember.kelompok}</span></>}
+            </p>
+          </div>
+        )}
+
+        {/* Calendar navigation */}
+        <div className="flex items-center justify-between mb-3">
+          <Button variant="ghost" size="sm" onClick={prevMonth}>‹</Button>
+          <h2 className="text-sm font-semibold capitalize">
+            {format(currentMonth, "MMMM yyyy", { locale: id })}
+          </h2>
+          <Button variant="ghost" size="sm" onClick={nextMonth}>›</Button>
+        </div>
+
+        {/* Calendar grid */}
+        <div className="bg-card rounded-xl border border-border overflow-hidden mb-4">
+          <div className="grid grid-cols-7 border-b border-border">
+            {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(d => (
+              <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-2">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {Array.from({ length: firstDayOffset }).map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-square" />
+            ))}
+            {daysInMonth.map(day => {
+              const dayEvents = getEventsForDay(day);
+              const isSelected = selectedDay && isSameDay(day, selectedDay);
+              return (
+                <button
+                  key={day.toISOString()}
+                  onClick={() => setSelectedDay(isSameDay(day, selectedDay) ? null : day)}
+                  className={`aspect-square flex flex-col items-center justify-center gap-0.5 text-xs transition-colors
+                    ${isToday(day) ? "font-bold text-primary" : "text-foreground"}
+                    ${isSelected ? "bg-primary/10 rounded-lg" : "hover:bg-secondary/50"}
+                  `}
+                >
+                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs
+                    ${isToday(day) ? "bg-primary text-white font-bold" : ""}
+                    ${isSelected && !isToday(day) ? "bg-primary/20 text-primary" : ""}
+                  `}>{format(day, "d")}</span>
+                  {dayEvents.length > 0 && (
+                    <div className="flex gap-0.5">
+                      {dayEvents.slice(0, 3).map((ev, i) => (
+                        <div key={i} className={`w-1.5 h-1.5 rounded-full ${ev.level === "Daerah" ? "bg-primary" : ev.level === "Desa" ? "bg-accent" : "bg-orange-500"}`} />
+                      ))}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Selected day events */}
+        {selectedDay && (
+          <div className="mb-4">
+            <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+              {format(selectedDay, "EEEE, dd MMMM yyyy", { locale: id })}
+            </h3>
+            {selectedDayEvents.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">Tidak ada kegiatan</p>
+            ) : (
+              <div className="space-y-2">
+                {selectedDayEvents.map(ev => <EventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Upcoming events this month */}
+        <div>
+          <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+            Semua Kegiatan — {format(currentMonth, "MMMM yyyy", { locale: id })}
+          </h3>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          ) : (
+            <div className="space-y-2">
+              {visibleEvents
+                .filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth))
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map(ev => <EventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)
+              }
+              {visibleEvents.filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth)).length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-6">Tidak ada kegiatan bulan ini</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Checkin success modal */}
+      {checkinSuccess && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCheckinSuccess(null)}>
+          <div className="bg-card rounded-2xl p-6 max-w-xs w-full text-center space-y-3 shadow-2xl">
+            <CheckCircle className="w-16 h-16 text-accent mx-auto" />
+            <p className="font-bold text-lg">Absensi Berhasil!</p>
+            <p className="text-sm text-muted-foreground">{checkinSuccess}</p>
+            <Button className="w-full" onClick={() => setCheckinSuccess(null)}>Tutup</Button>
+          </div>
+        </div>
+      )}
+
+      {/* QR Scanner Dialog */}
+      <Dialog open={scanOpen} onOpenChange={handleScanClose}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <QrCode className="w-4 h-4 text-primary" /> Scan QR Absensi Event
+            </DialogTitle>
+          </DialogHeader>
+
+          {!scanResult ? (
+            <div className="space-y-3">
+              <div id="event-qr-scanner" className="w-full rounded-xl overflow-hidden border border-border" style={{ minHeight: 280 }} />
+              <p className="text-xs text-muted-foreground text-center">Arahkan kamera ke QR Code event</p>
+              <Button variant="outline" onClick={handleScanClose} className="w-full">Batal</Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-accent/10 rounded-xl p-4 text-center space-y-2">
+                <CheckCircle className="w-10 h-10 text-accent mx-auto" />
+                <p className="font-semibold text-sm">{scanResult.name}</p>
+                {scanResult.date && <p className="text-xs text-muted-foreground">{format(new Date(scanResult.date), "dd MMMM yyyy", { locale: id })}</p>}
+                <Badge variant="outline" className={`text-xs ${LEVEL_COLORS[scanResult.level]}`}>{scanResult.level}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">Konfirmasi absensi Anda untuk kegiatan ini?</p>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleScanClose} className="flex-1">Batal</Button>
+                <Button onClick={handleConfirmScanCheckin} disabled={checkinMutation.isPending} className="flex-1 bg-accent hover:bg-accent/90">
+                  {checkinMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Konfirmasi Hadir"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function EventCard({ event, myMember, myAttendances, onCheckin, isPending }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const isToday = event.date === today;
+  const alreadyCheckedIn = myAttendances?.some(a => a.event_id === event.id && a.date === event.date);
+
+  return (
+    <div className={`bg-card border rounded-xl p-3 flex items-start gap-3 ${isToday ? "border-primary/30 bg-primary/5" : "border-border"}`}>
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${event.level === "Daerah" ? "bg-primary/10" : event.level === "Desa" ? "bg-accent/10" : "bg-orange-100"}`}>
+        <CalendarDays className={`w-5 h-5 ${event.level === "Daerah" ? "text-primary" : event.level === "Desa" ? "text-accent" : "text-orange-500"}`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-semibold text-sm leading-tight">{event.name}</p>
+          <Badge variant="outline" className={`text-[10px] shrink-0 ${LEVEL_COLORS[event.level]}`}>{event.level}</Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {event.date && format(new Date(event.date), "dd MMM yyyy", { locale: id })}
+          {event.location && ` · ${event.location}`}
+        </p>
+        {event.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{event.description}</p>}
+        {isToday && myMember && (
+          <div className="mt-2">
+            {alreadyCheckedIn ? (
+              <div className="flex items-center gap-1.5 text-accent">
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Sudah Hadir</span>
+              </div>
+            ) : (
+              <Button size="sm" className="h-7 text-xs px-3 bg-accent hover:bg-accent/90" onClick={() => onCheckin(event)} disabled={isPending}>
+                {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Catat Hadir"}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

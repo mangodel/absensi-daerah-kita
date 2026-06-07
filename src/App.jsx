@@ -32,6 +32,7 @@ const JamaahLogin = lazy(() => import('@/pages/JamaahLogin'));
 const JamaahSignup = lazy(() => import('@/pages/JamaahSignup'));
 const JamaahSurvey = lazy(() => import('@/pages/JamaahSurvey'));
 const JamaahAbsensi = lazy(() => import('@/pages/JamaahAbsensi'));
+const JamaahEvents = lazy(() => import('@/pages/JamaahEvents'));
 const Login = lazy(() => import('@/pages/Login'));
 
 // Loading fallback component
@@ -83,6 +84,7 @@ const AuthenticatedApp = () => {
           <Route path="/jamaah" element={<SuspendedPage><JamaahPortal /></SuspendedPage>} />
           <Route path="/jamaah/survey" element={<SuspendedPage><JamaahSurvey /></SuspendedPage>} />
           <Route path="/jamaah/absensi" element={<SuspendedPage><JamaahAbsensi /></SuspendedPage>} />
+          <Route path="/jamaah/events" element={<SuspendedPage><JamaahEvents /></SuspendedPage>} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>

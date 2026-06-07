@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, CalendarDays, Link2 } from "lucide-react";
+import { Plus, Pencil, CalendarDays, Link2, QrCode } from "lucide-react";
+import EventQRCode from "@/components/event-attendance/EventQRCode";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -25,6 +26,7 @@ export default function EventSessionManager({ onSelectEvent }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
+  const [qrEvent, setQrEvent] = useState(null);
 
   const { data: sessions = [] } = useQuery({
     queryKey: ["event-sessions"],
@@ -108,6 +110,9 @@ export default function EventSessionManager({ onSelectEvent }) {
                 )}
               </div>
               <Badge variant="outline" className={`text-xs shrink-0 ${statusColor[ev.status]}`}>{ev.status}</Badge>
+              <Button variant="ghost" size="icon" onClick={() => setQrEvent(ev)} title="Tampilkan QR">
+                <QrCode className="w-4 h-4 text-primary" />
+              </Button>
               <Button variant="ghost" size="icon" onClick={() => handleOpen(ev)}>
                 <Pencil className="w-4 h-4" />
               </Button>
@@ -162,6 +167,9 @@ export default function EventSessionManager({ onSelectEvent }) {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* QR Code Dialog */}
+      <EventQRCode event={qrEvent} open={!!qrEvent} onClose={() => setQrEvent(null)} />
 
       {/* Form Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
