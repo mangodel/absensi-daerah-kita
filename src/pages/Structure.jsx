@@ -80,6 +80,8 @@ function getPengurusKategori(pengurusList) {
     } else {
       members = pengurusList.filter(m => kat.dapukan.includes(m.dapukan));
     }
+    // Sort by sort_order
+    members.sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
     if (members.length > 0) {
       result.push({ ...kat, members });
     }
