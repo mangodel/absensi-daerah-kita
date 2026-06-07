@@ -250,25 +250,27 @@ export default function Members() {
         </div>
       )}
 
-      <PullToRefresh onRefresh={() => queryClient.invalidateQueries({ queryKey: ["members"] })}>
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          </div>
-        ) : viewMode === "family" ? (
-          <FamilyGroupView
-            members={filtered}
-            onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
-            onDelete={canManageMembers ? setDeleteMember : null}
-          />
-        ) : (
-          <MemberTable
-            members={filtered}
-            onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
-            onDelete={canManageMembers ? setDeleteMember : null}
-          />
-        )}
-      </PullToRefresh>
+      <div className="relative">
+        <PullToRefresh onRefresh={() => queryClient.invalidateQueries({ queryKey: ["members"] })}>
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : viewMode === "family" ? (
+            <FamilyGroupView
+              members={filtered}
+              onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
+              onDelete={canManageMembers ? setDeleteMember : null}
+            />
+          ) : (
+            <MemberTable
+              members={filtered}
+              onEdit={canManageMembers ? (m) => { setEditMember(m); setFormOpen(true); } : null}
+              onDelete={canManageMembers ? setDeleteMember : null}
+            />
+          )}
+        </PullToRefresh>
+      </div>
 
       <MemberSummaryBar members={filtered} />
 

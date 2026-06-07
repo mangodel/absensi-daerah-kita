@@ -8,7 +8,6 @@ export default function PullToRefresh({ children, onRefresh, isLoading = false }
     <div
       ref={containerRef}
       className="overflow-y-auto"
-      style={{ height: '100%' }}
     >
       {/* Pull indicator */}
       <div
