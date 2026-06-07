@@ -12,6 +12,7 @@ import {
   saveReminder,
   requestNotificationPermission,
   formatMinutes,
+  syncRemindersToSW,
 } from "@/hooks/useEventReminders";
 import { toast } from "sonner";
 
@@ -48,10 +49,12 @@ export default function EventReminderButton({ event }) {
       // Toggle off
       saveReminder(event.id, null);
       setCurrent(null);
+      syncRemindersToSW([event]);
       toast.success("Pengingat dinonaktifkan");
     } else {
       saveReminder(event.id, minutes);
       setCurrent(minutes);
+      syncRemindersToSW([event]);
       toast.success(`Pengingat diaktifkan: ${formatMinutes(minutes)} sebelum acara`);
     }
     setOpen(false);
@@ -61,6 +64,7 @@ export default function EventReminderButton({ event }) {
     e.stopPropagation();
     saveReminder(event.id, null);
     setCurrent(null);
+    syncRemindersToSW([event]);
     toast.success("Pengingat dihapus");
   };
 

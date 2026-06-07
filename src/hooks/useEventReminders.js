@@ -97,13 +97,53 @@ export const REMINDER_OPTIONS = [
   { label: "1 minggu sebelum", value: 10080 },
 ];
 
+// Register Service Worker for background notifications
+export async function registerReminderSW() {
+  if (!("serviceWorker" in navigator)) return null;
+  try {
+    const reg = await navigator.serviceWorker.register("/sw.js");
+    return reg;
+  } catch (e) {
+    console.warn("SW registration failed:", e);
+    return null;
+  }
+}
+
+// Send all active reminders to the Service Worker so it can fire them when page is closed
+export async function syncRemindersToSW(events) {
+  if (!("serviceWorker" in navigator)) return;
+  const reminders = getReminders();
+  const payload = [];
+  for (const [eventId, minutesBefore] of Object.entries(reminders)) {
+    const event = events.find(e => e.id === eventId);
+    if (!event || !event.date) continue;
+    payload.push({
+      eventId,
+      eventName: event.name,
+      eventLocation: event.location || "",
+      minutesBefore,
+      eventDate: event.date,
+    });
+  }
+  const reg = await navigator.serviceWorker.ready;
+  if (reg && reg.active) {
+    reg.active.postMessage({ type: "SCHEDULE_REMINDERS", reminders: payload });
+  }
+}
+
 export function useEventReminderChecker(events) {
   useEffect(() => {
     if (!events || events.length === 0) return;
-    // Check immediately
+    // Check immediately (in-page fallback)
     checkAndFireReminders(events);
     // Check every minute
     const interval = setInterval(() => checkAndFireReminders(events), 60 * 1000);
     return () => clearInterval(interval);
+  }, [events]);
+
+  useEffect(() => {
+    if (!events || events.length === 0) return;
+    // Register SW and sync reminders for background support
+    registerReminderSW().then(() => syncRemindersToSW(events));
   }, [events]);
 }
