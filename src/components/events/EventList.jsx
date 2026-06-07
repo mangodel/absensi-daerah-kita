@@ -11,20 +11,48 @@ const levelColors = {
   "Kelompok": "bg-orange-50 text-orange-600 border-orange-200",
 };
 
-// Color palette for desa/kelompok differentiation
-const desaColors = [
-  "bg-blue-50 border-blue-200",
-  "bg-emerald-50 border-emerald-200",
-  "bg-rose-50 border-rose-200",
-  "bg-amber-50 border-amber-200",
-  "bg-cyan-50 border-cyan-200",
-  "bg-fuchsia-50 border-fuchsia-200",
+// Color palette for desa/kelompok differentiation with better contrast
+const desaColorMap = {
+  "Desa Barat": "bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-700",
+  "Desa Timur": "bg-emerald-50 border-emerald-300 dark:bg-emerald-950 dark:border-emerald-700",
+  "Desa Selatan": "bg-rose-50 border-rose-300 dark:bg-rose-950 dark:border-rose-700",
+  "Desa Utara": "bg-amber-50 border-amber-300 dark:bg-amber-950 dark:border-amber-700",
+};
+
+const kelompokColorMap = {
+  "Kelompok A": "bg-violet-50 border-violet-300 dark:bg-violet-950 dark:border-violet-700",
+  "Kelompok B": "bg-indigo-50 border-indigo-300 dark:bg-indigo-950 dark:border-indigo-700",
+  "Kelompok C": "bg-cyan-50 border-cyan-300 dark:bg-cyan-950 dark:border-cyan-700",
+  "Kelompok D": "bg-orange-50 border-orange-300 dark:bg-orange-950 dark:border-orange-700",
+  "Kelompok E": "bg-teal-50 border-teal-300 dark:bg-teal-950 dark:border-teal-700",
+  "Kelompok F": "bg-pink-50 border-pink-300 dark:bg-pink-950 dark:border-pink-700",
+};
+
+const defaultColors = [
+  "bg-slate-50 border-slate-300 dark:bg-slate-800 dark:border-slate-600",
+  "bg-blue-50 border-blue-300 dark:bg-blue-950 dark:border-blue-700",
+  "bg-emerald-50 border-emerald-300 dark:bg-emerald-950 dark:border-emerald-700",
+  "bg-rose-50 border-rose-300 dark:bg-rose-950 dark:border-rose-700",
+  "bg-amber-50 border-amber-300 dark:bg-amber-950 dark:border-amber-700",
+  "bg-violet-50 border-violet-300 dark:bg-violet-950 dark:border-violet-700",
 ];
 
-function getDesaColor(desa) {
-  if (!desa) return "";
-  const hash = desa.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return desaColors[hash % desaColors.length];
+function getEventCardColor(event) {
+  // Prioritize kelompok color if exists
+  if (event.kelompok && kelompokColorMap[event.kelompok]) {
+    return kelompokColorMap[event.kelompok];
+  }
+  // Then desa color
+  if (event.desa && desaColorMap[event.desa]) {
+    return desaColorMap[event.desa];
+  }
+  // Fallback: generate from name
+  if (event.desa || event.kelompok) {
+    const name = event.kelompok || event.desa;
+    const hash = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return defaultColors[hash % defaultColors.length];
+  }
+  return "bg-card border-border";
 }
 
 export default function EventList({ events, onEdit, onDelete, onSelectForAttendance }) {
@@ -39,7 +67,7 @@ export default function EventList({ events, onEdit, onDelete, onSelectForAttenda
   return (
     <div className="space-y-3">
       {events.map(event => (
-        <div key={event.id} className={`rounded-2xl border p-5 hover:shadow-md transition-shadow ${getDesaColor(event.desa)}`}>
+        <div key={event.id} className={`rounded-2xl border p-5 hover:shadow-md transition-shadow ${getEventCardColor(event)}`}>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="space-y-2 flex-1">
               <div className="flex flex-wrap items-center gap-2">
