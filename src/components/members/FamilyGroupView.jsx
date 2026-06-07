@@ -19,14 +19,19 @@ function buildFamilyGroups(members) {
     }
   });
 
-  // Sort: anggota yang namanya = nama family_group (dipilih sebagai KK) tampil pertama
+  // Sort: prioritaskan yang namanya cocok dg nama grup (KK eksplisit),
+  // lalu yang lahir paling tua (birth_year paling kecil), lalu nama A-Z
   Object.keys(grouped).forEach(key => {
     grouped[key].sort((a, b) => {
       const aIsKK = a.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
       const bIsKK = b.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
       if (aIsKK && !bIsKK) return -1;
       if (!aIsKK && bIsKK) return 1;
-      return 0;
+      // Siapa yang paling tua (birth_year terkecil) = KK
+      const aYear = a.birth_year || 9999;
+      const bYear = b.birth_year || 9999;
+      if (aYear !== bYear) return aYear - bYear;
+      return (a.full_name || "").localeCompare(b.full_name || "");
     });
   });
 
@@ -39,13 +44,8 @@ function getAgeLabel(birth_year) {
   return `${age} th`;
 }
 
-// Tentukan apakah member adalah Kepala Keluarga:
-// - Dalam grup: HANYA yang namanya sama persis dengan nama family_group (dipilih sebagai KK)
-// - Tanpa grup: selalu dianggap KK sendiri
-function isKepalaKeluarga(member, familyGroupName) {
-  if (!familyGroupName) return true; // tanpa grup = KK sendiri
-  return member.full_name?.trim().toLowerCase() === familyGroupName.trim().toLowerCase();
-}
+// KK adalah member pertama dalam array (sudah diurutkan di buildFamilyGroups)
+// Tanpa grup = selalu KK sendiri
 
 function MemberRow({ member, index, isHead, onEdit, onDelete }) {
   const infoChunks = [
@@ -106,16 +106,14 @@ function MemberRow({ member, index, isHead, onEdit, onDelete }) {
 function FamilyCard({ familyName, members, onEdit, onDelete }) {
   const [open, setOpen] = useState(true);
   // Cari member yang namanya = familyName (KK terdaftar)
-  const kkMember = members.find(m => m.full_name?.trim().toLowerCase() === familyName.trim().toLowerCase());
-  // Anggota selain KK
-  const otherMembers = members.filter(m => m.id !== kkMember?.id);
+  // KK = member pertama setelah sorting (nama cocok > tertua > A-Z)
+  const kkMember = members[0];
+  const otherMembers = members.slice(1);
 
-  // Total anggota = members terdaftar + 1 jika KK belum terdaftar sebagai member
-  const totalCount = kkMember ? members.length : members.length + 1;
-  const activeCount = members.filter(m => m.status === "Aktif").length + (kkMember ? 0 : 1);
+  const totalCount = members.length;
+  const activeCount = members.filter(m => m.status === "Aktif").length;
 
-  // Alamat dari KK (jika ada) atau member pertama
-  const kkSource = kkMember || members[0];
+  const kkSource = kkMember;
   const addressStr = kkSource && (kkSource.address || kkSource.suburb || kkSource.state || kkSource.postcode)
     ? `${kkSource.address || ""} ${kkSource.suburb || ""} ${kkSource.state || ""} ${kkSource.postcode || ""}`.trim()
     : null;
@@ -140,7 +138,7 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs text-muted-foreground">{members[0]?.kelompok}</span>
+          <span className="text-xs text-muted-foreground">{kkMember?.kelompok}</span>
           {open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
         </div>
       </button>
@@ -156,24 +154,8 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
           >
             <div className="px-4 pb-3 space-y-1 border-t border-border">
               <div className="pt-2">
-                {/* Jika KK terdaftar sebagai member, tampilkan dia pertama */}
-                {kkMember ? (
-                  <MemberRow member={kkMember} index={1} isHead={true} onEdit={onEdit} onDelete={onDelete} />
-                ) : (
-                  /* KK tidak terdaftar sebagai member — tampilkan placeholder */
-                  <div className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-primary/5 border border-primary/10">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-primary text-primary-foreground">
-                      <Crown className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-primary">{familyName}</span>
-                        <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20" variant="outline">KK</Badge>
-                        <Badge className="text-[9px] px-1.5 py-0 bg-muted text-muted-foreground" variant="outline">Belum terdaftar</Badge>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* KK selalu ada — member pertama setelah sorting */}
+                <MemberRow member={kkMember} index={1} isHead={true} onEdit={onEdit} onDelete={onDelete} />
                 {otherMembers.map((m, i) => (
                   <MemberRow key={m.id} member={m} index={i + 2} isHead={false} onEdit={onEdit} onDelete={onDelete} />
                 ))}
@@ -226,7 +208,7 @@ export default function FamilyGroupView({ members, onEdit, onDelete }) {
           Semua Keluarga
         </Button>
         <span className="text-xs text-muted-foreground ml-2">
-          {Object.keys(grouped).length} keluarga · {noGroup.length} tanpa grup
+          {Object.keys(grouped).length + noGroup.length} KK total · {noGroup.length} mandiri
         </span>
       </div>
 
