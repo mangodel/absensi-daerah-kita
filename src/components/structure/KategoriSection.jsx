@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 // Kategori 4S configuration (reuse dari Structure)
 const KATEGORI_4S = [
   {
-    label: "Keimaman",
+    label: "Empat Serangkai (4S)",
     color: "bg-primary/5 border-primary/20 dark:bg-primary/10 dark:border-primary/30",
     badgeClass: "bg-primary/10 text-primary border-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/40",
     dapukan: ["Ki", "Wakil"],

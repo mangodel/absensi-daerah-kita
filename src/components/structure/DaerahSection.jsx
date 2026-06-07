@@ -19,10 +19,10 @@ export default function DaerahSection({
         <Shield className="w-4 h-4 text-primary" /> Tingkat Daerah
       </h2>
 
-      {/* 4 Serangkai Section */}
+      {/* Empat Serangkai Section */}
       {daerahKategori.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-2">4 Serangkai</p>
+          <p className="text-xs font-semibold text-muted-foreground mb-2">Empat Serangkai (4S)</p>
           <KategoriSection kategoriList={daerahKategori} {...editProps} level="Daerah" />
         </div>
       )}

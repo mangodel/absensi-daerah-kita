@@ -115,7 +115,7 @@ export default function TimConfigManager({ timConfigs = [], level = "Daerah" }) 
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="4_Serangkai">4 Serangkai</SelectItem>
+                  <SelectItem value="4_Serangkai">Empat Serangkai (4S)</SelectItem>
                   <SelectItem value="Tim_7">Tim 7</SelectItem>
                   <SelectItem value="Tim_Lainnya">Tim Lainnya</SelectItem>
                 </SelectContent>
