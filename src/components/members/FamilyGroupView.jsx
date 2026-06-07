@@ -150,19 +150,19 @@ function MemberRowMandiri({ member, onEdit, onDelete }) {
   ].filter(Boolean).join(" · ");
 
   return (
-    <div className="flex items-center gap-2.5 py-2 px-3 rounded-xl transition-colors hover:bg-amber-100/60 dark:hover:bg-amber-900/20 bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/60 dark:border-amber-800/40">
+    <div className="flex items-center gap-2.5 py-2 px-3 rounded-xl transition-colors hover:bg-secondary/40">
       {/* Avatar */}
-      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold bg-amber-500 text-white">
+      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
         <User className="w-3.5 h-3.5" />
       </div>
 
       {/* Info utama */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-medium text-sm leading-tight text-amber-800 dark:text-amber-300">
+          <span className="font-medium text-sm leading-tight text-foreground">
             {member.full_name}
           </span>
-          <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-700" variant="outline">
+          <Badge className="text-[9px] px-1.5 py-0 h-4 bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-400 dark:border-violet-700" variant="outline">
             KK Mandiri
           </Badge>
           {member.dapukan && member.dapukan !== "Jamaah" && member.dapukan !== "Jamaah Biasa" && (
@@ -170,7 +170,7 @@ function MemberRowMandiri({ member, onEdit, onDelete }) {
           )}
         </div>
         {infoChunks && (
-          <p className="text-[11px] text-amber-600/80 dark:text-amber-500/80 mt-0.5 leading-tight">{infoChunks}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{infoChunks}</p>
         )}
       </div>
 
@@ -308,7 +308,7 @@ export default function FamilyGroupView({ members, onEdit, onDelete }) {
             <span>{Object.keys(grouped).length} berkelompok</span>
           </span>{" "}·{" "}
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+            <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
             <span>{noGroup.length} mandiri</span>
           </span>
         </span>
@@ -354,14 +354,14 @@ export default function FamilyGroupView({ members, onEdit, onDelete }) {
           {noGroup.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-px flex-1 bg-amber-200 dark:bg-amber-800" />
-                <h3 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider px-2 flex items-center gap-1.5">
-                  <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                <div className="h-px flex-1 bg-border" />
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 flex items-center gap-1.5">
+                  <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
                   KK Mandiri ({noGroup.length})
                 </h3>
-                <div className="h-px flex-1 bg-amber-200 dark:bg-amber-800" />
+                <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 space-y-1">
+              <div className="bg-card border border-border rounded-2xl p-4 space-y-1">
                 {noGroup.map((m, i) => (
                   <MemberRowMandiri key={m.id} member={m} onEdit={onEdit} onDelete={onDelete} />
                 ))}
@@ -383,11 +383,11 @@ export default function FamilyGroupView({ members, onEdit, onDelete }) {
           ))}
           {noGroup.length > 0 && (
             <div>
-              <p className="text-xs text-amber-600 font-semibold mb-2 mt-4 flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+              <p className="text-xs text-muted-foreground font-semibold mb-2 mt-4 flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
                 KK Mandiri ({noGroup.length})
               </p>
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 space-y-1">
+              <div className="bg-card border border-border rounded-2xl p-4 space-y-1">
                 {noGroup.map((m, i) => (
                   <MemberRowMandiri key={m.id} member={m} onEdit={onEdit} onDelete={onDelete} />
                 ))}
