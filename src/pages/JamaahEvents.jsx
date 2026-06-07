@@ -10,6 +10,8 @@ import { format, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, getDa
 import { id } from "date-fns/locale";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import EventReminderButton from "@/components/portal/EventReminderButton";
+import { useEventReminderChecker } from "@/hooks/useEventReminders";
 
 const LEVEL_COLORS = {
   Daerah: "bg-indigo-100 text-indigo-700 border-indigo-300",
@@ -203,6 +205,9 @@ export default function JamaahEvents() {
     if (!scanResult) return;
     checkinMutation.mutate({ eventId: scanResult.id, eventName: scanResult.name, eventLevel: scanResult.level });
   };
+
+  // Fire browser notifications for saved reminders
+  useEventReminderChecker(visibleEvents);
 
   const prevMonth = () => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1));
   const nextMonth = () => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1));
@@ -418,9 +423,10 @@ function EventCard({ event, myMember, myAttendances, onCheckin, isPending }) {
           {event.location && ` · ${event.location}`}
         </p>
         {event.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{event.description}</p>}
-        {isToday && myMember && (
-          <div className="mt-2">
-            {alreadyCheckedIn ? (
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <EventReminderButton event={event} />
+          {isToday && myMember && (
+            alreadyCheckedIn ? (
               <div className="flex items-center gap-1.5 text-accent">
                 <CheckCircle className="w-3.5 h-3.5" />
                 <span className="text-xs font-medium">Sudah Hadir</span>
@@ -429,9 +435,9 @@ function EventCard({ event, myMember, myAttendances, onCheckin, isPending }) {
               <Button size="sm" className="h-7 text-xs px-3 bg-accent hover:bg-accent/90" onClick={() => onCheckin(event)} disabled={isPending}>
                 {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Catat Hadir"}
               </Button>
-            )}
-          </div>
-        )}
+            )
+          )}
+        </div>
       </div>
     </div>
   );
