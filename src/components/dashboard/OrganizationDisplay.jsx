@@ -77,9 +77,6 @@ export default function OrganizationDisplay({ level, desa, kelompok }) {
   const serangkai = relevantTims.filter(t => t.tim_category === "4_Serangkai");
   const tim7 = relevantTims.filter(t => t.tim_category === "Tim_7");
 
-  // Jika tidak ada tim, jangan tampilkan
-  if (serangkai.length === 0 && tim7.length === 0) return null;
-
   return (
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
@@ -89,26 +86,32 @@ export default function OrganizationDisplay({ level, desa, kelompok }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {serangkai.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Empat Serangkai</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {serangkai.map(tim => (
-                <TeamCard key={tim.id} tim={tim} members={allMembers} allMembers={allMembers} />
-              ))}
-            </div>
-          </div>
-        )}
+        {serangkai.length === 0 && tim7.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-6">Belum ada struktur kepemimpinan yang dikonfigurasi</p>
+        ) : (
+          <>
+            {serangkai.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">Empat Serangkai</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {serangkai.map(tim => (
+                    <TeamCard key={tim.id} tim={tim} members={allMembers} allMembers={allMembers} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {tim7.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">Tim 7</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {tim7.map(tim => (
-                <TeamCard key={tim.id} tim={tim} members={allMembers} allMembers={allMembers} />
-              ))}
-            </div>
-          </div>
+            {tim7.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">Tim 7</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {tim7.map(tim => (
+                    <TeamCard key={tim.id} tim={tim} members={allMembers} allMembers={allMembers} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

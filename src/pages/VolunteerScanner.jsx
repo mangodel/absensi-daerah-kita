@@ -71,11 +71,10 @@ function EventSelector({ onSelect }) {
             ))}
           </div>
         )}
-      </div>
-      </div>
-    </div>
-  );
-}
+        </div>
+        </div>
+        );
+        }
 
 // ─── Step 2: Form Identitas Operator dengan Login ─────────────────────────────────────────
 function OperatorForm({ onSave }) {
