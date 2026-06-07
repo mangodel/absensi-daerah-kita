@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
-import { Building2, Users, Shield, Phone, Home, Filter, Pencil, Check, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Building2, Users, Shield, Phone, Home, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import ViewSwitcher from "@/components/structure/ViewSwitcher";
+import TimConfigManager from "@/components/structure/TimConfigManager";
+import DaerahSection from "@/components/structure/DaerahSection";
+import { KategoriSection } from "@/components/structure/KategoriSection";
 
 // Kategori 4S
 const KATEGORI_4S = [
@@ -53,6 +56,11 @@ const KATEGORI_4S = [
 ];
 
 const KNOWN_DAPUKAN = KATEGORI_4S.flatMap(k => k.dapukan);
+
+// Helper untuk ambil TimConfig dari entitas
+const fetchTimConfigs = async (level = "Daerah") => {
+  return await base44.entities.TimConfig.filter({ level });
+};
 
 function getPengurusKategori(pengurusList) {
   const result = [];
@@ -179,60 +187,7 @@ function PengurusCard({ member, badgeClass, colorClass, isSuperAdmin, editingId,
   );
 }
 
-function KategoriSection({ kategoriList, isSuperAdmin, editingId, editDapukan, onStartEdit, onSaveEdit, onCancelEdit, setEditDapukan, onMoveUp, onMoveDown, level }) {
-  if (kategoriList.length === 0) return null;
-  return (
-    <div className="space-y-3">
-      {kategoriList.map(kat => {
-        if (kat.isKeimaman) {
-          return (
-            <KeimananSection
-              key="Keimaman"
-              members={kat.members}
-              isSuperAdmin={isSuperAdmin}
-              editingId={editingId}
-              editDapukan={editDapukan}
-              onStartEdit={onStartEdit}
-              onSaveEdit={onSaveEdit}
-              onCancelEdit={onCancelEdit}
-              setEditDapukan={setEditDapukan}
-              onMoveUp={onMoveUp}
-              onMoveDown={onMoveDown}
-              level={level}
-            />
-          );
-        }
-        return (
-          <div key={kat.label} className={`rounded-xl border ${kat.color} overflow-hidden`}>
-            <div className="px-4 py-2.5 flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground dark:text-foreground">{kat.label}</span>
-              <Badge variant="outline" className="text-[10px]">{kat.members.length}</Badge>
-            </div>
-            <div className="px-4 pb-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-              {kat.members.map(m => (
-                <PengurusCard
-                  key={m.id}
-                  member={m}
-                  badgeClass={kat.badgeClass}
-                  colorClass={kat.color}
-                  isSuperAdmin={isSuperAdmin}
-                  editingId={editingId}
-                  editDapukan={editDapukan}
-                  onStartEdit={onStartEdit}
-                  onSaveEdit={onSaveEdit}
-                  onCancelEdit={onCancelEdit}
-                  setEditDapukan={setEditDapukan}
-                  isOther={kat.isOther}
-                  isMubalighKat={kat.isMubaligh}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+
 
 export default function Structure() {
   const { config } = useAppConfig();
@@ -243,12 +198,23 @@ export default function Structure() {
   const [filterMubaligh, setFilterMubaligh] = useState("all");
   const [editingMemberId, setEditingMemberId] = useState(null);
   const [editDapukan, setEditDapukan] = useState("");
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem("structureViewMode") || "hierarchical");
+  const [managingCategory, setManagingCategory] = useState(null);
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    localStorage.setItem("structureViewMode", viewMode);
+  }, [viewMode]);
 
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => base44.entities.Member.list(),
+  });
+
+  const { data: timConfigs = [] } = useQuery({
+    queryKey: ["timConfigs"],
+    queryFn: () => base44.entities.TimConfig.list(),
   });
 
   const updateMutation = useMutation({
@@ -285,12 +251,6 @@ export default function Structure() {
 
   const editProps = {
     isSuperAdmin,
-    editingId: editingMemberId,
-    editDapukan,
-    onStartEdit: (id, dap) => { setEditingMemberId(id); setEditDapukan(dap); },
-    onSaveEdit: handleSaveDapukan,
-    onCancelEdit: () => setEditingMemberId(null),
-    setEditDapukan,
     onMoveUp: handleMoveUp,
     onMoveDown: handleMoveDown,
   };
@@ -324,6 +284,7 @@ export default function Structure() {
           <p className="text-sm text-muted-foreground mt-0.5">{pt.structure_subtitle || "Daerah → Desa → Kelompok"}</p>
         </div>
         <div className="flex items-center gap-2">
+          <ViewSwitcher currentView={viewMode} onViewChange={setViewMode} />
           <Filter className="w-4 h-4 text-muted-foreground" />
           <Select value={filterMubaligh} onValueChange={setFilterMubaligh}>
             <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
@@ -339,16 +300,30 @@ export default function Structure() {
 
       {/* Daerah Level */}
       {(isSuperAdmin || isAdminDesa) && (
-        <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Shield className="w-4 h-4 text-primary" /> Tingkat Daerah
-          </h2>
-          {daerahKategori.length > 0 ? (
-            <KategoriSection kategoriList={daerahKategori} {...editProps} level="Daerah" />
-          ) : (
-            <p className="text-xs text-muted-foreground">Belum ada pengurus tingkat daerah.</p>
+        <>
+          <DaerahSection
+            daerahKategori={daerahKategori}
+            daerahMembers={members.filter(m => m.dapukan_level === "Daerah" && isPengurus(m))}
+            timConfigs={timConfigs.filter(t => t.level === "Daerah")}
+            isSuperAdmin={isSuperAdmin}
+            editProps={editProps}
+            onManageTeam={setManagingCategory}
+          />
+          
+          {/* Tim Config Manager (jika super admin) */}
+          {isSuperAdmin && managingCategory && (
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold">Kelola {managingCategory === "Tim_7" ? "Tim 7" : "Tim Lainnya"}</h3>
+                <button onClick={() => setManagingCategory(null)} className="text-sm text-muted-foreground hover:text-foreground">Tutup</button>
+              </div>
+              <TimConfigManager 
+                timConfigs={timConfigs.filter(t => t.tim_category === managingCategory && t.level === "Daerah")}
+                level="Daerah"
+              />
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Desa Level Tabs */}
