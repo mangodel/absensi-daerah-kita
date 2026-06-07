@@ -48,55 +48,53 @@ function isKepalaKeluarga(member, familyGroupName) {
 }
 
 function MemberRow({ member, index, isHead, onEdit, onDelete }) {
-  const addressStr = member.address || member.suburb || member.state || member.postcode
-    ? `${member.address || ""} ${member.suburb || ""} ${member.state || ""} ${member.postcode || ""}`.trim()
-    : null;
+  const infoChunks = [
+    member.gender,
+    member.birth_year ? getAgeLabel(member.birth_year) : null,
+    member.marital_status,
+    member.visa_status,
+  ].filter(Boolean).join(" · ");
 
   return (
-    <div className={`flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors hover:bg-secondary/40 ${isHead ? "bg-primary/5 border border-primary/10" : ""}`}>
+    <div className={`flex items-center gap-2.5 py-2 px-3 rounded-xl transition-colors hover:bg-secondary/40 ${isHead ? "bg-primary/5 border border-primary/10" : ""}`}>
+      {/* Avatar */}
       <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${isHead ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>
-        {isHead ? <Crown className="w-3.5 h-3.5" /> : index}
+        {isHead ? <Crown className="w-3.5 h-3.5" /> : <span>{index}</span>}
       </div>
+
+      {/* Info utama */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`font-medium text-sm ${isHead ? "text-primary" : "text-foreground"}`}>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`font-medium text-sm leading-tight ${isHead ? "text-primary" : "text-foreground"}`}>
             {member.full_name}
           </span>
           {isHead && (
-            <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20" variant="outline">
-              KK
-            </Badge>
+            <Badge className="text-[9px] px-1 py-0 h-4 bg-primary/10 text-primary border-primary/20" variant="outline">KK</Badge>
           )}
           {member.dapukan && member.dapukan !== "Jamaah" && member.dapukan !== "Jamaah Biasa" && (
-            <Badge variant="secondary" className="text-[9px] px-1.5 py-0">{member.dapukan}</Badge>
+            <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">{member.dapukan}</Badge>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
-          {member.gender && <span>{member.gender}</span>}
-          {member.birth_year && <span>· {getAgeLabel(member.birth_year)}</span>}
-          {member.marital_status && <span>· {member.marital_status}</span>}
-          {member.visa_status && <span>· {member.visa_status}</span>}
-        </div>
-        {member.email && <div className="text-xs text-primary mt-1"><a href={`mailto:${member.email}`}>{member.email}</a></div>}
-        {addressStr && <div className="text-xs text-muted-foreground mt-0.5">{addressStr}</div>}
+        {infoChunks && (
+          <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{infoChunks}</p>
+        )}
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+
+      {/* Actions */}
+      <div className="flex items-center gap-0.5 shrink-0">
         <Badge
-          className={member.status === "Aktif"
-            ? "text-[10px] bg-accent/10 text-accent border-accent/20 py-0"
-            : "text-[10px] bg-destructive/10 text-destructive border-destructive/20 py-0"
-          }
+          className={`text-[9px] px-1.5 py-0 h-4 ${member.status === "Aktif" ? "bg-accent/10 text-accent border-accent/20" : "bg-destructive/10 text-destructive border-destructive/20"}`}
           variant="outline"
         >
           {member.status}
         </Badge>
         {onEdit && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(member)}>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(member)}>
             <Pencil className="w-3 h-3" />
           </Button>
         )}
         {onDelete && (
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDelete(member)}>
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => onDelete(member)}>
             <Trash2 className="w-3 h-3" />
           </Button>
         )}
@@ -107,12 +105,14 @@ function MemberRow({ member, index, isHead, onEdit, onDelete }) {
 
 function FamilyCard({ familyName, members, onEdit, onDelete }) {
   const [open, setOpen] = useState(true);
-  const activeCount = members.filter(m => m.status === "Aktif").length;
-
   // Cari member yang namanya = familyName (KK terdaftar)
   const kkMember = members.find(m => m.full_name?.trim().toLowerCase() === familyName.trim().toLowerCase());
   // Anggota selain KK
   const otherMembers = members.filter(m => m.id !== kkMember?.id);
+
+  // Total anggota = members terdaftar + 1 jika KK belum terdaftar sebagai member
+  const totalCount = kkMember ? members.length : members.length + 1;
+  const activeCount = members.filter(m => m.status === "Aktif").length + (kkMember ? 0 : 1);
 
   // Alamat dari KK (jika ada) atau member pertama
   const kkSource = kkMember || members[0];
@@ -135,7 +135,7 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
             <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20" variant="outline">KK</Badge>
           </div>
           <div className="flex flex-col gap-1 mt-0.5">
-            <p className="text-xs text-muted-foreground">{members.length} anggota · {activeCount} aktif</p>
+            <p className="text-xs text-muted-foreground">{totalCount} anggota · {activeCount} aktif</p>
             {addressStr && <p className="text-xs text-muted-foreground truncate">{addressStr}</p>}
           </div>
         </div>
