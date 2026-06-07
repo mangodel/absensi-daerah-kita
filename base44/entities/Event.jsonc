@@ -28,6 +28,10 @@
       "format": "date",
       "description": "Tanggal kegiatan"
     },
+    "time": {
+      "type": "string",
+      "description": "Waktu kegiatan (format HH:MM)"
+    },
     "month": {
       "type": "number",
       "description": "Bulan (1-12)"

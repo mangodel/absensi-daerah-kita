@@ -14,7 +14,7 @@ import { RECURRING_PATTERNS, RECURRING_DURATIONS, generateRecurringDates, dateTo
 
 const empty = {
   name: "", level: "Kelompok", desa: "", kelompok: "",
-  date: "", description: "", location: "",
+  date: "", time: "", description: "", location: "",
   materi: "", pemateri: "", notes: "",
   document_url: "", document_name: "",
   participant_dapukan: [],
@@ -217,6 +217,11 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Tanggal *</Label>
             <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Waktu (Jam)</Label>
+            <Input type="time" value={form.time || ""} onChange={e => setForm({ ...form, time: e.target.value })} placeholder="HH:MM" />
           </div>
 
           {/* Recurring — hanya saat tambah baru */}

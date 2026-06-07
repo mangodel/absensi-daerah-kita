@@ -11,6 +11,22 @@ const levelColors = {
   "Kelompok": "bg-orange-50 text-orange-600 border-orange-200",
 };
 
+// Color palette for desa/kelompok differentiation
+const desaColors = [
+  "bg-blue-50 border-blue-200",
+  "bg-emerald-50 border-emerald-200",
+  "bg-rose-50 border-rose-200",
+  "bg-amber-50 border-amber-200",
+  "bg-cyan-50 border-cyan-200",
+  "bg-fuchsia-50 border-fuchsia-200",
+];
+
+function getDesaColor(desa) {
+  if (!desa) return "";
+  const hash = desa.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return desaColors[hash % desaColors.length];
+}
+
 export default function EventList({ events, onEdit, onDelete, onSelectForAttendance }) {
   if (events.length === 0) {
     return (
@@ -23,7 +39,7 @@ export default function EventList({ events, onEdit, onDelete, onSelectForAttenda
   return (
     <div className="space-y-3">
       {events.map(event => (
-        <div key={event.id} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow">
+        <div key={event.id} className={`rounded-2xl border p-5 hover:shadow-md transition-shadow ${getDesaColor(event.desa)}`}>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="space-y-2 flex-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -49,6 +65,7 @@ export default function EventList({ events, onEdit, onDelete, onSelectForAttenda
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
                   {event.date ? format(new Date(event.date), "EEEE, dd MMM yyyy", { locale: id }) : "-"}
+                  {event.time && <span className="ml-1">• {event.time}</span>}
                 </span>
                 {event.location && (
                   <span className="flex items-center gap-1">
