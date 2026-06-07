@@ -5,28 +5,56 @@ import { ChevronDown, ChevronRight, Users, Crown, User, Pencil, Trash2 } from "l
 import { motion, AnimatePresence } from "framer-motion";
 
 // Kelompokkan anggota berdasarkan family_group
+// KK yang namanya = family_group tapi tidak punya family_group sendiri
+// akan diambil dari noGroup dan dimasukkan ke dalam grup sebagai member pertama
 function buildFamilyGroups(members) {
   const grouped = {};
-  const noGroup = [];
+  const noGroupMap = {}; // nama lowercase -> member
 
+  // Pass 1: pisahkan yang punya family_group dan yang tidak
   members.forEach(m => {
     const fg = m.family_group?.trim();
     if (fg) {
       if (!grouped[fg]) grouped[fg] = [];
       grouped[fg].push(m);
     } else {
-      noGroup.push(m);
+      // Simpan di map berdasarkan nama untuk lookup cepat
+      const nameLower = m.full_name?.trim().toLowerCase();
+      if (nameLower) noGroupMap[nameLower] = m;
     }
   });
 
-  // Sort: prioritaskan KK berdasarkan:
-  // 1. Laki-laki + Menikah (kepala keluarga ideal)
-  // 2. Laki-laki saja
-  // 3. Namanya cocok dengan nama grup
-  // 4. Tertua (birth_year terkecil)
-  // 5. A-Z
+  // Pass 2: untuk setiap grup, cari apakah si KK (nama = nama grup)
+  // belum ada di dalam grup — jika ada di noGroupMap, tarik masuk sebagai anggota pertama
+  const injectedIds = new Set();
   Object.keys(grouped).forEach(key => {
+    const keyLower = key.trim().toLowerCase();
+    const alreadyInGroup = grouped[key].some(
+      m => m.full_name?.trim().toLowerCase() === keyLower
+    );
+    if (!alreadyInGroup && noGroupMap[keyLower]) {
+      // Inject KK ke posisi pertama
+      grouped[key].unshift(noGroupMap[keyLower]);
+      injectedIds.add(noGroupMap[keyLower].id);
+    }
+  });
+
+  // Pass 3: noGroup = yang tidak punya family_group DAN tidak diinjeksi ke grup manapun
+  const noGroup = members.filter(
+    m => !m.family_group?.trim() && !injectedIds.has(m.id)
+  );
+
+  // Sort setiap grup: KK (nama cocok) selalu pertama,
+  // lalu laki-laki menikah, laki-laki, perempuan, tertua, A-Z
+  Object.keys(grouped).forEach(key => {
+    const keyLower = key.trim().toLowerCase();
     grouped[key].sort((a, b) => {
+      // KK eksplisit (nama cocok dengan nama grup) selalu pertama
+      const aIsKK = a.full_name?.trim().toLowerCase() === keyLower;
+      const bIsKK = b.full_name?.trim().toLowerCase() === keyLower;
+      if (aIsKK && !bIsKK) return -1;
+      if (!aIsKK && bIsKK) return 1;
+      // Lalu laki-laki menikah > laki-laki > perempuan
       const score = (m) => {
         const isMale = m.gender === "Laki-laki";
         const isMarried = m.marital_status === "Menikah";
@@ -36,11 +64,6 @@ function buildFamilyGroups(members) {
       };
       const sa = score(a), sb = score(b);
       if (sa !== sb) return sa - sb;
-      // Lalu cek nama cocok dengan grup
-      const aIsKK = a.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
-      const bIsKK = b.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
-      if (aIsKK && !bIsKK) return -1;
-      if (!aIsKK && bIsKK) return 1;
       // Lalu tertua
       const aYear = a.birth_year || 9999;
       const bYear = b.birth_year || 9999;
