@@ -34,11 +34,9 @@ export default function CameraScanner({ onScan, active }) {
 
   const startScanner = useCallback(async (cameraId) => {
     setError(null);
-    // Make sure element exists before init
     const el = document.getElementById(DIV_ID);
     if (!el) { setError("Elemen kamera tidak ditemukan."); return; }
 
-    // Destroy previous instance
     if (scannerRef.current) {
       try {
         const s = scannerRef.current;
@@ -52,35 +50,47 @@ export default function CameraScanner({ onScan, active }) {
       const scanner = new Html5Qrcode(DIV_ID, { verbose: false });
       scannerRef.current = scanner;
 
-      const camConfig = cameraId
-        ? cameraId
-        : { facingMode: "environment" };
+      const camConfig = cameraId ? cameraId : { facingMode: "environment" };
 
-      await scanner.start(
-        camConfig,
-        { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
-        (text) => {
-          const val = text.trim().toUpperCase();
-          if (cooldown.current || val === lastScanned.current) return;
-          cooldown.current = true;
-          lastScanned.current = val;
-          onScan(val);
-          setTimeout(() => {
-            cooldown.current = false;
-            lastScanned.current = "";
-          }, 2500);
-        },
-        () => {} // frame error — ignore
-      );
+      // Optimize camera config untuk kompatibilitas lebih baik
+      const scanConfig = {
+        fps: 15,
+        qrbox: { width: 240, height: 240 },
+        aspectRatio: 1.0,
+        disableFlip: false,
+        formatsToSupport: [Html5Qrcode.SupportedFormats.QR_CODE],
+      };
+
+      // Tambah timeout untuk device yang lambat
+      const scannerPromise = scanner.start(camConfig, scanConfig, (text) => {
+        const val = text.trim().toUpperCase();
+        if (cooldown.current || val === lastScanned.current) return;
+        cooldown.current = true;
+        lastScanned.current = val;
+        onScan(val);
+        setTimeout(() => {
+          cooldown.current = false;
+          lastScanned.current = "";
+        }, 2500);
+      }, () => {});
+
+      await Promise.race([
+        scannerPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000))
+      ]);
+
       setStarted(true);
       setError(null);
     } catch (err) {
       scannerRef.current = null;
-      const msg = err?.message || "";
-      if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("denied")) {
-        setError("Akses kamera ditolak. Buka Settings browser → izinkan Kamera untuk situs ini, lalu refresh halaman.");
-      } else if (msg.toLowerCase().includes("notfound") || msg.toLowerCase().includes("not found")) {
+      const msg = (err?.message || "").toLowerCase();
+      
+      if (msg.includes("permission") || msg.includes("denied")) {
+        setError("Akses kamera ditolak. Buka Settings → izinkan Kamera untuk situs ini, lalu refresh halaman.");
+      } else if (msg.includes("notfound") || msg.includes("not found") || msg.includes("no camera")) {
         setError("Kamera tidak ditemukan di perangkat ini.");
+      } else if (msg.includes("timeout") || msg.includes("abort")) {
+        setError("Waktu tunggu kamera habis. Periksa permission kamera dan refresh halaman.");
       } else {
         setError(`Gagal mengakses kamera: ${msg || "unknown error"}`);
       }

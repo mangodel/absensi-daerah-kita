@@ -9,6 +9,7 @@ import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Calendar, 
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import CameraScanner from "@/components/event-attendance/CameraScanner";
+import VolunteerLogin from "@/components/volunteer/VolunteerLogin";
 import { useAppConfig } from "@/lib/AppConfigContext";
 
 const SESSION_KEY = "volunteer_operator";
@@ -63,79 +64,14 @@ function EventSelector({ onSelect }) {
   );
 }
 
-// ─── Step 2: Form Identitas Operator ─────────────────────────────────────────
+// ─── Step 2: Form Identitas Operator dengan Login ─────────────────────────────────────────
 function OperatorForm({ onSave }) {
-  const { config } = useAppConfig();
-  const desaList = config.desa_list || [];
-  const desaKelompokMap = config.desa_kelompok_map || {};
-
-  const [nama, setNama] = useState("");
-  const [desa, setDesa] = useState("");
-  const [kelompok, setKelompok] = useState("");
-
-  const kelompokList = desa ? (desaKelompokMap[desa] || []) : [];
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!nama.trim()) return;
-    const data = { nama: nama.trim(), desa, kelompok };
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
-    onSave(data);
+  const handleLoginSuccess = (operator) => {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(operator));
+    onSave(operator);
   };
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
-            <Users className="w-8 h-8 text-primary" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground">Identitas Operator</h2>
-          <p className="text-sm text-muted-foreground">Isi data sebelum memulai scan absensi</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Nama Operator *</label>
-            <Input
-              autoFocus
-              value={nama}
-              onChange={e => setNama(e.target.value)}
-              placeholder="Nama lengkap Anda..."
-              className="h-11"
-              required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Desa</label>
-            <Select value={desa} onValueChange={v => { setDesa(v); setKelompok(""); }}>
-              <SelectTrigger className="h-11"><SelectValue placeholder="Pilih Desa..." /></SelectTrigger>
-              <SelectContent>
-                {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {desa && kelompokList.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Kelompok</label>
-              <Select value={kelompok} onValueChange={setKelompok}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Pilih Kelompok..." /></SelectTrigger>
-                <SelectContent>
-                  {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <Button type="submit" className="w-full h-12 text-base" disabled={!nama.trim()}>
-            Mulai Scan Absensi →
-          </Button>
-        </form>
-      </div>
-    </div>
-  );
+  return <VolunteerLogin onSuccess={handleLoginSuccess} />;
 }
 
 // ─── Step 3: Scanner Utama ────────────────────────────────────────────────────
