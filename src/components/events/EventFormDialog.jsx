@@ -9,12 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { EVENT_LEVEL_LIST, DAPUKAN_LIST, DAPUKAN_4S } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
-import { Users, X, CheckSquare, RefreshCw } from "lucide-react";
+import { Users, X, CheckSquare, RefreshCw, Upload, FileText, Loader2 } from "lucide-react";
 import { RECURRING_PATTERNS, RECURRING_DURATIONS, generateRecurringDates, dateToISO } from "@/lib/recurringUtils";
 
 const empty = {
   name: "", level: "Kelompok", desa: "", kelompok: "",
   date: "", description: "", location: "",
+  materi: "", pemateri: "", notes: "",
+  document_url: "", document_name: "",
   participant_dapukan: [],
   participant_filter: "",
   recurring_pattern: "",
@@ -78,6 +80,7 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
   const desaKelompokMap = config.desa_kelompok_map || {};
 
   const [form, setForm] = useState(empty);
+  const [uploading, setUploading] = useState(false);
   const isEdit = !!event;
 
   const { data: members = [] } = useQuery({
@@ -106,6 +109,15 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
       if (cur.includes(d)) return { ...prev, participant_dapukan: cur.filter(x => x !== d) };
       return { ...prev, participant_dapukan: [...cur, d] };
     });
+  };
+
+  const handleDocumentUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(prev => ({ ...prev, document_url: file_url, document_name: file.name }));
+    setUploading(false);
   };
 
   const recurringPreview = form.recurring_pattern && form.date
@@ -267,6 +279,45 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Deskripsi</Label>
             <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Opsional" />
+          </div>
+
+          {/* Materi & Pemateri */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Materi / Topik</Label>
+              <Input value={form.materi} onChange={e => setForm({ ...form, materi: e.target.value })} placeholder="cth: Fiqih Sholat" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Pemateri / Pengajar</Label>
+              <Input value={form.pemateri} onChange={e => setForm({ ...form, pemateri: e.target.value })} placeholder="cth: Ust. Ahmad" />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Catatan Tambahan</Label>
+            <Input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Catatan, pesan, atau info penting lainnya" />
+          </div>
+
+          {/* Upload Dokumen */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Dokumen / Susunan Acara</Label>
+            {form.document_url ? (
+              <div className="flex items-center gap-2 p-2.5 border border-border rounded-lg bg-secondary/30">
+                <FileText className="w-4 h-4 text-primary shrink-0" />
+                <a href={form.document_url} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline flex-1 truncate">{form.document_name || "Lihat Dokumen"}</a>
+                <button type="button" onClick={() => setForm(f => ({ ...f, document_url: "", document_name: "" }))}
+                  className="text-muted-foreground hover:text-destructive transition-colors">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label className={`flex items-center gap-2 p-2.5 border border-dashed border-border rounded-lg bg-secondary/20 cursor-pointer hover:bg-secondary/40 transition-colors ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
+                <span className="text-xs text-muted-foreground">{uploading ? "Mengupload..." : "Klik untuk upload PDF / Word / Excel"}</span>
+                <input type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" onChange={handleDocumentUpload} />
+              </label>
+            )}
           </div>
 
           {/* Multi-dapukan participant selector */}

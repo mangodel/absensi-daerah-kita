@@ -44,6 +44,26 @@
       "type": "string",
       "description": "Lokasi kegiatan"
     },
+    "materi": {
+      "type": "string",
+      "description": "Materi / topik yang dibahas dalam kegiatan"
+    },
+    "pemateri": {
+      "type": "string",
+      "description": "Nama pemateri / pengajar / pembicara"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan tambahan mengenai kegiatan"
+    },
+    "document_url": {
+      "type": "string",
+      "description": "URL dokumen/susunan acara yang diupload"
+    },
+    "document_name": {
+      "type": "string",
+      "description": "Nama file dokumen yang diupload"
+    },
     "participant_dapukan": {
       "type": "array",
       "items": {

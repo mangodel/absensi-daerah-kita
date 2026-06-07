@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, MapPin, Calendar, Users, RefreshCw } from "lucide-react";
+import { Pencil, Trash2, MapPin, Calendar, Users, RefreshCw, BookOpen, Mic, FileText, StickyNote } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { RECURRING_PATTERNS } from "@/lib/recurringUtils";
@@ -60,6 +60,37 @@ export default function EventList({ events, onEdit, onDelete, onSelectForAttenda
 
               {event.description && (
                 <p className="text-xs text-muted-foreground">{event.description}</p>
+              )}
+
+              {/* Materi, Pemateri, Notes, Dokumen */}
+              {(event.materi || event.pemateri || event.notes || event.document_url) && (
+                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground pt-1">
+                  {event.materi && (
+                    <span className="flex items-center gap-1">
+                      <BookOpen className="w-3.5 h-3.5 text-primary/70" />
+                      <span className="font-medium text-foreground">{event.materi}</span>
+                    </span>
+                  )}
+                  {event.pemateri && (
+                    <span className="flex items-center gap-1">
+                      <Mic className="w-3.5 h-3.5 text-accent/80" />
+                      {event.pemateri}
+                    </span>
+                  )}
+                  {event.notes && (
+                    <span className="flex items-center gap-1">
+                      <StickyNote className="w-3.5 h-3.5 text-orange-400" />
+                      {event.notes}
+                    </span>
+                  )}
+                  {event.document_url && (
+                    <a href={event.document_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-primary hover:underline">
+                      <FileText className="w-3.5 h-3.5" />
+                      {event.document_name || "Lihat Dokumen"}
+                    </a>
+                  )}
+                </div>
               )}
             </div>
 
