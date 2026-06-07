@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, GripVertical, Copy, ExternalLink, MapPin, Mail } from "lucide-react";
+import { Plus, Trash2, GripVertical, Copy, ExternalLink, MapPin, Mail, Map } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import VenueLocationPicker from "./VenueLocationPicker";
 
 const DEFAULT_FIELDS = [
   { key: "full_name", label: "Nama Lengkap", type: "text", required: true },
@@ -39,6 +40,7 @@ export default function FormConfigEditor({ eventId, eventName }) {
   const [venueRadius, setVenueRadius] = useState("200");
   const [configId, setConfigId] = useState(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   const { data: configs = [] } = useQuery({
     queryKey: ["event-form-config", eventId],
@@ -149,25 +151,48 @@ export default function FormConfigEditor({ eventId, eventName }) {
         <p className="text-xs text-muted-foreground">Jika aktif, scan QR hanya valid jika peserta berada dalam radius venue. Cegah check-in dari luar lokasi acara.</p>
         {geofence && (
           <div className="space-y-3 pt-1">
+            {/* Pilih di Peta */}
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="flex-1" onClick={() => setShowMapPicker(true)}>
+                <Map className="w-3.5 h-3.5 mr-1" /> Pilih di Peta / Cari Alamat
+              </Button>
+              <Button size="sm" variant="outline" onClick={detectLocation} disabled={detectingLocation}>
+                <MapPin className="w-3.5 h-3.5 mr-1" />
+                {detectingLocation ? "Mendeteksi..." : "Lokasi Saya"}
+              </Button>
+            </div>
+
+            {/* Koordinat manual */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Latitude Venue</Label>
+                <Label className="text-xs text-muted-foreground">Latitude</Label>
                 <Input value={venueLat} onChange={e => setVenueLat(e.target.value)} placeholder="-33.8688" className="text-xs" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Longitude Venue</Label>
+                <Label className="text-xs text-muted-foreground">Longitude</Label>
                 <Input value={venueLng} onChange={e => setVenueLng(e.target.value)} placeholder="151.2093" className="text-xs" />
               </div>
             </div>
+
+            {venueLat && venueLng && (
+              <p className="text-xs text-muted-foreground">
+                📍 Venue: {Number(venueLat).toFixed(5)}, {Number(venueLng).toFixed(5)}
+              </p>
+            )}
+
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Radius (meter)</Label>
               <Input value={venueRadius} onChange={e => setVenueRadius(e.target.value)} placeholder="200" type="number" className="text-xs" />
             </div>
-            <Button size="sm" variant="outline" onClick={detectLocation} disabled={detectingLocation}>
-              <MapPin className="w-3.5 h-3.5 mr-1" />
-              {detectingLocation ? "Mendeteksi..." : "Gunakan Lokasi Saat Ini sebagai Venue"}
-            </Button>
           </div>
+        )}
+        {showMapPicker && (
+          <VenueLocationPicker
+            lat={venueLat}
+            lng={venueLng}
+            onConfirm={(lat, lng) => { setVenueLat(lat); setVenueLng(lng); }}
+            onClose={() => setShowMapPicker(false)}
+          />
         )}
       </div>
 
