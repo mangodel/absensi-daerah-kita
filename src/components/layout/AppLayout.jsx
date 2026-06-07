@@ -12,7 +12,7 @@ export default function AppLayout({ isLoading = false }) {
         <main className="w-full md:ml-64 pb-36 md:pb-8">
           <div className="p-3 md:p-8">
             {isLoading ? (
-              <div className="flex items-center justify-center min-h-screen">
+              <div className="flex items-center justify-center h-64">
                 <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
               </div>
             ) : (
