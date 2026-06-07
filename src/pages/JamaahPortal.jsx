@@ -636,10 +636,9 @@ export default function JamaahPortal() {
               </Card>
             )}
           </TabsContent>
+          </Tabs>
 
-
-
-        {/* Navigasi ke halaman terpisah */}
+          {/* Navigasi ke halaman terpisah */}
          <div className="grid grid-cols-2 gap-3 mt-6">
            <Link to="/jamaah/survey">
             <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20 hover:border-primary/50">

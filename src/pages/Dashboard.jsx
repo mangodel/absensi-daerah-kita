@@ -128,6 +128,7 @@ export default function Dashboard() {
   const inactiveMembers = members.filter(m => m.status === "Tidak Aktif").length;
 
   // Hitung total KK: family_group unik = 1 KK + member tanpa family_group = mandiri (1 KK)
+  // Hitung berdasarkan members yang sudah difilter (sesuai scope admin)
   const totalKK = (() => {
     const groupsSet = new Set();
     members.forEach(m => {

@@ -54,6 +54,7 @@ export default function Sidebar() {
   const visibleNav = navItems.filter(item => {
     if (item.path === "/transfers") return isSuperAdmin || isAdminDesa;
     if (item.path === "/structure") return isSuperAdmin || isAdminDesa;
+    if (item.path === "/broadcast") return isSuperAdmin || isAdminDesa;
     if (item.adminOnly) return isSuperAdmin || isAdminDesa;
     return true;
   });
