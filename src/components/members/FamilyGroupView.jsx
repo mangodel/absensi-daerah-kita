@@ -107,15 +107,17 @@ function MemberRow({ member, index, isHead, onEdit, onDelete }) {
 
 function FamilyCard({ familyName, members, onEdit, onDelete }) {
   const [open, setOpen] = useState(true);
-  const head = members[0];
-  const others = members.slice(1);
-  // Kepala Keluarga = anggota pertama yang laki-laki atau namanya = familyName
-  const headIsKK = isKepalaKeluarga(head, familyName);
   const activeCount = members.filter(m => m.status === "Aktif").length;
-  
-  // Alamat dari kepala keluarga
-  const addressStr = head && (head.address || head.suburb || head.state || head.postcode)
-    ? `${head.address || ""} ${head.suburb || ""} ${head.state || ""} ${head.postcode || ""}`.trim()
+
+  // Cari member yang namanya = familyName (KK terdaftar)
+  const kkMember = members.find(m => m.full_name?.trim().toLowerCase() === familyName.trim().toLowerCase());
+  // Anggota selain KK
+  const otherMembers = members.filter(m => m.id !== kkMember?.id);
+
+  // Alamat dari KK (jika ada) atau member pertama
+  const kkSource = kkMember || members[0];
+  const addressStr = kkSource && (kkSource.address || kkSource.suburb || kkSource.state || kkSource.postcode)
+    ? `${kkSource.address || ""} ${kkSource.suburb || ""} ${kkSource.state || ""} ${kkSource.postcode || ""}`.trim()
     : null;
 
   return (
@@ -154,9 +156,26 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
           >
             <div className="px-4 pb-3 space-y-1 border-t border-border">
               <div className="pt-2">
-                <MemberRow member={head} index={1} isHead={headIsKK} onEdit={onEdit} onDelete={onDelete} />
-                {others.map((m, i) => (
-                  <MemberRow key={m.id} member={m} index={i + 2} isHead={isKepalaKeluarga(m, familyName)} onEdit={onEdit} onDelete={onDelete} />
+                {/* Jika KK terdaftar sebagai member, tampilkan dia pertama */}
+                {kkMember ? (
+                  <MemberRow member={kkMember} index={1} isHead={true} onEdit={onEdit} onDelete={onDelete} />
+                ) : (
+                  /* KK tidak terdaftar sebagai member — tampilkan placeholder */
+                  <div className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-primary/5 border border-primary/10">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 bg-primary text-primary-foreground">
+                      <Crown className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm text-primary">{familyName}</span>
+                        <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20" variant="outline">KK</Badge>
+                        <Badge className="text-[9px] px-1.5 py-0 bg-muted text-muted-foreground" variant="outline">Belum terdaftar</Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {otherMembers.map((m, i) => (
+                  <MemberRow key={m.id} member={m} index={i + 2} isHead={false} onEdit={onEdit} onDelete={onDelete} />
                 ))}
               </div>
             </div>
