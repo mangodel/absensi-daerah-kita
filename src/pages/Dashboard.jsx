@@ -133,13 +133,13 @@ export default function Dashboard() {
   const inactiveMembers = members.filter(m => m.status === "Tidak Aktif").length;
 
   // Hitung total KK: family_group unik = 1 KK + member tanpa family_group = mandiri (1 KK)
-  // Hitung berdasarkan members yang sudah difilter (sesuai scope admin)
+  // Hitung berdasarkan members AKTIF yang sudah difilter (sesuai scope admin)
   const totalKK = useMemo(() => {
     const scopedMems = isAdminKelompok && userKelompok
-      ? members.filter(m => m.kelompok === userKelompok)
+      ? members.filter(m => m.kelompok === userKelompok && m.status === "Aktif")
       : isAdminDesa && userDesa
-      ? members.filter(m => m.desa === userDesa)
-      : members;
+      ? members.filter(m => m.desa === userDesa && m.status === "Aktif")
+      : members.filter(m => m.status === "Aktif");
     
     const groupsSet = new Set();
     scopedMems.forEach(m => {
