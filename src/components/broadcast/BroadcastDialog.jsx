@@ -10,7 +10,15 @@ import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useToast } from "@/components/ui/use-toast";
 
-export default function BroadcastDialog({ open, onOpenChange, members = [], onSent }) {
+export default function BroadcastDialog({ 
+  open, 
+  onOpenChange, 
+  members = [], 
+  onSent,
+  scopeOverride,
+  desaOverride,
+  kelompokOverride
+}) {
   const { config } = useAppConfig();
   const { toast } = useToast();
   const desaList = config.desa_list || [];
@@ -18,9 +26,9 @@ export default function BroadcastDialog({ open, onOpenChange, members = [], onSe
 
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [scope, setScope] = useState("Semua");
-  const [targetDesa, setTargetDesa] = useState("");
-  const [targetKelompok, setTargetKelompok] = useState("");
+  const [scope, setScope] = useState(scopeOverride || "Semua");
+  const [targetDesa, setTargetDesa] = useState(desaOverride || "");
+  const [targetKelompok, setTargetKelompok] = useState(kelompokOverride || "");
   const [channel, setChannel] = useState("Portal");
   const [sending, setSending] = useState(false);
 
@@ -118,7 +126,7 @@ export default function BroadcastDialog({ open, onOpenChange, members = [], onSe
           {/* Target */}
           <div className="space-y-2">
             <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Target Penerima</Label>
-            <Select value={scope} onValueChange={v => { setScope(v); setTargetDesa(""); setTargetKelompok(""); }}>
+            <Select value={scope} onValueChange={v => { setScope(v); setTargetDesa(""); setTargetKelompok(""); }} disabled={!!scopeOverride}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -129,7 +137,7 @@ export default function BroadcastDialog({ open, onOpenChange, members = [], onSe
               </SelectContent>
             </Select>
             {scope === "Desa" && (
-              <Select value={targetDesa} onValueChange={setTargetDesa}>
+              <Select value={targetDesa} onValueChange={setTargetDesa} disabled={!!desaOverride}>
                 <SelectTrigger><SelectValue placeholder="Pilih Desa..." /></SelectTrigger>
                 <SelectContent>
                   {desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
@@ -137,7 +145,7 @@ export default function BroadcastDialog({ open, onOpenChange, members = [], onSe
               </Select>
             )}
             {scope === "Kelompok" && (
-              <Select value={targetKelompok} onValueChange={setTargetKelompok}>
+              <Select value={targetKelompok} onValueChange={setTargetKelompok} disabled={!!kelompokOverride}>
                 <SelectTrigger><SelectValue placeholder="Pilih Kelompok..." /></SelectTrigger>
                 <SelectContent>
                   {kelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}

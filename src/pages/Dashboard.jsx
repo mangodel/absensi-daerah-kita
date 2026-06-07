@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home } from "lucide-react";
+import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home, Megaphone, Plus } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import GenerusBreakdown from "@/components/dashboard/GenerusBreakdown";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
@@ -8,8 +8,10 @@ import DesaOverview from "@/components/dashboard/DesaOverview";
 import AustraliaMap from "@/components/dashboard/AustraliaMap";
 import OrganizationDisplay from "@/components/dashboard/OrganizationDisplay";
 import MonthlyAttendanceSummary from "@/components/dashboard/MonthlyAttendanceSummary";
+import BroadcastDialog from "@/components/broadcast/BroadcastDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
@@ -114,6 +116,8 @@ export default function Dashboard() {
   const pt = config.page_titles || {};
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { filterMembers, filterEvents, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
 
   const { data: allMembers = [] } = useQuery({ queryKey: ["members"], queryFn: () => base44.entities.Member.list() });
@@ -303,6 +307,35 @@ export default function Dashboard() {
           desaKelompokMap={config.desa_kelompok_map || {}}
         />
       )}
-    </div>
-  );
-}
+
+      {/* Quick Broadcast — untuk admin desa & kelompok */}
+      {(isAdminDesa || isAdminKelompok) && (
+        <div className="bg-card border border-primary/20 rounded-2xl p-5 space-y-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Megaphone className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-foreground">Kirim Pengumuman</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">Sampaikan informasi penting kepada jamaah {isAdminKelompok ? `kelompok ${userKelompok}` : `desa ${userDesa}`}</p>
+            </div>
+          </div>
+          <Button onClick={() => setBroadcastOpen(true)} className="w-full gap-2" variant="default">
+            <Plus className="w-4 h-4" />
+            Buat Broadcast
+          </Button>
+        </div>
+      )}
+
+      <BroadcastDialog
+        open={broadcastOpen}
+        onOpenChange={setBroadcastOpen}
+        members={members}
+        onSent={() => queryClient.invalidateQueries({ queryKey: ["broadcasts"] })}
+        scopeOverride={isAdminKelompok ? "Kelompok" : isAdminDesa ? "Desa" : undefined}
+        desaOverride={userDesa}
+        kelompokOverride={userKelompok}
+      />
+      </div>
+      );
+      }
