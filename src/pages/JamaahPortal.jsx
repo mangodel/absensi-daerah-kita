@@ -37,12 +37,14 @@ const EDITABLE_FIELDS = [
   { key: "birth_year", label: "Tahun Lahir", type: "number", placeholder: "1990" },
   { key: "visa_status", label: "Status Visa", type: "select", options: ["PR", "Citizen", "Student", "Sponsor", "Bridging", "WHV", "Tourist", "Partner", "Lainnya"] },
   { key: "employment", label: "Jenis Pekerjaan", type: "select", options: ["Bekerja", "Tidak Bekerja", "Belum Bekerja", "Student", "Retired"] },
-  { key: "address", label: "Alamat", type: "textarea", placeholder: "Alamat Anda" },
+  { key: "address", label: "Alamat Australia", type: "address_australia", placeholder: "Cukup diisi oleh kepala keluarga" },
   { key: "phone", label: "Nomor Telepon", type: "phone", placeholder: "08xxxx / 02xxxx" },
   { key: "whatsapp", label: "Nomor WhatsApp", type: "phone", placeholder: "08xxxx / 02xxxx" },
   { key: "emergency_contact", label: "Kontak Darurat (Nama)", type: "text", placeholder: "Nama orang yang dapat dihubungi" },
   { key: "emergency_phone", label: "Nomor Telepon Kontak Darurat", type: "phone", placeholder: "08xxxx / 02xxxx" },
 ];
+
+const AUSTRALIA_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"];
 
 const READONLY_FIELDS = [
   { key: "full_name", label: "Nama Lengkap" },
@@ -107,6 +109,9 @@ export default function JamaahPortal() {
         visa_status: myMember.visa_status || "",
         employment: myMember.employment || "",
         address: myMember.address || "",
+        suburb: myMember.suburb || "",
+        state: myMember.state || "",
+        postcode: myMember.postcode || "",
         phone: myMember.phone || "",
         phone_country_code: myMember.phone_country_code || "Indonesia",
         whatsapp: myMember.whatsapp || "",
@@ -143,15 +148,14 @@ export default function JamaahPortal() {
   };
 
   const handleEditFamilyMember = (member) => {
-    setEditingFamily(member);
-    setFamilyEditData({
-      full_name: member.full_name || "",
-      gender: member.gender || "",
-      marital_status: member.marital_status || "",
-      phone: member.phone || "",
-      phone_country_code: member.phone_country_code || "Indonesia",
-      address: member.address || "",
-    });
+   setEditingFamily(member);
+   setFamilyEditData({
+     full_name: member.full_name || "",
+     gender: member.gender || "",
+     marital_status: member.marital_status || "",
+     phone: member.phone || "",
+     phone_country_code: member.phone_country_code || "Indonesia",
+   });
   };
 
   const handleSaveFamily = () => {
@@ -337,21 +341,67 @@ export default function JamaahPortal() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {EDITABLE_FIELDS.map(f => {
-                    const isPhoneField = f.type === "phone";
-                    const countryCodeKey = isPhoneField ? f.key.replace("phone", "country_code").replace("_phone", "_phone_country_code") : null;
-                    
-                    return (
-                      <div key={f.key} className="space-y-1.5">
-                        <Label className="text-xs">{f.label}</Label>
-                        {f.type === "textarea" ? (
-                          <Textarea
-                            value={editData[f.key] || ""}
-                            onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
-                            placeholder={f.placeholder}
-                            rows={3}
-                            className="text-sm"
-                          />
-                        ) : f.type === "select" ? (
+                     const isPhoneField = f.type === "phone";
+                     const countryCodeKey = isPhoneField ? f.key.replace("phone", "country_code").replace("_phone", "_phone_country_code") : null;
+
+                     return (
+                       <div key={f.key} className="space-y-1.5">
+                         <Label className="text-xs">{f.label}</Label>
+                         {f.type === "address_australia" ? (
+                           <div className="space-y-3 p-3 border border-border rounded-lg bg-secondary/30">
+                             <p className="text-xs text-muted-foreground">Alamat cukup diisi oleh kepala keluarga saja. Anggota keluarga lain akan menggunakan alamat ini.</p>
+                             <div className="space-y-1.5">
+                               <Label className="text-xs">Alamat (Street Address)</Label>
+                               <Input
+                                 value={editData.address || ""}
+                                 onChange={e => setEditData(prev => ({ ...prev, address: e.target.value }))}
+                                 placeholder="Cth: 123 Main Street"
+                                 className="text-sm"
+                               />
+                             </div>
+                             <div className="grid grid-cols-2 gap-3">
+                               <div className="space-y-1.5">
+                                 <Label className="text-xs">Suburb / Kota</Label>
+                                 <Input
+                                   value={editData.suburb || ""}
+                                   onChange={e => setEditData(prev => ({ ...prev, suburb: e.target.value }))}
+                                   placeholder="Cth: Sydney"
+                                   className="text-sm"
+                                 />
+                               </div>
+                               <div className="space-y-1.5">
+                                 <Label className="text-xs">State</Label>
+                                 <Select value={editData.state || ""} onValueChange={val => setEditData(prev => ({ ...prev, state: val }))}>
+                                   <SelectTrigger className="text-sm">
+                                     <SelectValue placeholder="Pilih State" />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     {AUSTRALIA_STATES.map(s => (
+                                       <SelectItem key={s} value={s}>{s}</SelectItem>
+                                     ))}
+                                   </SelectContent>
+                                 </Select>
+                               </div>
+                             </div>
+                             <div className="space-y-1.5">
+                               <Label className="text-xs">Postcode</Label>
+                               <Input
+                                 value={editData.postcode || ""}
+                                 onChange={e => setEditData(prev => ({ ...prev, postcode: e.target.value }))}
+                                 placeholder="Cth: 2000"
+                                 className="text-sm"
+                               />
+                             </div>
+                           </div>
+                         ) : f.type === "textarea" ? (
+                           <Textarea
+                             value={editData[f.key] || ""}
+                             onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
+                             placeholder={f.placeholder}
+                             rows={3}
+                             className="text-sm"
+                           />
+                         ) : f.type === "select" ? (
                           <Select value={editData[f.key] || ""} onValueChange={val => setEditData(prev => ({ ...prev, [f.key]: val }))}>
                             <SelectTrigger className="text-sm">
                               <SelectValue placeholder={`Pilih ${f.label.toLowerCase()}`} />
@@ -604,17 +654,6 @@ export default function JamaahPortal() {
                     className="text-sm flex-1"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm">Alamat</Label>
-                <Textarea
-                  value={familyEditData.address || ""}
-                  onChange={e => setFamilyEditData(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="Alamat lengkap"
-                  rows={2}
-                  className="text-sm resize-none"
-                />
               </div>
             </div>
           )}
