@@ -56,7 +56,7 @@ function TeamCard({ tim, members, allMembers }) {
 
 export default function OrganizationDisplay({ level, desa, kelompok }) {
   const { data: timConfigs = [] } = useQuery({
-    queryKey: ["timConfigs", level, desa, kelompok],
+    queryKey: ["timConfigs"],
     queryFn: () => base44.entities.TimConfig.list(),
   });
 
@@ -65,15 +65,21 @@ export default function OrganizationDisplay({ level, desa, kelompok }) {
     queryFn: () => base44.entities.Member.list(),
   });
 
-  // Filter tim configs berdasarkan level dan location
+  // Filter tim configs: jika level Desa/Kelompok, tampilkan struktur Daerah + struktur level terkait
   const relevantTims = timConfigs.filter(t => {
-    if (t.level !== level) return false;
-    if (level === "Desa" && t.desa !== desa) return false;
-    if (level === "Kelompok" && (t.desa !== desa || t.kelompok !== kelompok)) return false;
-    return true;
+    if (level === "Daerah") {
+      return t.level === "Daerah";
+    }
+    if (level === "Desa") {
+      return t.level === "Daerah" || (t.level === "Desa" && t.desa === desa);
+    }
+    if (level === "Kelompok") {
+      return t.level === "Daerah" || (t.level === "Desa" && t.desa === desa) || (t.level === "Kelompok" && t.desa === desa && t.kelompok === kelompok);
+    }
+    return false;
   });
 
-  // Pisahkan berdasarkan kategori
+  // Pisahkan berdasarkan kategori dan level
   const serangkai = relevantTims.filter(t => t.tim_category === "4_Serangkai");
   const tim7 = relevantTims.filter(t => t.tim_category === "Tim_7");
 
