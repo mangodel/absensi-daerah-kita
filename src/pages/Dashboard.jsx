@@ -19,6 +19,7 @@ import { Link } from "react-router-dom";
 import { isToday, isPast, format } from "date-fns";
 import { id } from "date-fns/locale";
 import { MONTHS } from "@/lib/constants";
+import { AlertCircle } from "lucide-react";
 
 function pct(val, total) {
   if (!total) return "0%";
@@ -172,6 +173,24 @@ export default function Dashboard() {
     ? userDesa
     : "Daerah";
 
+  // Hitung kehadiran bulan lalu untuk filter "jarang hadir"
+  const lastMonth = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const lastMonthNum = lastMonth.getMonth() + 1;
+  const lastMonthYear = lastMonth.getFullYear();
+  
+  const lowAttendanceMembers = useMemo(() => {
+    const lastMonthAtts = attendances.filter(a => a.month === lastMonthNum && a.year === lastMonthYear);
+    
+    return members.filter(m => {
+      const memberAtts = lastMonthAtts.filter(a => a.member_id === m.id);
+      if (memberAtts.length === 0) return false; // Tidak ada data absensi
+      const hadirCount = memberAtts.filter(a => a.status === "Hadir").length;
+      const rate = (hadirCount / memberAtts.length) * 100;
+      return rate < 50;
+    });
+  }, [members, attendances, lastMonthNum, lastMonthYear]);
+
   return (
     <div className="space-y-6 pb-20 md:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 pt-2">
@@ -261,6 +280,35 @@ export default function Dashboard() {
             </div>
           </div>
         </Link>
+      )}
+
+      {/* Jamaah Jarang Hadir — untuk admin desa & kelompok */}
+      {(isAdminDesa || isAdminKelompok) && lowAttendanceMembers.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-amber-900 mb-1">Jamaah Jarang Hadir</h3>
+              <p className="text-sm text-amber-800 mb-3">Kehadiran di bawah 50% pada {format(lastMonth, "MMMM yyyy", { locale: id })}</p>
+              <div className="space-y-2">
+                {lowAttendanceMembers.slice(0, 5).map(m => {
+                  const memberAtts = attendances.filter(a => a.member_id === m.id && a.month === lastMonthNum && a.year === lastMonthYear);
+                  const hadirCount = memberAtts.filter(a => a.status === "Hadir").length;
+                  const rate = Math.round((hadirCount / memberAtts.length) * 100);
+                  return (
+                    <div key={m.id} className="flex items-center justify-between p-2 bg-white rounded-lg border border-amber-100">
+                      <span className="text-sm text-foreground">{m.full_name}</span>
+                      <Badge className="bg-amber-100 text-amber-700 border-amber-200">{rate}%</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+              {lowAttendanceMembers.length > 5 && (
+                <p className="text-xs text-amber-700 mt-2">+{lowAttendanceMembers.length - 5} lainnya</p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {isAdminKelompok && (
