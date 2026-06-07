@@ -19,15 +19,29 @@ function buildFamilyGroups(members) {
     }
   });
 
-  // Sort: prioritaskan yang namanya cocok dg nama grup (KK eksplisit),
-  // lalu yang lahir paling tua (birth_year paling kecil), lalu nama A-Z
+  // Sort: prioritaskan KK berdasarkan:
+  // 1. Laki-laki + Menikah (kepala keluarga ideal)
+  // 2. Laki-laki saja
+  // 3. Namanya cocok dengan nama grup
+  // 4. Tertua (birth_year terkecil)
+  // 5. A-Z
   Object.keys(grouped).forEach(key => {
     grouped[key].sort((a, b) => {
+      const score = (m) => {
+        const isMale = m.gender === "Laki-laki";
+        const isMarried = m.marital_status === "Menikah";
+        if (isMale && isMarried) return 0;
+        if (isMale) return 1;
+        return 2;
+      };
+      const sa = score(a), sb = score(b);
+      if (sa !== sb) return sa - sb;
+      // Lalu cek nama cocok dengan grup
       const aIsKK = a.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
       const bIsKK = b.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
       if (aIsKK && !bIsKK) return -1;
       if (!aIsKK && bIsKK) return 1;
-      // Siapa yang paling tua (birth_year terkecil) = KK
+      // Lalu tertua
       const aYear = a.birth_year || 9999;
       const bYear = b.birth_year || 9999;
       if (aYear !== bYear) return aYear - bYear;
@@ -129,7 +143,7 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold text-sm text-foreground truncate">Keluarga {familyName}</p>
+            <p className="font-semibold text-sm text-foreground truncate">Keluarga {kkMember?.full_name || familyName}</p>
             <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20" variant="outline">KK</Badge>
           </div>
           <div className="flex flex-col gap-1 mt-0.5">
