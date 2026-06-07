@@ -53,6 +53,10 @@ export default function MonthlyReport() {
   const currentMonth = new Date().getMonth() + 1;
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [selectedMonth, setSelectedMonth] = useState(String(currentMonth));
+  const [reportType, setReportType] = useState("monthly"); // "monthly" | "quarterly"
+  const [viewMode, setViewMode] = useState("summary"); // "summary" | "individual" | "family"
+  const [filterDesa, setFilterDesa] = useState("all");
+  const [filterKelompok, setFilterKelompok] = useState("all");
   const [expandedDesa, setExpandedDesa] = useState(null);
   const [exporting, setExporting] = useState(false);
   const reportRef = useRef(null);
@@ -71,7 +75,12 @@ export default function MonthlyReport() {
   const month = Number(selectedMonth);
   const year = Number(selectedYear);
 
-  const allMonthAttendances = allAttendances.filter(a => a.month === month && a.year === year);
+  // Determine months for report
+  const reportMonths = reportType === "quarterly"
+    ? [Math.floor((month - 1) / 3) * 3 + 1, Math.floor((month - 1) / 3) * 3 + 2, Math.floor((month - 1) / 3) * 3 + 3]
+    : [month];
+
+  const allMonthAttendances = allAttendances.filter(a => reportMonths.includes(a.month) && a.year === year);
   const monthAttendances = useMemo(() => {
     if (isSuperAdmin) return allMonthAttendances;
     if (isAdminDesa && userDesa) return allMonthAttendances.filter(a => a.desa === userDesa);
@@ -79,12 +88,17 @@ export default function MonthlyReport() {
     return [];
   }, [allMonthAttendances, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok]);
 
-  const monthEvents = events.filter(e => e.month === month && e.year === year);
+  const monthEvents = events.filter(e => reportMonths.includes(e.month) && e.year === year);
 
   const desaStats = useMemo(() => {
-    const desaList = isSuperAdmin ? Object.keys(desaKelompokMap) :
+    let desaList = isSuperAdmin ? Object.keys(desaKelompokMap) :
       isAdminDesa && userDesa ? [userDesa] :
       isAdminKelompok && userDesa ? [userDesa] : [];
+
+    // Apply filter
+    if (filterDesa !== "all") {
+      desaList = desaList.filter(d => d === filterDesa);
+    }
 
     return desaList.map(desa => {
       const desaMembers = members.filter(m => m.desa === desa && m.status === "Aktif");
@@ -92,9 +106,14 @@ export default function MonthlyReport() {
         isAdminKelompok ? k === userKelompok : true
       );
 
-      const kelompokStats = kelompoks.map(kelompok => {
+      let filteredKelompoks = kelompoks;
+      if (filterKelompok !== "all") {
+        filteredKelompoks = kelompoks.filter(k => k === filterKelompok);
+      }
+
+      const kelompokStats = filteredKelompoks.map(kelompok => {
         const km = desaMembers.filter(m => m.kelompok === kelompok);
-        const kAtts = allMonthAttendances.filter(a => a.kelompok === kelompok);
+        const kAtts = allMonthAttendances.filter(a => a.kelompok === kelompok && a.desa === desa);
         const hadir = kAtts.filter(a => a.status === "Hadir").length;
         const total = kAtts.length;
         const kEvents = allEvents.filter(e =>
@@ -113,7 +132,7 @@ export default function MonthlyReport() {
 
       return { desa, memberCount: desaMembers.length, totalHadir, totalAtt, kelompokStats, rate: pct(totalHadir, totalAtt) };
     });
-  }, [members, allMonthAttendances, allEvents, desaKelompokMap, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok, month, year]);
+  }, [members, allMonthAttendances, allEvents, desaKelompokMap, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok, month, year, filterDesa, filterKelompok]);
 
   const totalActiveMembers = members.filter(m => m.status === "Aktif").length;
   const totalHadir = monthAttendances.filter(a => a.status === "Hadir").length;
@@ -187,20 +206,37 @@ export default function MonthlyReport() {
     setExporting(false);
   };
 
+  const availableDesas = isSuperAdmin ? Object.keys(desaKelompokMap) :
+    isAdminDesa && userDesa ? [userDesa] :
+    isAdminKelompok && userDesa ? [userDesa] : [];
+
+  const availableKelompoks = filterDesa !== "all" && desaKelompokMap[filterDesa]
+    ? desaKelompokMap[filterDesa]
+    : filterDesa === "all" && availableDesas.length > 0
+    ? Array.from(new Set(availableDesas.flatMap(d => desaKelompokMap[d] || [])))
+    : [];
+
   return (
     <div className="space-y-6 pb-20 md:pb-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <FileBarChart className="w-6 h-6 text-primary" /> Laporan Bulanan
+            <FileBarChart className="w-6 h-6 text-primary" /> Laporan Kehadiran
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Rekap kehadiran dan kegiatan per bulan
+            Rekap kehadiran dan kegiatan {reportType === "quarterly" ? "per triwulan" : "per bulan"}
             <span className="ml-2 inline-block text-[10px] bg-primary/5 border border-primary/20 text-primary rounded-md px-2 py-0.5">{scopeLabel}</span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Select value={reportType} onValueChange={setReportType}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="monthly">Laporan Bulanan</SelectItem>
+              <SelectItem value="quarterly">Laporan Triwulan (3 Bulan)</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -222,11 +258,57 @@ export default function MonthlyReport() {
         </div>
       </div>
 
+      {/* Filter & View Mode */}
+      <div className="flex flex-wrap gap-2 items-center">
+        {!isAdminKelompok && (
+          <>
+            <Select value={filterDesa} onValueChange={d => { setFilterDesa(d); setFilterKelompok("all"); }}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="Semua Desa" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Desa</SelectItem>
+                {availableDesas.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {availableKelompoks.length > 0 && (
+              <Select value={filterKelompok} onValueChange={setFilterKelompok}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Semua Kelompok" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Kelompok</SelectItem>
+                  {availableKelompoks.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+          </>
+        )}
+        
+        {!isAdminKelompok && (
+          <div className="flex gap-1 ml-auto bg-secondary rounded-lg p-1">
+            {[
+              { key: "summary", label: "Ringkasan" },
+              { key: "individual", label: "Per Individu" },
+              { key: "family", label: "Per KK" }
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setViewMode(key)}
+                className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                  viewMode === key ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Exportable content */}
       <div ref={reportRef} className="space-y-6 bg-background p-2">
         {/* Report title (visible in export) */}
         <div className="hidden print:block text-center mb-2">
-          <h2 className="text-lg font-bold">Laporan Absensi {MONTHS[month - 1]} {year} — {scopeLabel}</h2>
+          <h2 className="text-lg font-bold">
+            Laporan Absensi {reportType === "quarterly" ? `Triwulan ${Math.floor((month - 1) / 3) + 1}` : MONTHS[month - 1]} {year} — {scopeLabel}
+          </h2>
         </div>
 
         {/* Summary Cards */}
@@ -302,8 +384,131 @@ export default function MonthlyReport() {
           </div>
         )}
 
-        {/* Per-Desa Breakdown */}
-        {!isAdminKelompok && (
+        {/* Per Individual View */}
+        {!isAdminKelompok && viewMode === "individual" && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground">Rekap Kehadiran Per Individu</h2>
+            {desaStats.map(({ desa, kelompokStats }) => (
+              <div key={desa} className="bg-card border border-border rounded-2xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-border bg-secondary/30">
+                  <p className="text-sm font-semibold">{desa}</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-secondary/50">
+                      <tr>
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Nama</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Kelompok</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Hadir</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Izin</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Alpa</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">% Hadir</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {kelompokStats.map(({ kelompok }) => {
+                        const kMembers = members.filter(m => m.desa === desa && m.kelompok === kelompok && m.status === "Aktif");
+                        return kMembers.map(member => {
+                          const memberAtts = allMonthAttendances.filter(a => a.member_id === member.id);
+                          const hadir = memberAtts.filter(a => a.status === "Hadir").length;
+                          const izin = memberAtts.filter(a => ["Izin Sekolah", "Izin Kerja"].includes(a.status)).length;
+                          const alpa = memberAtts.filter(a => a.status === "Alpa").length;
+                          const total = memberAtts.length;
+                          const rate = total > 0 ? Math.round((hadir / total) * 100) : 0;
+                          
+                          return (
+                            <tr key={member.id} className="border-t border-border hover:bg-secondary/20">
+                              <td className="px-4 py-2 font-medium text-xs">{member.full_name}</td>
+                              <td className="px-4 py-2 text-center text-xs text-muted-foreground">{kelompok}</td>
+                              <td className="px-4 py-2 text-center text-xs text-accent font-medium">{hadir}</td>
+                              <td className="px-4 py-2 text-center text-xs text-primary">{izin}</td>
+                              <td className="px-4 py-2 text-center text-xs text-destructive">{alpa}</td>
+                              <td className="px-4 py-2 text-center">
+                                <Badge variant="outline" className={total > 0 ? "bg-accent/10 text-accent border-accent/20 text-[10px]" : "bg-secondary text-muted-foreground text-[10px]"}>
+                                  {rate}%
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Per Family (KK) View */}
+        {!isAdminKelompok && viewMode === "family" && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground">Rekap Kehadiran Per Kepala Keluarga (KK)</h2>
+            {desaStats.map(({ desa }) => {
+              const desaMembers = members.filter(m => m.desa === desa && m.status === "Aktif");
+              const familyGroups = new Map();
+              
+              desaMembers.forEach(m => {
+                const key = m.family_group || `${m.full_name}-${m.id}`;
+                if (!familyGroups.has(key)) {
+                  familyGroups.set(key, []);
+                }
+                familyGroups.get(key).push(m);
+              });
+
+              return (
+                <div key={desa} className="bg-card border border-border rounded-2xl overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border bg-secondary/30">
+                    <p className="text-sm font-semibold">{desa} ({familyGroups.size} KK)</p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-secondary/50">
+                        <tr>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Kepala Keluarga</th>
+                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Anggota</th>
+                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Hadir (Rerata)</th>
+                          <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">% Kehadiran</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from(familyGroups.entries()).map(([familyKey, familyMembers]) => {
+                          let totalHadir = 0;
+                          let totalRecords = 0;
+                          
+                          familyMembers.forEach(m => {
+                            const memberAtts = allMonthAttendances.filter(a => a.member_id === m.id);
+                            totalHadir += memberAtts.filter(a => a.status === "Hadir").length;
+                            totalRecords += memberAtts.length;
+                          });
+
+                          const avgRate = totalRecords > 0 ? Math.round((totalHadir / totalRecords) * 100) : 0;
+                          const kepala = familyMembers.find(m => m.id === familyMembers[0].id);
+
+                          return (
+                            <tr key={familyKey} className="border-t border-border hover:bg-secondary/20">
+                              <td className="px-4 py-2 font-medium text-xs">{kepala.full_name}</td>
+                              <td className="px-4 py-2 text-center text-xs text-muted-foreground">{familyMembers.length}</td>
+                              <td className="px-4 py-2 text-center text-xs text-accent font-medium">{totalHadir}/{totalRecords}</td>
+                              <td className="px-4 py-2 text-center">
+                                <Badge variant="outline" className={totalRecords > 0 ? "bg-accent/10 text-accent border-accent/20 text-[10px]" : "bg-secondary text-muted-foreground text-[10px]"}>
+                                  {avgRate}%
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Per-Desa Breakdown (Summary) */}
+        {!isAdminKelompok && viewMode === "summary" && (
           <div className="space-y-3">
             <h2 className="text-sm font-semibold text-foreground">Rekap per Desa</h2>
             {desaStats.map(({ desa, memberCount, totalHadir, totalAtt, kelompokStats, rate }) => (
