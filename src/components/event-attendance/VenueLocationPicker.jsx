@@ -82,20 +82,25 @@ export default function VenueLocationPicker({ lat, lng, onConfirm, onClose }) {
         {/* Search */}
         <div className="flex gap-2">
           <Input
-            placeholder="Cari alamat, nama tempat..."
+            placeholder="Cari alamat, nama tempat, kota..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSearch()}
-            className="text-sm"
+            className="text-sm text-gray-900 placeholder:text-gray-500"
           />
           <Button size="sm" onClick={handleSearch} disabled={searching}>
             {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           </Button>
         </div>
-        {searchError && <p className="text-xs text-destructive">{searchError}</p>}
+        {searchError && <p className="text-xs font-medium text-red-600">{searchError}</p>}
+
+        {/* Hint */}
+        <p className="text-xs font-medium text-gray-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          🗺️ Cari alamat di atas <strong>atau klik langsung pada peta</strong> untuk menentukan titik venue.
+        </p>
 
         {/* Map */}
-        <div className="rounded-lg overflow-hidden border border-border" style={{ height: 360 }}>
+        <div className="rounded-lg overflow-hidden border-2 border-gray-300 shadow-md" style={{ height: 380 }}>
           <MapContainer
             center={defaultCenter}
             zoom={markerPos ? 16 : 12}
@@ -103,19 +108,21 @@ export default function VenueLocationPicker({ lat, lng, onConfirm, onClose }) {
             ref={mapRef}
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='Tiles &copy; Esri &mdash; Source: Esri, HERE, Garmin, USGS'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
             />
             <MapClickHandler onPick={handlePick} />
             {markerPos && <Marker position={[markerPos.lat, markerPos.lng]} />}
           </MapContainer>
         </div>
 
-        <p className="text-xs text-muted-foreground">Klik pada peta untuk menentukan titik venue.</p>
-
-        {markerPos && (
-          <div className="bg-secondary/30 rounded-lg px-3 py-2 text-xs font-mono text-muted-foreground">
-            Lat: {markerPos.lat.toFixed(6)}, Lng: {markerPos.lng.toFixed(6)}
+        {markerPos ? (
+          <div className="bg-green-50 border border-green-300 rounded-lg px-3 py-2 text-xs font-semibold text-green-800">
+            ✅ Titik dipilih: {markerPos.lat.toFixed(6)}, {markerPos.lng.toFixed(6)}
+          </div>
+        ) : (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-500">
+            Belum ada titik dipilih.
           </div>
         )}
 
