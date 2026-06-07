@@ -19,13 +19,13 @@ function buildFamilyGroups(members) {
     }
   });
 
-  // Sort: kepala keluarga = laki-laki OR nama sama dengan family_group key (dipilih sebagai KK) tampil pertama
+  // Sort: anggota yang namanya = nama family_group (dipilih sebagai KK) tampil pertama
   Object.keys(grouped).forEach(key => {
     grouped[key].sort((a, b) => {
-      const isHeadA = a.gender === "Laki-laki" || a.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
-      const isHeadB = b.gender === "Laki-laki" || b.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
-      if (isHeadA && !isHeadB) return -1;
-      if (!isHeadA && isHeadB) return 1;
+      const aIsKK = a.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
+      const bIsKK = b.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
+      if (aIsKK && !bIsKK) return -1;
+      if (!aIsKK && bIsKK) return 1;
       return 0;
     });
   });
@@ -40,14 +40,11 @@ function getAgeLabel(birth_year) {
 }
 
 // Tentukan apakah member adalah Kepala Keluarga:
-// - Dalam grup: laki-laki ATAU namanya sama dengan nama family_group
-// - Tanpa grup: selalu dianggap KK (1 kepala keluarga sendiri)
+// - Dalam grup: HANYA yang namanya sama persis dengan nama family_group (dipilih sebagai KK)
+// - Tanpa grup: selalu dianggap KK sendiri
 function isKepalaKeluarga(member, familyGroupName) {
   if (!familyGroupName) return true; // tanpa grup = KK sendiri
-  return (
-    member.gender === "Laki-laki" ||
-    member.full_name?.trim().toLowerCase() === familyGroupName.trim().toLowerCase()
-  );
+  return member.full_name?.trim().toLowerCase() === familyGroupName.trim().toLowerCase();
 }
 
 function MemberRow({ member, index, isHead, onEdit, onDelete }) {
@@ -131,7 +128,10 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
           <Users className="w-4 h-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm text-foreground truncate">Keluarga {familyName}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-semibold text-sm text-foreground truncate">Keluarga {familyName}</p>
+            <Badge className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20" variant="outline">KK</Badge>
+          </div>
           <div className="flex flex-col gap-1 mt-0.5">
             <p className="text-xs text-muted-foreground">{members.length} anggota · {activeCount} aktif</p>
             {addressStr && <p className="text-xs text-muted-foreground truncate">{addressStr}</p>}
