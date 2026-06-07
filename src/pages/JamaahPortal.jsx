@@ -18,6 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, X, CalendarDays } from "lucide-react";
+import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -291,6 +292,16 @@ export default function JamaahPortal() {
           </div>
         )}
 
+        {/* Laporan Kelengkapan Profil */}
+        {myMember && (
+          <div className="mb-4">
+            <ProfileCompletionReport
+              member={myMember}
+              onEditClick={() => document.getElementById("edit-profil-section")?.scrollIntoView({ behavior: "smooth" })}
+            />
+          </div>
+        )}
+
         {/* Profil */}
         <div className="space-y-4 mb-6">
           {myMember ? (
@@ -316,7 +327,7 @@ export default function JamaahPortal() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card id="edit-profil-section">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold">Data Jamaah / Data Diri (Dapat Diedit)</CardTitle>
                 </CardHeader>

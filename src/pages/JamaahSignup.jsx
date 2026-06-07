@@ -79,7 +79,7 @@ export default function JamaahSignup() {
     setLoading(true);
     try {
       // Tunggu user terdaftar di DB
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 1500));
       
       // Cari user yang baru register
       const allUsers = await base44.entities.User.list();
@@ -96,10 +96,11 @@ export default function JamaahSignup() {
           full_name: selectedMember.full_name
         });
         
-        toast.success("Data kepala keluarga berhasil diklaim!");
+        toast.success("Data berhasil diklaim! Anda sekarang terhubung dengan data jamaah.");
       }
       
-      setStep("family");
+      // Jika sudah klaim data yang ada, langsung ke success — TIDAK buat data baru
+      setStep("success");
     } catch (err) {
       toast.error(err.message || "Gagal mengklaim data");
     } finally {
@@ -107,8 +108,9 @@ export default function JamaahSignup() {
     }
   };
 
-  // Step 2b: Skip claim (buat user baru tanpa member)
+  // Step 2b: Skip claim — lanjut tambah data baru tanpa claim
   const handleSkipClaim = () => {
+    setSelectedMember(null);
     setStep("family");
   };
 
@@ -140,18 +142,13 @@ export default function JamaahSignup() {
       
       if (!newUser) throw new Error("User tidak ditemukan");
 
-      // Get desa & kelompok dari claimed member atau gunakan default
-      let desa = "Default";
-      let kelompok = "Default";
-      let family_group = formData.fullName;
+      // Get desa & kelompok dari default
+      const desa = "Default";
+      const kelompok = "Default";
+      const family_group = formData.fullName;
 
-      if (selectedMember) {
-        desa = selectedMember.desa;
-        kelompok = selectedMember.kelompok;
-        family_group = selectedMember.family_group || formData.fullName;
-      }
-
-      // Buat member records untuk setiap anggota keluarga
+      // Tidak ada claimed member di step ini (jika claim sudah selesai lebih awal)
+      // Buat member baru hanya untuk kepala keluarga baru (tanpa claim)
       const memberRecords = [
         {
           full_name: formData.fullName,
@@ -172,7 +169,6 @@ export default function JamaahSignup() {
         }))
       ];
 
-      // Batch create members (atau create satu per satu jika tidak ada bulkCreate)
       for (const memberData of memberRecords) {
         try {
           await base44.entities.Member.create(memberData);
@@ -181,7 +177,7 @@ export default function JamaahSignup() {
         }
       }
 
-      toast.success(`Pendaftaran berhasil! ${memberRecords.length} anggota keluarga terdaftar.`);
+      toast.success(`Pendaftaran berhasil! ${memberRecords.length} data terdaftar.`);
       setStep("success");
     } catch (err) {
       toast.error(err.message || "Gagal menyimpan data keluarga");
