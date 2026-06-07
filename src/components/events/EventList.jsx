@@ -1,8 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, MapPin, Calendar, Users } from "lucide-react";
+import { Pencil, Trash2, MapPin, Calendar, Users, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { RECURRING_PATTERNS } from "@/lib/recurringUtils";
 
 const levelColors = {
   "Daerah": "bg-primary/10 text-primary border-primary/20",
@@ -35,6 +36,12 @@ export default function EventList({ events, onEdit, onDelete, onSelectForAttenda
                 )}
                 {event.kelompok && (
                   <Badge variant="secondary" className="text-xs">{event.kelompok}</Badge>
+                )}
+                {event.recurring_pattern && (
+                  <Badge variant="outline" className="text-xs bg-violet-50 text-violet-600 border-violet-200 flex items-center gap-1">
+                    <RefreshCw className="w-2.5 h-2.5" />
+                    {RECURRING_PATTERNS.find(p => p.value === event.recurring_pattern)?.label || "Berulang"}
+                  </Badge>
                 )}
               </div>
 

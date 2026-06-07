@@ -68,6 +68,24 @@
     "participant_filter_legacy": {
       "type": "string",
       "description": "Filter peserta legacy (all/muballigh/dapukan/smp/sma/muda_mudi)"
+    },
+    "recurring_group": {
+      "type": "string",
+      "description": "ID grup recurring (sama untuk semua event dalam satu seri)"
+    },
+    "recurring_pattern": {
+      "type": "string",
+      "enum": [
+        "",
+        "weekly",
+        "biweekly",
+        "monthly",
+        "first_week",
+        "second_week",
+        "third_week",
+        "fourth_week"
+      ],
+      "description": "Pola pengulangan kegiatan"
     }
   },
   "required": [

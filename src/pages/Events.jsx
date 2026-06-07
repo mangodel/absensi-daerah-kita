@@ -43,6 +43,11 @@ export default function Events() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["events"] }); setFormOpen(false); },
   });
 
+  const createRecurringMutation = useMutation({
+    mutationFn: (events) => base44.entities.Event.bulkCreate(events),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["events"] }); setFormOpen(false); },
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Event.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["events"] }); setFormOpen(false); setEditEvent(null); },
@@ -56,6 +61,10 @@ export default function Events() {
   const handleSave = (data) => {
     if (editEvent) updateMutation.mutate({ id: editEvent.id, data });
     else createMutation.mutate(data);
+  };
+
+  const handleSaveRecurring = (events) => {
+    createRecurringMutation.mutate(events);
   };
 
   const handleAddOnDate = (date) => {
@@ -238,6 +247,7 @@ export default function Events() {
         event={editEvent}
         prefilledDate={prefilledDate}
         onSave={handleSave}
+        onSaveRecurring={handleSaveRecurring}
       />
 
       <AlertDialog open={!!deleteEvent} onOpenChange={() => setDeleteEvent(null)}>

@@ -9,13 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { EVENT_LEVEL_LIST, DAPUKAN_LIST, DAPUKAN_4S } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
-import { Users, X, CheckSquare } from "lucide-react";
+import { Users, X, CheckSquare, RefreshCw } from "lucide-react";
+import { RECURRING_PATTERNS, RECURRING_DURATIONS, generateRecurringDates, dateToISO } from "@/lib/recurringUtils";
 
 const empty = {
   name: "", level: "Kelompok", desa: "", kelompok: "",
   date: "", description: "", location: "",
-  participant_dapukan: [], // [] = semua jamaah
-  participant_filter: "", // special filter: mubaligh_both, mubaligh_only, mubalighot_only, generus_smp, generus_sma, usia_nikah
+  participant_dapukan: [],
+  participant_filter: "",
+  recurring_pattern: "",
+  recurring_duration: 3,
 };
 
 const currentYear = new Date().getFullYear();
@@ -69,7 +72,7 @@ const PRESET_FILTERS = [
   { value: "ibu_ibu", label: "Ibu-ibu" },
 ];
 
-export default function EventFormDialog({ open, onOpenChange, event, prefilledDate, onSave }) {
+export default function EventFormDialog({ open, onOpenChange, event, prefilledDate, onSave, onSaveRecurring }) {
   const { config } = useAppConfig();
   const desaList = config.desa_list || [];
   const desaKelompokMap = config.desa_kelompok_map || {};
@@ -85,7 +88,7 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
 
   useEffect(() => {
     if (event) {
-      setForm({ ...empty, ...event, participant_dapukan: event.participant_dapukan || [], participant_filter: event.participant_filter || "" });
+      setForm({ ...empty, ...event, participant_dapukan: event.participant_dapukan || [], participant_filter: event.participant_filter || "", recurring_pattern: "", recurring_duration: 3 });
     } else if (prefilledDate) {
       const iso = `${prefilledDate.getFullYear()}-${String(prefilledDate.getMonth()+1).padStart(2,"0")}-${String(prefilledDate.getDate()).padStart(2,"0")}`;
       setForm({ ...empty, date: iso });
@@ -105,15 +108,46 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
     });
   };
 
+  const recurringPreview = form.recurring_pattern && form.date
+    ? generateRecurringDates(form.date, form.recurring_pattern, form.recurring_duration)
+    : [];
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const dateObj = new Date(form.date);
-    onSave({
+    const baseData = {
       ...form,
-      month: dateObj.getMonth() + 1,
-      year: dateObj.getFullYear(),
       desa: form.level === "Daerah" ? "" : form.desa,
       kelompok: form.level !== "Kelompok" ? "" : form.kelompok,
+      recurring_pattern: undefined,
+      recurring_duration: undefined,
+    };
+
+    // Jika ada recurring pattern dan bukan edit
+    if (form.recurring_pattern && !event && recurringPreview.length > 1 && onSaveRecurring) {
+      const groupId = `recurring_${Date.now()}`;
+      const allDates = recurringPreview;
+      const events = allDates.map(dt => {
+        const iso = dateToISO(dt);
+        const d = new Date(dt);
+        return {
+          ...baseData,
+          date: iso,
+          month: d.getMonth() + 1,
+          year: d.getFullYear(),
+          recurring_group: groupId,
+          recurring_pattern: form.recurring_pattern,
+        };
+      });
+      onSaveRecurring(events);
+      return;
+    }
+
+    // Single event
+    const dateObj = new Date(form.date);
+    onSave({
+      ...baseData,
+      month: dateObj.getMonth() + 1,
+      year: dateObj.getFullYear(),
     });
   };
 
@@ -172,6 +206,58 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
             <Label className="text-xs font-medium">Tanggal *</Label>
             <Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
           </div>
+
+          {/* Recurring — hanya saat tambah baru */}
+          {!event && (
+            <div className="space-y-3 border border-border rounded-xl p-4 bg-secondary/20">
+              <Label className="text-xs font-medium flex items-center gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5 text-primary" /> Pengulangan Kegiatan
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wide">Pola</p>
+                  <Select value={form.recurring_pattern} onValueChange={v => setForm({ ...form, recurring_pattern: v })}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Tidak berulang" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>Tidak Berulang</SelectItem>
+                      {RECURRING_PATTERNS.map(p => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {form.recurring_pattern && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wide">Durasi</p>
+                    <Select value={String(form.recurring_duration)} onValueChange={v => setForm({ ...form, recurring_duration: Number(v) })}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {RECURRING_DURATIONS.map(d => (
+                          <SelectItem key={d.value} value={String(d.value)}>{d.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              {recurringPreview.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-1.5">
+                    Akan dibuat <span className="font-semibold text-primary">{recurringPreview.length}</span> event:
+                  </p>
+                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                    {recurringPreview.map((dt, i) => (
+                      <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0.5 bg-primary/5 border-primary/20 text-primary">
+                        {dateToISO(dt)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Lokasi</Label>
