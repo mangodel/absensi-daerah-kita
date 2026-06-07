@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, Loader2, User, UserPlus, Mail } from "lucide-react";
+import { ShieldCheck, Loader2, User, UserPlus, Mail, Search, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
@@ -39,6 +39,8 @@ export default function UserRoleManager() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", role: "admin_kelompok", desa: "", kelompok: "" });
   const [inviting, setInviting] = useState(false);
+  const [userBiasaExpanded, setUserBiasaExpanded] = useState(true);
+  const [userBiasaSearch, setUserBiasaSearch] = useState("");
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users_list"],
@@ -112,6 +114,18 @@ export default function UserRoleManager() {
   // Base44 users are "accepted" when they appear in the User list (all listed users have accepted)
   const registeredUsers = users;
 
+  // Separate users by role
+  const userBiasa = registeredUsers.filter(u => (u.role || "user") === "user");
+  const adminUsers = registeredUsers.filter(u => ["admin_kelompok", "admin_desa", "super_admin"].includes(u.role));
+
+  // Filter user biasa by search
+  const filteredUserBiasa = userBiasaSearch.trim()
+    ? userBiasa.filter(u => {
+        const query = userBiasaSearch.toLowerCase();
+        return u.full_name?.toLowerCase().includes(query) || u.email?.toLowerCase().includes(query);
+      })
+    : userBiasa;
+
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
   return (
@@ -128,7 +142,7 @@ export default function UserRoleManager() {
         </div>
 
         {/* Role legend */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
           {ROLE_OPTIONS.map(r => (
             <div key={r.value} className="flex items-start gap-2 p-2.5 rounded-lg bg-secondary/40 text-xs">
               <Badge variant="outline" className={`text-[10px] shrink-0 ${r.color}`}>{r.label}</Badge>
@@ -137,8 +151,10 @@ export default function UserRoleManager() {
           ))}
         </div>
 
-        <div className="space-y-3">
-          {registeredUsers.map(u => (
+        {/* Admin Users Section */}
+        {adminUsers.length > 0 && (
+          <div className="space-y-3 mb-6">
+            {adminUsers.map(u => (
             <div key={u.id} className="border border-border rounded-xl p-4">
               {editingId === u.id ? (
                 <div className="space-y-3">
@@ -203,11 +219,125 @@ export default function UserRoleManager() {
                 </div>
               )}
             </div>
-          ))}
-          {registeredUsers.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-6">Belum ada pengguna terdaftar.</p>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {/* User Biasa Section dengan Collapse & Search */}
+        {userBiasa.length > 0 && (
+          <div className="border border-border rounded-xl overflow-hidden">
+            <button
+              onClick={() => setUserBiasaExpanded(!userBiasaExpanded)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/30 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2 flex-1">
+                {userBiasaExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                <Badge variant="outline" className="text-xs bg-secondary text-secondary-foreground">User Biasa</Badge>
+                <span className="text-xs text-muted-foreground font-medium">{userBiasa.length} pengguna</span>
+              </div>
+            </button>
+
+            {userBiasaExpanded && (
+              <div className="border-t border-border p-4 space-y-3 bg-secondary/5">
+                {userBiasa.length > 1 && (
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      className="pl-9 pr-9 h-8"
+                      placeholder="Cari nama / email..."
+                      value={userBiasaSearch}
+                      onChange={e => setUserBiasaSearch(e.target.value)}
+                    />
+                    {userBiasaSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setUserBiasaSearch("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {filteredUserBiasa.length > 0 ? (
+                    filteredUserBiasa.map(u => (
+                      <div key={u.id} className="border border-border rounded-lg p-3 hover:bg-secondary/50 transition-colors">
+                        {editingId === u.id ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <User className="w-3.5 h-3.5 text-muted-foreground" />
+                              <span className="text-xs font-medium">{u.full_name || u.email}</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground font-medium">Role</label>
+                                <Select value={editForm.role} onValueChange={v => setEditForm(f => ({ ...f, role: v, desa: "", kelompok: "" }))}>
+                                  <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {ROLE_OPTIONS.filter(r => r.value !== "user").map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {(editForm.role === "admin_desa" || editForm.role === "admin_kelompok") && (
+                                <div className="space-y-1">
+                                  <label className="text-xs text-muted-foreground font-medium">Desa</label>
+                                  <Select value={editForm.desa} onValueChange={v => setEditForm(f => ({ ...f, desa: v, kelompok: "" }))}>
+                                    <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Pilih Desa" /></SelectTrigger>
+                                    <SelectContent>{desaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                              {editForm.role === "admin_kelompok" && (
+                                <div className="space-y-1">
+                                  <label className="text-xs text-muted-foreground font-medium">Kelompok</label>
+                                  <Select value={editForm.kelompok} onValueChange={v => setEditForm(f => ({ ...f, kelompok: v }))} disabled={!editForm.desa}>
+                                    <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Pilih Kelompok" /></SelectTrigger>
+                                    <SelectContent>{kelompokOptions.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={() => handleSave(u.id)} disabled={updateMutation.isPending} className="h-7 text-xs">
+                                {updateMutation.isPending && <Loader2 className="w-3 h-3 mr-1 animate-spin" />} Simpan
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="h-7 text-xs">Batal</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate">{u.full_name || u.email}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs px-2"
+                                onClick={() => handleEdit(u)}
+                              >
+                                Promosi
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center py-3">Tidak ada pengguna yang cocok.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {registeredUsers.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-6">Belum ada pengguna terdaftar.</p>
+        )}
       </div>
 
       {/* Invite Dialog */}
