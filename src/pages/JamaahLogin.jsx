@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Loader2, Mail, Lock } from "lucide-react";
+import { AlertCircle, Loader2, Mail, Lock, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -128,6 +128,16 @@ export default function JamaahLogin() {
               disabled={loading}
             >
               Daftar Akun Baru
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => navigate("/scanner-volunteer")}
+            >
+              <QrCode className="w-4 h-4" />
+              Akses Volunteer Scan Absensi
             </Button>
 
             <Button
