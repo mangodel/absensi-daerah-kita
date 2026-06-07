@@ -32,6 +32,7 @@ const JamaahLogin = lazy(() => import('@/pages/JamaahLogin'));
 const JamaahSignup = lazy(() => import('@/pages/JamaahSignup'));
 const JamaahSurvey = lazy(() => import('@/pages/JamaahSurvey'));
 const JamaahAbsensi = lazy(() => import('@/pages/JamaahAbsensi'));
+const Login = lazy(() => import('@/pages/Login'));
 
 // Loading fallback component
 const PageLoadingFallback = () => (
@@ -57,6 +58,16 @@ const AuthenticatedApp = () => {
   return (
     <AnimatePresence mode="wait">
       <Routes>
+        {/* Public routes - tidak perlu menunggu auth check */}
+        <Route path="/login" element={<SuspendedPage><Login /></SuspendedPage>} />
+        <Route path="/jamaah-login" element={<SuspendedPage><JamaahLogin /></SuspendedPage>} />
+        <Route path="/jamaah/signup" element={<SuspendedPage><JamaahSignup /></SuspendedPage>} />
+        <Route path="/event-register/:eventId" element={<SuspendedPage><EventRegister /></SuspendedPage>} />
+        <Route path="/event-register" element={<SuspendedPage><EventRegister /></SuspendedPage>} />
+        <Route path="/event-display" element={<SuspendedPage><EventDisplay /></SuspendedPage>} />
+        <Route path="/scanner-volunteer" element={<SuspendedPage><VolunteerScanner /></SuspendedPage>} />
+
+        {/* Protected routes - pakai AppLayout dengan loading state */}
         <Route element={<AppLayout isLoading={isLoadingAuth || isLoadingPublicSettings} />}>
           <Route path="/" element={<SuspendedPage><Dashboard /></SuspendedPage>} />
           <Route path="/members" element={<SuspendedPage><Members /></SuspendedPage>} />
@@ -69,16 +80,10 @@ const AuthenticatedApp = () => {
           <Route path="/reminders" element={<SuspendedPage><Reminders /></SuspendedPage>} />
           <Route path="/documents" element={<SuspendedPage><Documents /></SuspendedPage>} />
           <Route path="/event-attendance" element={<SuspendedPage><EventAttendance /></SuspendedPage>} />
+          <Route path="/jamaah" element={<SuspendedPage><JamaahPortal /></SuspendedPage>} />
+          <Route path="/jamaah/survey" element={<SuspendedPage><JamaahSurvey /></SuspendedPage>} />
+          <Route path="/jamaah/absensi" element={<SuspendedPage><JamaahAbsensi /></SuspendedPage>} />
         </Route>
-        <Route path="/event-display" element={<SuspendedPage><EventDisplay /></SuspendedPage>} />
-        <Route path="/scanner-volunteer" element={<SuspendedPage><VolunteerScanner /></SuspendedPage>} />
-        <Route path="/event-register/:eventId" element={<SuspendedPage><EventRegister /></SuspendedPage>} />
-        <Route path="/event-register" element={<SuspendedPage><EventRegister /></SuspendedPage>} />
-        <Route path="/jamaah-login" element={<SuspendedPage><JamaahLogin /></SuspendedPage>} />
-        <Route path="/jamaah/signup" element={<SuspendedPage><JamaahSignup /></SuspendedPage>} />
-        <Route path="/jamaah" element={<SuspendedPage><JamaahPortal /></SuspendedPage>} />
-        <Route path="/jamaah/survey" element={<SuspendedPage><JamaahSurvey /></SuspendedPage>} />
-        <Route path="/jamaah/absensi" element={<SuspendedPage><JamaahAbsensi /></SuspendedPage>} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </AnimatePresence>
