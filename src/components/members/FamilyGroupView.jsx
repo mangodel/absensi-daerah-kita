@@ -140,6 +140,63 @@ function MemberRow({ member, index, isHead, onEdit, onDelete }) {
   );
 }
 
+// Row khusus untuk KK Mandiri (belum punya grup / belum tunjuk KK)
+function MemberRowMandiri({ member, onEdit, onDelete }) {
+  const infoChunks = [
+    member.gender,
+    member.birth_year ? getAgeLabel(member.birth_year) : null,
+    member.marital_status,
+    member.visa_status,
+  ].filter(Boolean).join(" · ");
+
+  return (
+    <div className="flex items-center gap-2.5 py-2 px-3 rounded-xl transition-colors hover:bg-amber-100/60 dark:hover:bg-amber-900/20 bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/60 dark:border-amber-800/40">
+      {/* Avatar */}
+      <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold bg-amber-500 text-white">
+        <User className="w-3.5 h-3.5" />
+      </div>
+
+      {/* Info utama */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-medium text-sm leading-tight text-amber-800 dark:text-amber-300">
+            {member.full_name}
+          </span>
+          <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-700" variant="outline">
+            KK Mandiri
+          </Badge>
+          {member.dapukan && member.dapukan !== "Jamaah" && member.dapukan !== "Jamaah Biasa" && (
+            <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">{member.dapukan}</Badge>
+          )}
+        </div>
+        {infoChunks && (
+          <p className="text-[11px] text-amber-600/80 dark:text-amber-500/80 mt-0.5 leading-tight">{infoChunks}</p>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-0.5 shrink-0">
+        <Badge
+          className={`text-[9px] px-1.5 py-0 h-4 ${member.status === "Aktif" ? "bg-accent/10 text-accent border-accent/20" : "bg-destructive/10 text-destructive border-destructive/20"}`}
+          variant="outline"
+        >
+          {member.status}
+        </Badge>
+        {onEdit && (
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(member)}>
+            <Pencil className="w-3 h-3" />
+          </Button>
+        )}
+        {onDelete && (
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => onDelete(member)}>
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function FamilyCard({ familyName, members, onEdit, onDelete }) {
   const [open, setOpen] = useState(true);
   // Cari member yang namanya = familyName (KK terdaftar)
@@ -245,18 +302,38 @@ export default function FamilyGroupView({ members, onEdit, onDelete }) {
           Semua Keluarga
         </Button>
         <span className="text-xs text-muted-foreground ml-2">
-          {Object.keys(grouped).length + noGroup.length} KK total · {noGroup.length} mandiri
+          <span className="font-semibold text-foreground">{Object.keys(grouped).length + noGroup.length}</span> KK total ·{" "}
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-primary"></span>
+            <span>{Object.keys(grouped).length} berkelompok</span>
+          </span>{" "}·{" "}
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+            <span>{noGroup.length} mandiri</span>
+          </span>
         </span>
       </div>
 
       {groupByKelompok ? (
         // Grouped by kelompok
         <div className="space-y-8">
-          {sortedKelompok.map(kel => (
+          {sortedKelompok.map(kel => {
+            const kkCount = familyByKelompok[kel].length;
+            const mandiriCount = noGroup.filter(m => (m.kelompok || "Lainnya") === kel).length;
+            return (
             <div key={kel}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-px flex-1 bg-border" />
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">{kel}</h3>
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 flex items-center gap-2">
+                  {kel}
+                  <span className="normal-case font-normal text-[10px] text-muted-foreground">
+                    <span className="text-primary font-semibold">{kkCount}</span> KK
+                    {mandiriCount > 0 && (
+                      <> · <span className="text-amber-500 font-semibold">{mandiriCount}</span> mandiri</>
+                    )}
+                    {" "}· total <span className="font-semibold">{kkCount + mandiriCount}</span>
+                  </span>
+                </h3>
                 <div className="h-px flex-1 bg-border" />
               </div>
               <div className="space-y-3">
@@ -271,19 +348,22 @@ export default function FamilyGroupView({ members, onEdit, onDelete }) {
                 ))}
               </div>
             </div>
-          ))}
+          );})}
 
-          {/* No family group */}
+          {/* No family group - KK Mandiri */}
           {noGroup.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-px flex-1 bg-border" />
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Tanpa Grup Keluarga</h3>
-                <div className="h-px flex-1 bg-border" />
+                <div className="h-px flex-1 bg-amber-200 dark:bg-amber-800" />
+                <h3 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider px-2 flex items-center gap-1.5">
+                  <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                  KK Mandiri ({noGroup.length})
+                </h3>
+                <div className="h-px flex-1 bg-amber-200 dark:bg-amber-800" />
               </div>
-              <div className="bg-card border border-border rounded-2xl p-4 space-y-1">
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 space-y-1">
                 {noGroup.map((m, i) => (
-                  <MemberRow key={m.id} member={m} index={i + 1} isHead={true} onEdit={onEdit} onDelete={onDelete} />
+                  <MemberRowMandiri key={m.id} member={m} onEdit={onEdit} onDelete={onDelete} />
                 ))}
               </div>
             </div>
@@ -303,10 +383,13 @@ export default function FamilyGroupView({ members, onEdit, onDelete }) {
           ))}
           {noGroup.length > 0 && (
             <div>
-              <p className="text-xs text-muted-foreground font-semibold mb-2 mt-4">Tanpa Grup Keluarga ({noGroup.length})</p>
-              <div className="bg-card border border-border rounded-2xl p-4 space-y-1">
+              <p className="text-xs text-amber-600 font-semibold mb-2 mt-4 flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                KK Mandiri ({noGroup.length})
+              </p>
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 space-y-1">
                 {noGroup.map((m, i) => (
-                  <MemberRow key={m.id} member={m} index={i + 1} isHead={true} onEdit={onEdit} onDelete={onDelete} />
+                  <MemberRowMandiri key={m.id} member={m} onEdit={onEdit} onDelete={onDelete} />
                 ))}
               </div>
             </div>
