@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home, Megaphone, Plus } from "lucide-react";
+import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home, Megaphone, Plus, ArrowRightLeft } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import GenerusBreakdown from "@/components/dashboard/GenerusBreakdown";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
@@ -208,13 +208,7 @@ export default function Dashboard() {
          <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="primary" />
        </div>
 
-       {(isSuperAdmin || isAdminDesa || isAdminKelompok) && (
-         <OrganizationDisplay 
-           level={isAdminKelompok ? "Kelompok" : isAdminDesa ? "Desa" : "Daerah"}
-           desa={userDesa}
-           kelompok={userKelompok}
-         />
-       )}
+
 
        <GenerusBreakdown members={members} />
 
@@ -251,6 +245,23 @@ export default function Dashboard() {
       {(isSuperAdmin || isAdminDesa) && <DesaOverview members={members} />}
 
       {(isAdminDesa || isAdminKelompok) && <MonthlyAttendanceSummary />}
+
+      {/* Pindah Kelompok — untuk admin desa & kelompok */}
+      {(isAdminDesa || isAdminKelompok) && (
+        <Link to="/transfers" className="block">
+          <div className="bg-card border border-border rounded-2xl p-5 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <ArrowRightLeft className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Pindah Kelompok</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">Kelola pemindahan anggota antar kelompok</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+      )}
 
       {isAdminKelompok && (
         <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
