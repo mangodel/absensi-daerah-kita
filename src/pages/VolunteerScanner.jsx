@@ -16,6 +16,9 @@ const SESSION_KEY = "volunteer_operator";
 
 // ─── Step 1: Pilih Event ─────────────────────────────────────────────────────
 function EventSelector({ onSelect }) {
+  const { config } = useAppConfig();
+  const loginBgUrl = config.login_bg_url || "";
+
   const { data: events = [] } = useQuery({
     queryKey: ["event-sessions-volunteer"],
     queryFn: () => base44.entities.EventSession.filter({ status: "Active" }),
@@ -24,8 +27,17 @@ function EventSelector({ onSelect }) {
   const sorted = [...events].sort((a, b) => new Date(b.event_date) - new Date(a.event_date));
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-6">
+    <div 
+      className="min-h-screen flex flex-col items-center justify-center p-6"
+      style={{
+        backgroundImage: loginBgUrl ? `url(${loginBgUrl})` : "linear-gradient(to bottom right, rgb(243 232 255), rgb(240 249 255))",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed"
+      }}
+    >
+      <div className="absolute inset-0 bg-black/40" />
+      <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
             <Calendar className="w-8 h-8 text-primary" />
@@ -60,18 +72,37 @@ function EventSelector({ onSelect }) {
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 }
 
 // ─── Step 2: Form Identitas Operator dengan Login ─────────────────────────────────────────
 function OperatorForm({ onSave }) {
+  const { config } = useAppConfig();
+  const loginBgUrl = config.login_bg_url || "";
+
   const handleLoginSuccess = (operator) => {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(operator));
     onSave(operator);
   };
 
-  return <VolunteerLogin onSuccess={handleLoginSuccess} />;
+  return (
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundImage: loginBgUrl ? `url(${loginBgUrl})` : "linear-gradient(to bottom right, rgb(243 232 255), rgb(240 249 255))",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed"
+      }}
+    >
+      <div className="absolute inset-0 bg-black/40" />
+      <div className="relative z-10">
+        <VolunteerLogin onSuccess={handleLoginSuccess} />
+      </div>
+    </div>
+  );
 }
 
 // ─── Step 3: Scanner Utama ────────────────────────────────────────────────────

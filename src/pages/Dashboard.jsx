@@ -7,6 +7,7 @@ import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import DesaOverview from "@/components/dashboard/DesaOverview";
 import AustraliaMap from "@/components/dashboard/AustraliaMap";
 import OrganizationDisplay from "@/components/dashboard/OrganizationDisplay";
+import MonthlyAttendanceSummary from "@/components/dashboard/MonthlyAttendanceSummary";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
@@ -240,6 +241,8 @@ export default function Dashboard() {
       )}
 
       {(isSuperAdmin || isAdminDesa) && <DesaOverview members={members} />}
+
+      {(isAdminDesa || isAdminKelompok) && <MonthlyAttendanceSummary />}
 
       {isAdminKelompok && (
         <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
