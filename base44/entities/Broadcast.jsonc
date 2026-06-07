@@ -1,0 +1,75 @@
+{
+  "name": "Broadcast",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Judul pesan broadcast"
+    },
+    "message": {
+      "type": "string",
+      "description": "Isi pesan broadcast"
+    },
+    "target_scope": {
+      "type": "string",
+      "enum": [
+        "Semua",
+        "Desa",
+        "Kelompok",
+        "Custom"
+      ],
+      "default": "Semua",
+      "description": "Target penerima"
+    },
+    "target_desa": {
+      "type": "string",
+      "description": "Desa target (jika scope Desa/Kelompok)"
+    },
+    "target_kelompok": {
+      "type": "string",
+      "description": "Kelompok target (jika scope Kelompok)"
+    },
+    "recipient_ids": {
+      "type": "string",
+      "description": "JSON array of member IDs (jika scope Custom)"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "Email",
+        "Portal"
+      ],
+      "default": "Portal",
+      "description": "Saluran pengiriman"
+    },
+    "sent_by": {
+      "type": "string",
+      "description": "Email pengirim"
+    },
+    "sent_by_name": {
+      "type": "string",
+      "description": "Nama pengirim"
+    },
+    "sent_at": {
+      "type": "string",
+      "description": "Waktu pengiriman (ISO string)"
+    },
+    "recipient_count": {
+      "type": "number",
+      "description": "Jumlah penerima"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Draft",
+        "Sent",
+        "Failed"
+      ],
+      "default": "Draft"
+    }
+  },
+  "required": [
+    "title",
+    "message"
+  ]
+}

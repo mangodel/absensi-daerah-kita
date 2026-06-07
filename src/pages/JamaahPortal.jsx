@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, X, CalendarDays } from "lucide-react";
 import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
+import BroadcastInbox from "@/components/portal/BroadcastInbox";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -291,6 +292,9 @@ export default function JamaahPortal() {
             </div>
           </div>
         )}
+
+        {/* Inbox Broadcast dari Pengurus */}
+        {myMember && <BroadcastInbox member={myMember} />}
 
         {/* Laporan Kelengkapan Profil */}
         {myMember && (
