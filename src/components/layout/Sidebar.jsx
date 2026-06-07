@@ -39,7 +39,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { config } = useAppConfig();
   const { user } = useAuth();
-  const { canAccessSettings, role, userDesa, userKelompok, isSuperAdmin, isAdminDesa } = useUserRole();
+  const { canAccessSettings, role, userDesa, userKelompok, isSuperAdmin, isAdminDesa, isAdminKelompok } = useUserRole();
 
   const { data: reminders = [] } = useQuery({
     queryKey: ["reminders"],
@@ -52,10 +52,10 @@ export default function Sidebar() {
 
   // Filter nav based on role
   const visibleNav = navItems.filter(item => {
-    if (item.path === "/transfers") return isSuperAdmin || isAdminDesa;
-    if (item.path === "/structure") return isSuperAdmin || isAdminDesa;
-    if (item.path === "/broadcast") return isSuperAdmin || isAdminDesa;
-    if (item.adminOnly) return isSuperAdmin || isAdminDesa;
+    if (item.path === "/transfers") return isSuperAdmin || isAdminDesa || isAdminKelompok;
+    if (item.path === "/structure") return isSuperAdmin || isAdminDesa || isAdminKelompok;
+    if (item.path === "/broadcast") return isSuperAdmin || isAdminDesa || isAdminKelompok;
+    if (item.adminOnly) return isSuperAdmin || isAdminDesa || isAdminKelompok;
     return true;
   });
 

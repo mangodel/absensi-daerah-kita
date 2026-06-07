@@ -134,18 +134,24 @@ export default function Dashboard() {
 
   // Hitung total KK: family_group unik = 1 KK + member tanpa family_group = mandiri (1 KK)
   // Hitung berdasarkan members yang sudah difilter (sesuai scope admin)
-  const totalKK = (() => {
+  const totalKK = useMemo(() => {
+    const scopedMems = isAdminKelompok && userKelompok
+      ? members.filter(m => m.kelompok === userKelompok)
+      : isAdminDesa && userDesa
+      ? members.filter(m => m.desa === userDesa)
+      : members;
+    
     const groupsSet = new Set();
-    members.forEach(m => {
+    scopedMems.forEach(m => {
       if (m.family_group && m.family_group.trim()) {
         groupsSet.add(m.family_group.trim());
       }
     });
     // KK berkelompok + KK mandiri (yang tidak punya family_group)
     const berkelompok = groupsSet.size;
-    const mandiri = members.filter(m => !m.family_group || !m.family_group.trim()).length;
+    const mandiri = scopedMems.filter(m => !m.family_group || !m.family_group.trim()).length;
     return berkelompok + mandiri;
-  })();
+  }, [members, isAdminKelompok, isAdminDesa, userKelompok, userDesa]);
   const yearAttendances = attendances.filter(a => a.year === Number(selectedYear));
   // Admin kelompok: only kelompok-level events attendance (exclude Daerah events)
   // Kelompok: all attendance for their kelompok (including Daerah/Desa events they attend)
