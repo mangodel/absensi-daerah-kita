@@ -6,6 +6,7 @@ import GenerusBreakdown from "@/components/dashboard/GenerusBreakdown";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import DesaOverview from "@/components/dashboard/DesaOverview";
 import AustraliaMap from "@/components/dashboard/AustraliaMap";
+import OrganizationDisplay from "@/components/dashboard/OrganizationDisplay";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
@@ -192,13 +193,21 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Jamaah" value={members.length} icon={Users} color="primary" />
-        <StatCard title="Aktif" value={activeMembers} icon={UserCheck} color="accent" />
-        <StatCard title="Total KK" value={totalKK} icon={Home} color="warning" />
-        <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="primary" />
-      </div>
+         <StatCard title="Total Jamaah" value={members.length} icon={Users} color="primary" />
+         <StatCard title="Aktif" value={activeMembers} icon={UserCheck} color="accent" />
+         <StatCard title="Total KK" value={totalKK} icon={Home} color="warning" />
+         <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="primary" />
+       </div>
 
-      <GenerusBreakdown members={members} />
+       {(isSuperAdmin || isAdminDesa || isAdminKelompok) && (
+         <OrganizationDisplay 
+           level={isAdminKelompok ? "Kelompok" : isAdminDesa ? "Desa" : "Daerah"}
+           desa={userDesa}
+           kelompok={userKelompok}
+         />
+       )}
+
+       <GenerusBreakdown members={members} />
 
       {upcomingEvents.length > 0 && (
         <div className="bg-card border border-border rounded-2xl p-5">
