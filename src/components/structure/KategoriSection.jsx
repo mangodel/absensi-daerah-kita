@@ -42,7 +42,7 @@ const KNOWN_DAPUKAN = KATEGORI_4S.flatMap((k) => k.dapukan);
 function getDapukanLabel(member) {
   const d = member.dapukan || "";
   const level = member.dapukan_level || "";
-  if (!d || d === "Jamaah" || d === "Jamaah Biasa") return null;
+  if (!d || d === "Jamaah") return null;
 
   if (d === "Muballigh 4S") return "Mubaligh 4S";
   if (d === "Muballigh Daerah") return "Mubaligh Daerah";
@@ -118,21 +118,19 @@ function KeimananSection({ members, isSuperAdmin, onMoveUp, onMoveDown, level })
 function PengurusCard({ member, badgeClass }) {
   return (
     <div className="px-3 py-2.5 rounded-xl border bg-white/70 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700">
-      <div className="flex items-start gap-1">
-        <div className="flex-1 min-w-0">
-          <span className="font-medium text-sm text-foreground">{member.full_name}</span>
-          {getDapukanLabel(member) && (
-            <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 mt-0.5 ${badgeClass}`}>
-              {getDapukanLabel(member)}
-            </Badge>
-          )}
-          {member.phone && (
-            <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
-              <Phone className="w-2.5 h-2.5" />
-              {member.phone}
-            </div>
-          )}
-        </div>
+      <div className="flex flex-col gap-1">
+        <span className="font-medium text-sm text-foreground">{member.full_name}</span>
+        {getDapukanLabel(member) && (
+          <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 w-fit ${badgeClass}`}>
+            {getDapukanLabel(member)}
+          </Badge>
+        )}
+        {member.phone && (
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Phone className="w-2.5 h-2.5" />
+            {member.phone}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -156,7 +154,7 @@ export function KategoriSection({ kategoriList, isSuperAdmin, onMoveUp, onMoveDo
                 {kat.members.length}
               </Badge>
             </div>
-            <div className="px-4 pb-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            <div className="px-4 pb-3 grid grid-cols-1 gap-2">
               {kat.members.map((m) => (
                 <PengurusCard key={m.id} member={m} badgeClass={kat.badgeClass} />
               ))}
