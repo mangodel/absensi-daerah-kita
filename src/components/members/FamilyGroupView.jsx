@@ -19,16 +19,14 @@ function buildFamilyGroups(members) {
     }
   });
 
-  // Sort: kepala keluarga (Menikah/Laki-laki) dulu, lalu anggota lain
+  // Sort: kepala keluarga = laki-laki OR nama sama dengan family_group key (dipilih sebagai KK) tampil pertama
   Object.keys(grouped).forEach(key => {
     grouped[key].sort((a, b) => {
-      const aScore = (a.marital_status === "Menikah" && a.gender === "Laki-laki") ? 0
-        : (a.marital_status === "Menikah") ? 1
-        : 2;
-      const bScore = (b.marital_status === "Menikah" && b.gender === "Laki-laki") ? 0
-        : (b.marital_status === "Menikah") ? 1
-        : 2;
-      return aScore - bScore;
+      const isHeadA = a.gender === "Laki-laki" || a.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
+      const isHeadB = b.gender === "Laki-laki" || b.full_name?.trim().toLowerCase() === key.trim().toLowerCase();
+      if (isHeadA && !isHeadB) return -1;
+      if (!isHeadA && isHeadB) return 1;
+      return 0;
     });
   });
 
@@ -39,6 +37,17 @@ function getAgeLabel(birth_year) {
   if (!birth_year) return null;
   const age = new Date().getFullYear() - birth_year;
   return `${age} th`;
+}
+
+// Tentukan apakah member adalah Kepala Keluarga:
+// - Dalam grup: laki-laki ATAU namanya sama dengan nama family_group
+// - Tanpa grup: selalu dianggap KK (1 kepala keluarga sendiri)
+function isKepalaKeluarga(member, familyGroupName) {
+  if (!familyGroupName) return true; // tanpa grup = KK sendiri
+  return (
+    member.gender === "Laki-laki" ||
+    member.full_name?.trim().toLowerCase() === familyGroupName.trim().toLowerCase()
+  );
 }
 
 function MemberRow({ member, index, isHead, onEdit, onDelete }) {
@@ -103,6 +112,8 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
   const [open, setOpen] = useState(true);
   const head = members[0];
   const others = members.slice(1);
+  // Kepala Keluarga = anggota pertama yang laki-laki atau namanya = familyName
+  const headIsKK = isKepalaKeluarga(head, familyName);
   const activeCount = members.filter(m => m.status === "Aktif").length;
   
   // Alamat dari kepala keluarga
@@ -143,9 +154,9 @@ function FamilyCard({ familyName, members, onEdit, onDelete }) {
           >
             <div className="px-4 pb-3 space-y-1 border-t border-border">
               <div className="pt-2">
-                <MemberRow member={head} index={1} isHead={true} onEdit={onEdit} onDelete={onDelete} />
+                <MemberRow member={head} index={1} isHead={headIsKK} onEdit={onEdit} onDelete={onDelete} />
                 {others.map((m, i) => (
-                  <MemberRow key={m.id} member={m} index={i + 2} isHead={false} onEdit={onEdit} onDelete={onDelete} />
+                  <MemberRow key={m.id} member={m} index={i + 2} isHead={isKepalaKeluarga(m, familyName)} onEdit={onEdit} onDelete={onDelete} />
                 ))}
               </div>
             </div>
@@ -234,7 +245,7 @@ export default function FamilyGroupView({ members, onEdit, onDelete }) {
               </div>
               <div className="bg-card border border-border rounded-2xl p-4 space-y-1">
                 {noGroup.map((m, i) => (
-                  <MemberRow key={m.id} member={m} index={i + 1} isHead={false} onEdit={onEdit} onDelete={onDelete} />
+                  <MemberRow key={m.id} member={m} index={i + 1} isHead={true} onEdit={onEdit} onDelete={onDelete} />
                 ))}
               </div>
             </div>
@@ -257,7 +268,7 @@ export default function FamilyGroupView({ members, onEdit, onDelete }) {
               <p className="text-xs text-muted-foreground font-semibold mb-2 mt-4">Tanpa Grup Keluarga ({noGroup.length})</p>
               <div className="bg-card border border-border rounded-2xl p-4 space-y-1">
                 {noGroup.map((m, i) => (
-                  <MemberRow key={m.id} member={m} index={i + 1} isHead={false} onEdit={onEdit} onDelete={onDelete} />
+                  <MemberRow key={m.id} member={m} index={i + 1} isHead={true} onEdit={onEdit} onDelete={onDelete} />
                 ))}
               </div>
             </div>
