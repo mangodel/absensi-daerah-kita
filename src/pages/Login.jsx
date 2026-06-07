@@ -16,6 +16,7 @@ export default function Login() {
   const logoSrc = config.login_logo_url || config.logo_url;
   const orgName = config.org_name || "Sistem Organisasi";
   const orgSubtitle = config.org_subtitle || "";
+  const adminLoginBg = config.admin_login_bg_url || "";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,8 +28,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl p-8 max-w-sm w-full shadow-lg space-y-6">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={adminLoginBg ? {
+        backgroundImage: `url(${adminLoginBg})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed"
+      } : { background: "linear-gradient(to bottom right, hsl(var(--primary) / 0.05), hsl(var(--background)), hsl(var(--accent) / 0.05))" }}
+    >
+      {adminLoginBg && <div className="absolute inset-0 bg-black/40" />}
+      <div className="bg-card border border-border rounded-2xl p-8 max-w-sm w-full shadow-lg space-y-6 relative z-10">
         {/* Logo & Nama Organisasi */}
         <div className="text-center space-y-3">
           {logoSrc ? (

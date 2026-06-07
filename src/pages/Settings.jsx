@@ -42,6 +42,8 @@ export default function Settings() {
   const [uploadingLoginLogo, setUploadingLoginLogo] = useState(false);
   const [uploadingLoginBg, setUploadingLoginBg] = useState(false);
   const [uploadingLoginBanner, setUploadingLoginBanner] = useState(false);
+  const [uploadingAdminLoginBg, setUploadingAdminLoginBg] = useState(false);
+  const [adminLoginBgUrl, setAdminLoginBgUrl] = useState("");
   const [orgName, setOrgName] = useState("");
   const [orgSubtitle, setOrgSubtitle] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
@@ -56,6 +58,7 @@ export default function Settings() {
   const loginLogoInputRef = useRef();
   const loginBgInputRef = useRef();
   const loginBannerInputRef = useRef();
+  const adminLoginBgInputRef = useRef();
 
   useEffect(() => {
     setOrgName(config.org_name || "");
@@ -65,6 +68,7 @@ export default function Settings() {
     setLoginLogoUrl(config.login_logo_url || "");
     setLoginBgUrl(config.login_bg_url || "");
     setLoginBannerUrl(config.login_banner_url || "");
+    setAdminLoginBgUrl(config.admin_login_bg_url || "");
     setPageTitles({ ...config.page_titles });
     setDesaKelompokMap(JSON.parse(JSON.stringify(config.desa_kelompok_map || {})));
   }, [config]);
@@ -125,6 +129,15 @@ export default function Settings() {
     setUploadingLoginBg(false);
   };
 
+  const handleAdminLoginBgUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAdminLoginBg(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setAdminLoginBgUrl(file_url);
+    setUploadingAdminLoginBg(false);
+  };
+
   const handleLoginBannerUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -142,6 +155,7 @@ export default function Settings() {
     await upsertConfig("register_banner_url", registerBannerUrl, "Banner Form Registrasi");
     await upsertConfig("login_logo_url", loginLogoUrl, "Logo Halaman Login");
     await upsertConfig("login_bg_url", loginBgUrl, "Background Portal Jamaah Login");
+    await upsertConfig("admin_login_bg_url", adminLoginBgUrl, "Background Halaman Login Admin");
     await upsertConfig("login_banner_url", loginBannerUrl, "Banner Portal Jamaah Login");
     await upsertConfig("page_titles", pageTitles, "Judul Halaman");
     await upsertConfig("desa_kelompok_map", desaKelompokMap, "Peta Desa-Kelompok");
@@ -275,6 +289,26 @@ export default function Settings() {
                 </div>
               </div>
               <Input value={loginLogoUrl} onChange={e => setLoginLogoUrl(e.target.value)} placeholder="Atau masukkan URL logo login (https://...)" className="text-xs" />
+              </div>
+
+              {/* Background Halaman Login Admin */}
+              <div className="space-y-2 pt-2 border-t border-border">
+              <Label className="text-xs text-muted-foreground">Background Halaman Login Admin</Label>
+              <p className="text-[11px] text-muted-foreground">Gambar latar belakang untuk halaman login admin.</p>
+              <div className="flex items-center gap-4">
+                <div className="w-32 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-secondary/30 overflow-hidden shrink-0">
+                  {adminLoginBgUrl ? <img src={adminLoginBgUrl} alt="Admin Login BG" className="w-full h-full object-cover" /> : <Image className="w-5 h-5 text-muted-foreground" />}
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <input ref={adminLoginBgInputRef} type="file" accept="image/*" className="hidden" onChange={handleAdminLoginBgUpload} />
+                  <Button size="sm" variant="outline" onClick={() => adminLoginBgInputRef.current?.click()} disabled={uploadingAdminLoginBg}>
+                    {uploadingAdminLoginBg ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+                    {uploadingAdminLoginBg ? "Mengupload..." : "Upload Background"}
+                  </Button>
+                  {adminLoginBgUrl && <Button size="sm" variant="ghost" className="text-destructive ml-2" onClick={() => setAdminLoginBgUrl("")}>Hapus</Button>}
+                </div>
+              </div>
+              <Input value={adminLoginBgUrl} onChange={e => setAdminLoginBgUrl(e.target.value)} placeholder="Atau masukkan URL gambar background (https://...)" className="text-xs" />
               </div>
 
               {/* Background Portal Jamaah Login */}
