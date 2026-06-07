@@ -127,15 +127,18 @@ export default function Dashboard() {
   const activeMembers = members.filter(m => m.status === "Aktif").length;
   const inactiveMembers = members.filter(m => m.status === "Tidak Aktif").length;
 
-  // Hitung total KK: setiap family_group unik = 1 KK, tanpa family_group masing-masing = 1 KK
+  // Hitung total KK: family_group unik = 1 KK + member tanpa family_group = mandiri (1 KK)
   const totalKK = (() => {
-    const groups = new Set();
-    let noGroup = 0;
+    const groupsSet = new Set();
     members.forEach(m => {
-      if (m.family_group && m.family_group.trim()) groups.add(m.family_group.trim());
-      else noGroup++;
+      if (m.family_group && m.family_group.trim()) {
+        groupsSet.add(m.family_group.trim());
+      }
     });
-    return groups.size + noGroup;
+    // KK berkelompok + KK mandiri (yang tidak punya family_group)
+    const berkelompok = groupsSet.size;
+    const mandiri = members.filter(m => !m.family_group || !m.family_group.trim()).length;
+    return berkelompok + mandiri;
   })();
   const yearAttendances = attendances.filter(a => a.year === Number(selectedYear));
   // Admin kelompok: only kelompok-level events attendance (exclude Daerah events)
@@ -159,9 +162,9 @@ export default function Dashboard() {
     .slice(0, 3);
 
   const scopeLabel = isAdminKelompok && userKelompok
-    ? `Kelompok ${userKelompok}`
+    ? userKelompok
     : isAdminDesa && userDesa
-    ? `Desa ${userDesa}`
+    ? userDesa
     : "Daerah";
 
   return (

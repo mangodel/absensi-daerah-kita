@@ -17,9 +17,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, X, CalendarDays } from "lucide-react";
 import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
 import BroadcastInbox from "@/components/portal/BroadcastInbox";
+import OrganizationDisplay from "@/components/dashboard/OrganizationDisplay";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -493,63 +495,128 @@ export default function JamaahPortal() {
           )}
         </div>
 
-        {/* Anggota Keluarga */}
-        {familyMembers.length > 0 && (
-          <Card className="mb-6 border-accent/20">
+        {/* Tab: Struktur Organisasi */}
+        {myMember && (
+          <Card className="mb-6">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Users className="w-4 h-4 text-accent" />
-                Anggota Keluarga ({familyMembers.length})
+                <Users className="w-4 h-4 text-primary" />
+                Struktur Organisasi
               </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">Grup: {myMember?.family_group}</p>
             </CardHeader>
-            <CardContent className="space-y-2">
-            {[...familyMembers].sort((a, b) => {
-             // Urutan: Kepala Keluarga, Istri, Anak (berdasarkan tahun lahir tertua ke termuda)
-             const aIsKepala = a.id === myMember?.id ? 0 : 1;
-             const bIsKepala = b.id === myMember?.id ? 0 : 1;
-
-             if (aIsKepala !== bIsKepala) return aIsKepala - bIsKepala;
-
-             // Jika kedua-duanya bukan kepala, urutkan berdasarkan tahun lahir (tertua terlebih dahulu)
-             const aYear = a.birth_year || 9999;
-             const bYear = b.birth_year || 9999;
-             return aYear - bYear;
-            }).map(member => {
-             const isKepalaKeluarga = member.id === myMember?.id;
-             const isIstri = !isKepalaKeluarga && member.marital_status === "Menikah" && member.gender === "Perempuan";
-             const isAnak = !isKepalaKeluarga && (member.marital_status === "Belum Menikah" || member.marital_status === null || member.marital_status === "");
-
-             return (
-               <div key={member.id} className={`p-3 rounded-lg border ${isKepalaKeluarga ? 'border-primary/30 bg-primary/5' : 'border-border'} flex items-center justify-between`}>
-                 <div className="flex-1">
-                   <p className="text-sm font-semibold">{member.full_name}</p>
-                   <div className="flex items-center gap-2 mt-1 flex-wrap">
-                     {isKepalaKeluarga && <Badge className="text-[10px] h-auto py-0.5">Kepala Keluarga</Badge>}
-                     {isIstri && <Badge variant="secondary" className="text-[10px] h-auto py-0.5">Istri</Badge>}
-                     {isAnak && <Badge variant="outline" className="text-[10px] h-auto py-0.5">Anak</Badge>}
-                     {member.gender && <span className="text-xs text-muted-foreground">{member.gender}</span>}
-                   </div>
-                   {member.phone && <p className="text-xs text-muted-foreground mt-1">{member.phone}</p>}
-                 </div>
-                 <Button
-                   variant="ghost"
-                   size="icon"
-                   onClick={() => handleEditFamilyMember(member)}
-                   className="text-muted-foreground hover:text-foreground"
-                 >
-                   <Edit2 className="w-4 h-4" />
-                 </Button>
-               </div>
-             );
-            })}
+            <CardContent>
+              <OrganizationDisplay 
+                level="Daerah"
+                desa={myMember.desa}
+                kelompok={myMember.kelompok}
+              />
             </CardContent>
           </Card>
         )}
 
+        {/* Tab: Data Jamaah, Anggota Keluarga, Struktur Organisasi */}
+        <Tabs defaultValue="data" className="mb-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="data">Data Jamaah</TabsTrigger>
+            <TabsTrigger value="keluarga">Keluarga</TabsTrigger>
+            <TabsTrigger value="struktur">Struktur</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="data" className="mt-4">
+            {myMember ? (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-accent" />
+                      Data Jamaah
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {READONLY_FIELDS.map(f => {
+                      const val = f.key === "email" ? (myMember?.email || jamaahUser?.email) : myMember[f.key];
+                      if (!val) return null;
+                      return (
+                        <div key={f.key} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                          <span className="text-xs text-muted-foreground">{f.label}</span>
+                          <span className="text-xs font-medium text-foreground">{val}</span>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+                <p className="text-xs text-muted-foreground text-center py-4">Untuk mengubah data, buka menu utama dan edit profil Anda</p>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <User className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-30" />
+                  <p className="text-sm text-muted-foreground">Data anggota belum tersedia</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="keluarga" className="mt-4">
+            {familyMembers.length > 0 ? (
+              <Card className="border-accent/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Anggota Keluarga ({familyMembers.length})</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Grup: {myMember?.family_group}</p>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {[...familyMembers].sort((a, b) => {
+                    const aIsKepala = a.id === myMember?.id ? 0 : 1;
+                    const bIsKepala = b.id === myMember?.id ? 0 : 1;
+                    if (aIsKepala !== bIsKepala) return aIsKepala - bIsKepala;
+                    const aYear = a.birth_year || 9999;
+                    const bYear = b.birth_year || 9999;
+                    return aYear - bYear;
+                  }).map(member => {
+                    const isKepalaKeluarga = member.id === myMember?.id;
+                    const isIstri = !isKepalaKeluarga && member.marital_status === "Menikah" && member.gender === "Perempuan";
+                    const isAnak = !isKepalaKeluarga && (member.marital_status === "Belum Menikah" || member.marital_status === null || member.marital_status === "");
+                    return (
+                      <div key={member.id} className={`p-3 rounded-lg border ${isKepalaKeluarga ? 'border-primary/30 bg-primary/5' : 'border-border'} flex items-center justify-between`}>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold">{member.full_name}</p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {isKepalaKeluarga && <Badge className="text-[10px] h-auto py-0.5">Kepala Keluarga</Badge>}
+                            {isIstri && <Badge variant="secondary" className="text-[10px] h-auto py-0.5">Istri</Badge>}
+                            {isAnak && <Badge variant="outline" className="text-[10px] h-auto py-0.5">Anak</Badge>}
+                            {member.gender && <span className="text-xs text-muted-foreground">{member.gender}</span>}
+                          </div>
+                          {member.phone && <p className="text-xs text-muted-foreground mt-1">{member.phone}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <Users className="w-10 h-10 text-muted-foreground mx-auto mb-2 opacity-30" />
+                  <p className="text-sm text-muted-foreground">Tidak ada anggota keluarga lain</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="struktur" className="mt-4">
+            {myMember && (
+              <OrganizationDisplay 
+                level="Daerah"
+                desa={myMember.desa}
+                kelompok={myMember.kelompok}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
+
         {/* Navigasi ke halaman terpisah */}
-        <div className="grid grid-cols-2 gap-3 mt-6">
-          <Link to="/jamaah/survey">
+         <div className="grid grid-cols-2 gap-3 mt-6">
+           <Link to="/jamaah/survey">
             <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20 hover:border-primary/50">
               <CardContent className="p-5 flex flex-col items-center gap-3 text-center">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
