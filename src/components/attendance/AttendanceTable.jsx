@@ -69,7 +69,7 @@ function MemberRow({ member, idx, onStatusChange }) {
   // Resolve age category
   const currentYear = new Date().getFullYear();
   const age = member.birth_year ? currentYear - member.birth_year : null;
-  const isDewasa = age === null || age >= 22;
+  const isDewasa = age === null || age >= 18;
 
   if (phase === "done") {
     // Dissolve after save — show compact badge row
@@ -186,8 +186,8 @@ export default function AttendanceTable({ members, attendanceData, onStatusChang
   const sorted = [...members].sort((a, b) => {
     const ageA = a.birth_year ? currentYear - a.birth_year : 999;
     const ageB = b.birth_year ? currentYear - b.birth_year : 999;
-    const isDewasaA = ageA >= 22;
-    const isDewasaB = ageB >= 22;
+    const isDewasaA = ageA >= 18;
+    const isDewasaB = ageB >= 18;
     if (isDewasaA && !isDewasaB) return -1;
     if (!isDewasaA && isDewasaB) return 1;
     return 0;

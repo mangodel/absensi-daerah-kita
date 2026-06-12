@@ -11,7 +11,12 @@ function getAge(birth_year) {
 
 function isGenerus(member) {
   const age = getAge(member.birth_year);
-  return age !== null && age < 22;
+  return age !== null && age < 18;
+}
+
+function isDewasa(member) {
+  const age = getAge(member.birth_year);
+  return age === null || age >= 18;
 }
 
 export default function KelompokAttendanceDetail({ members, attendances, kelompok, month, year }) {
@@ -24,7 +29,7 @@ export default function KelompokAttendanceDetail({ members, attendances, kelompo
   );
 
   const memberStats = useMemo(() => {
-    const dewasa = kelompokMembers.filter(m => !isGenerus(m));
+    const dewasa = kelompokMembers.filter(m => isDewasa(m));
     const generus = kelompokMembers.filter(m => isGenerus(m));
     const sorted = [...dewasa, ...generus];
 
@@ -45,7 +50,7 @@ export default function KelompokAttendanceDetail({ members, attendances, kelompo
       <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
         <span className="flex items-center gap-1"><Users className="w-3 h-3" />{kelompokMembers.length} anggota</span>
         <span className="text-primary font-medium">
-          {memberStats.filter(m => !m.isGenerus).length} Dewasa ·{" "}
+          {memberStats.filter(m => !m.isGenerus).length} Dewasa (18+) ·{" "}
           <span className="text-purple-600">{memberStats.filter(m => m.isGenerus).length} Generus</span>
         </span>
       </div>

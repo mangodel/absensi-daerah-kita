@@ -144,10 +144,10 @@ export default function Attendance() {
     let matchAge = true;
     if (filterAgeGroup === "dewasa") {
       const age = m.birth_year ? thisYear - m.birth_year : 999;
-      matchAge = age >= 22;
+      matchAge = age >= 18;
     } else if (filterAgeGroup === "generus") {
       const age = m.birth_year ? thisYear - m.birth_year : 999;
-      matchAge = age < 22;
+      matchAge = age < 18;
     }
     return matchDesa && matchKelompok && matchVisa && matchDapukan && matchMuballigh && matchAge;
   });
@@ -350,8 +350,8 @@ export default function Attendance() {
                         <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">Semua Usia</SelectItem>
-                          <SelectItem value="dewasa">Jamaah Dewasa (22+)</SelectItem>
-                          <SelectItem value="generus">Generus (&lt;22 thn)</SelectItem>
+                          <SelectItem value="dewasa">Jamaah Dewasa (18+)</SelectItem>
+                          <SelectItem value="generus">Generus (&lt;18 thn)</SelectItem>
                         </SelectContent>
                       </Select>
                       {selectedEvent.level === "Daerah" && (
