@@ -1,12 +1,11 @@
-import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, MapPin, Calendar, Users, RefreshCw, BookOpen, Mic, FileText, StickyNote, QrCode, Palette } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Pencil, Trash2, MapPin, Calendar, Users, RefreshCw, BookOpen, Mic, FileText, StickyNote, QrCode } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { RECURRING_PATTERNS } from "@/lib/recurringUtils";
-import FormConfigEditor from "@/components/event-attendance/FormConfigEditor";
 
 const levelColors = {
   "Daerah": "bg-primary/10 text-primary border-primary/20",
@@ -60,7 +59,6 @@ function getEventCardColor(event) {
 
 export default function EventList({ events, sessions = [], onEdit, onDelete, onSelectForAttendance }) {
   const navigate = useNavigate();
-  const [formConfigOpen, setFormConfigOpen] = useState(null);
 
   if (events.length === 0) {
     return (
@@ -158,33 +156,23 @@ export default function EventList({ events, sessions = [], onEdit, onDelete, onS
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-               {linkedSession && (
-                 <Button size="sm" variant="outline" className="text-xs h-8 text-primary border-primary/30 hover:bg-primary/10" onClick={() => navigate("/event-attendance")}>
-                   <QrCode className="w-3.5 h-3.5 mr-1" /> Buka QR
-                 </Button>
-               )}
-               {onSelectForAttendance && (
-                 <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => onSelectForAttendance(event)}>
-                   <Users className="w-3.5 h-3.5 mr-1" /> Absensi
-                 </Button>
-               )}
-               <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary" onClick={() => setFormConfigOpen(event.id)} title="Customize TV Display">
-                 <Palette className="w-3.5 h-3.5" />
-               </Button>
-               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(event)}>
-                 <Pencil className="w-3.5 h-3.5" />
-               </Button>
-               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(event)}>
-                 <Trash2 className="w-3.5 h-3.5" />
-               </Button>
+              {linkedSession && (
+                <Button size="sm" variant="outline" className="text-xs h-8 text-primary border-primary/30 hover:bg-primary/10" onClick={() => navigate("/event-attendance")}>
+                  <QrCode className="w-3.5 h-3.5 mr-1" /> Buka QR
+                </Button>
+              )}
+              {onSelectForAttendance && (
+                <Button size="sm" variant="outline" className="text-xs h-8" onClick={() => onSelectForAttendance(event)}>
+                  <Users className="w-3.5 h-3.5 mr-1" /> Absensi
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(event)}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(event)}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
             </div>
-
-            {/* Form Config Editor Modal */}
-            <FormConfigEditor
-              eventId={formConfigOpen}
-              open={!!formConfigOpen}
-              onClose={() => setFormConfigOpen(null)}
-            />
           </div>
         </div>
         );
