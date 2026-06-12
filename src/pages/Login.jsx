@@ -77,7 +77,7 @@ export default function Login() {
           <a href="/jamaah-login" className="text-xs text-primary hover:underline text-center block">
             Masuk sebagai Jamaah →
           </a>
-          </div>
+        </div>
 
         {!showForgot ? (
           <>
