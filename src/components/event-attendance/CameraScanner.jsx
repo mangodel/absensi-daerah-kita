@@ -5,9 +5,8 @@
 import QRPhotoScanner from "@/components/shared/QRPhotoScanner";
 
 export default function CameraScanner({ onScan, active }) {
-  if (!active) return null;
   return (
-    <div className="py-2">
+    <div className={`py-2 ${active ? "block" : "hidden"}`}>
       <QRPhotoScanner
         onScan={onScan}
         label="Foto QR Peserta"
