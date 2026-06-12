@@ -3,6 +3,13 @@ import { Camera, X, ScanLine, FlipHorizontal, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import jsQR from "jsqr";
 
+/**
+ * CameraScanner — universal QR scanner via jsQR + getUserMedia
+ * 
+ * Key design: <video> and <canvas> are ALWAYS mounted in the DOM so refs
+ * are always valid before startCamera() is called.  Visibility is toggled
+ * via CSS classes, never via conditional rendering.
+ */
 export default function CameraScanner({ onScan, active }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -18,14 +25,11 @@ export default function CameraScanner({ onScan, active }) {
 
   const triggerScan = useCallback((value) => {
     if (cooldown.current) return;
-    const clean = value.trim().toUpperCase();
     cooldown.current = true;
+    const clean = value.trim().toUpperCase();
     setLastScanned(clean);
     onScan(clean);
-    setTimeout(() => {
-      cooldown.current = false;
-      setLastScanned(null);
-    }, 3000);
+    setTimeout(() => { cooldown.current = false; setLastScanned(null); }, 3000);
   }, [onScan]);
 
   const stopCamera = useCallback(() => {
@@ -48,7 +52,7 @@ export default function CameraScanner({ onScan, active }) {
     ctx.drawImage(video, 0, 0);
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const code = jsQR(imgData.data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
-    if (code?.data) triggerScan(code.data);
+    if (code?.data) { triggerScan(code.data); return; }
     rafRef.current = requestAnimationFrame(scanLoop);
   }, [triggerScan]);
 
@@ -56,6 +60,7 @@ export default function CameraScanner({ onScan, active }) {
     const facing = fm || facingMode;
     setError(null);
     stopCamera();
+    cooldown.current = false;
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setError("Browser tidak mendukung akses kamera langsung. Gunakan Upload Foto di bawah.");
@@ -74,7 +79,7 @@ export default function CameraScanner({ onScan, active }) {
         video.play().then(() => {
           setCameraActive(true);
           rafRef.current = requestAnimationFrame(scanLoop);
-        }).catch(() => setError("Gagal memulai video kamera."));
+        }).catch(err => setError("Gagal memulai video: " + err.message));
       };
     } catch (err) {
       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
@@ -103,8 +108,7 @@ export default function CameraScanner({ onScan, active }) {
     const url = URL.createObjectURL(file);
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = img.width; canvas.height = img.height;
       canvas.getContext("2d").drawImage(img, 0, 0);
       const imgData = canvas.getContext("2d").getImageData(0, 0, img.width, img.height);
       const code = jsQR(imgData.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
@@ -125,14 +129,14 @@ export default function CameraScanner({ onScan, active }) {
 
   return (
     <div className="space-y-3">
-      {/* Hidden elements always in DOM so refs valid before camera starts */}
+      {/* Always in DOM — refs always valid */}
       <canvas ref={canvasRef} className="hidden" />
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
 
-      {/* Camera view — always rendered, visibility toggled */}
+      {/* Camera view — always in DOM, CSS controls visibility */}
       <div className={`relative rounded-xl overflow-hidden bg-black ${cameraActive ? "block" : "hidden"}`}>
         <video ref={videoRef} className="w-full max-h-72 object-cover" autoPlay playsInline muted />
-        {/* Viewfinder */}
+        {/* Viewfinder corners */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-52 h-52 relative">
             <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-md" />
@@ -143,7 +147,7 @@ export default function CameraScanner({ onScan, active }) {
           </div>
         </div>
         {/* Controls */}
-        <div className="absolute top-2 right-2 flex gap-2">
+        <div className="absolute top-2 right-2 flex gap-2 z-10">
           <button onClick={flipCamera} className="bg-black/50 rounded-full p-2 text-white hover:bg-black/70">
             <FlipHorizontal className="w-4 h-4" />
           </button>
@@ -152,13 +156,13 @@ export default function CameraScanner({ onScan, active }) {
           </button>
         </div>
         {lastScanned && (
-          <div className="absolute bottom-2 left-2 right-2 bg-accent text-white rounded-lg px-3 py-2 text-sm font-medium text-center">
-            ✓ Berhasil scan: {lastScanned}
+          <div className="absolute bottom-2 left-2 right-2 bg-accent text-white rounded-lg px-3 py-2 text-sm font-medium text-center z-10">
+            ✓ Scanned: {lastScanned}
           </div>
         )}
       </div>
 
-      {/* Idle state */}
+      {/* Idle state — shown when camera not active */}
       {!cameraActive && (
         <div className="bg-secondary/40 rounded-xl p-6 flex flex-col items-center gap-3 text-center">
           <ScanLine className="w-12 h-12 text-primary opacity-70" />
@@ -182,7 +186,7 @@ export default function CameraScanner({ onScan, active }) {
 
       {!cameraActive && lastScanned && (
         <div className="bg-accent/10 border border-accent/30 rounded-lg px-3 py-2 text-sm text-accent font-medium text-center">
-          ✓ Scanned: {lastScanned}
+          ✓ Berhasil scan: {lastScanned}
         </div>
       )}
     </div>

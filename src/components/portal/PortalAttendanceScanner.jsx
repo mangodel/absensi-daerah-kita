@@ -17,32 +17,19 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
   const cooldown = useRef(false);
 
   const [cameraActive, setCameraActive] = useState(false);
-  const [scanStatus, setScanStatus] = useState(null); // 'success' | 'error' | null
+  const [scanStatus, setScanStatus] = useState(null);
   const [scanResultName, setScanResultName] = useState("");
   const [facingMode, setFacingMode] = useState("environment");
   const [camError, setCamError] = useState(null);
 
   const { data: activeSessions = [] } = useQuery({
-    queryKey: ["active-event-sessions", volunteerLevel],
-    queryFn: async () => {
-      const sessions = await base44.entities.EventSession.filter({ status: "Active" });
-      if (!volunteerLevel) return sessions;
-      return sessions.filter(s => {
-        if (volunteerLevel === "Daerah") return true;
-        if (volunteerLevel === "Desa" && member?.desa) return s.event_name?.includes(member.desa) || !s.event_name;
-        if (volunteerLevel === "Kelompok" && member?.kelompok) return s.event_name?.includes(member.kelompok) || !s.event_name;
-        return false;
-      });
-    },
+    queryKey: ["active-event-sessions"],
+    queryFn: () => base44.entities.EventSession.filter({ status: "Active" }),
   });
 
   const stopCamera = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     if (videoRef.current) videoRef.current.srcObject = null;
     setCameraActive(false);
   }, []);
@@ -55,8 +42,8 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
       const participants = await base44.entities.EventParticipant.filter({ qr_code_value: clean });
       if (participants.length === 0) {
         setScanStatus("error");
-        toast.error("QR tidak dikenali. Pastikan sudah terdaftar di event ini.");
-        cooldown.current = false;
+        toast.error("QR tidak dikenali.");
+        setTimeout(() => { cooldown.current = false; setScanStatus(null); }, 3000);
         return;
       }
       const participant = participants[0];
@@ -68,76 +55,73 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
         checkin_time: new Date().toISOString(),
         checkin_date: new Date().toISOString().split("T")[0],
         checkin_method: "QR Scan",
-        volunteer_name: user?.full_name || "Self Check-in",
-        notes: "Self check-in via Portal Jamaah",
+        volunteer_name: user?.full_name || "Portal Check-in",
+        notes: "Check-in via Portal Jamaah",
       });
       await base44.entities.EventParticipant.update(participant.id, { attendance_status: "Present" });
       setScanResultName(participant.full_name);
       setScanStatus("success");
       toast.success(`Absensi berhasil! Selamat datang, ${participant.full_name}`);
       stopCamera();
-    } catch (e) {
+    } catch {
       setScanStatus("error");
       toast.error("Terjadi kesalahan saat memproses absensi.");
-      cooldown.current = false;
+      setTimeout(() => { cooldown.current = false; setScanStatus(null); }, 3000);
     }
   }, [stopCamera, user]);
 
   const scanLoop = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState < video.HAVE_ENOUGH_DATA) {
+    if (!video || !canvas || video.readyState < 2 || !video.videoWidth) {
       rafRef.current = requestAnimationFrame(scanLoop);
       return;
     }
-    const w = video.videoWidth;
-    const h = video.videoHeight;
-    if (!w || !h) { rafRef.current = requestAnimationFrame(scanLoop); return; }
-    canvas.width = w;
-    canvas.height = h;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, w, h);
-    const imgData = ctx.getImageData(0, 0, w, h);
-    const code = jsQR(imgData.data, w, h, { inversionAttempts: "dontInvert" });
-    if (code?.data) {
-      handleCheckin(code.data);
-      return;
-    }
+    ctx.drawImage(video, 0, 0);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imgData.data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
+    if (code?.data) { handleCheckin(code.data); return; }
     rafRef.current = requestAnimationFrame(scanLoop);
   }, [handleCheckin]);
 
-  const startCamera = useCallback(async (facing) => {
-    const fm = facing || facingMode;
+  const startCamera = useCallback(async (fm) => {
+    const facing = fm || facingMode;
     setCamError(null);
     setScanStatus(null);
     setScanResultName("");
     stopCamera();
+    cooldown.current = false;
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setCamError("Browser ini tidak mendukung akses kamera. Gunakan fitur Upload Foto di bawah.");
+      setCamError("Browser ini tidak mendukung akses kamera. Gunakan Upload Foto.");
       return;
     }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: fm }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().then(() => {
-            setCameraActive(true);
-            rafRef.current = requestAnimationFrame(scanLoop);
-          });
-        };
-      }
+      // videoRef always in DOM — set srcObject then play
+      const video = videoRef.current;
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play().then(() => {
+          setCameraActive(true);
+          rafRef.current = requestAnimationFrame(scanLoop);
+        }).catch(err => setCamError("Gagal memulai kamera: " + err.message));
+      };
     } catch (err) {
       if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
         setCamError("Izin kamera ditolak. Silakan izinkan akses kamera di pengaturan browser.");
+      } else if (err.name === "NotFoundError") {
+        setCamError("Kamera tidak ditemukan pada perangkat ini.");
       } else {
-        setCamError("Tidak dapat mengakses kamera. Gunakan Upload Foto sebagai alternatif.");
+        setCamError(`Tidak dapat membuka kamera (${err.name}). Gunakan Upload Foto.`);
       }
     }
   }, [facingMode, stopCamera, scanLoop]);
@@ -156,18 +140,13 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
     const url = URL.createObjectURL(file);
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, img.width, img.height);
+      canvas.width = img.width; canvas.height = img.height;
+      canvas.getContext("2d").drawImage(img, 0, 0);
+      const imgData = canvas.getContext("2d").getImageData(0, 0, img.width, img.height);
       const code = jsQR(imgData.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
       URL.revokeObjectURL(url);
-      if (code?.data) {
-        handleCheckin(code.data);
-      } else {
-        setCamError("QR Code tidak ditemukan di foto. Coba foto ulang dengan lebih jelas.");
-      }
+      if (code?.data) handleCheckin(code.data);
+      else setCamError("QR Code tidak ditemukan di foto. Coba foto yang lebih jelas.");
       if (fileInputRef.current) fileInputRef.current.value = "";
     };
     img.src = url;
@@ -175,15 +154,23 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
+  const resetScan = () => {
+    setScanStatus(null);
+    setScanResultName("");
+    setCamError(null);
+    cooldown.current = false;
+  };
+
   return (
     <div className="space-y-4">
+      {/* Hidden always-in-DOM elements */}
       <canvas ref={canvasRef} className="hidden" />
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
 
       {activeSessions.length > 0 && (
         <Card className="border-accent/30 bg-accent/5">
           <CardContent className="p-4">
-            <p className="text-xs font-semibold text-accent mb-2">Event Aktif Saat Ini:</p>
+            <p className="text-xs font-semibold text-accent mb-2">Event Aktif:</p>
             {activeSessions.map(s => (
               <div key={s.id} className="flex items-center justify-between">
                 <span className="text-sm font-medium">{s.event_name}</span>
@@ -227,51 +214,45 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
             </div>
           )}
 
-          {/* Live camera view */}
-          {cameraActive && (
-            <div className="relative rounded-xl overflow-hidden bg-black">
-              <video ref={videoRef} className="w-full max-h-64 object-cover" autoPlay playsInline muted />
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-48 h-48 relative">
-                  <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-white rounded-tl-md" />
-                  <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-white rounded-tr-md" />
-                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-white rounded-bl-md" />
-                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-white rounded-br-md" />
-                  <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary/80 animate-pulse" />
-                </div>
-              </div>
-              <div className="absolute top-2 right-2 flex gap-1">
-                <button onClick={flipCamera} className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70">
-                  <FlipHorizontal className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={stopCamera} className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+          {/* Live camera — visible via CSS toggle, always mounted */}
+          <div className={`relative rounded-xl overflow-hidden bg-black ${cameraActive ? "block" : "hidden"}`}>
+            <video ref={videoRef} className="w-full max-h-64 object-cover" autoPlay playsInline muted />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-48 h-48 relative">
+                <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-white rounded-tl-md" />
+                <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-white rounded-tr-md" />
+                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-white rounded-bl-md" />
+                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-white rounded-br-md" />
+                <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary/80 animate-pulse" />
               </div>
             </div>
-          )}
+            <div className="absolute top-2 right-2 flex gap-1">
+              <button onClick={flipCamera} className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70">
+                <FlipHorizontal className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={stopCamera} className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
 
           {!cameraActive && (
             <Button onClick={() => startCamera()} className="w-full gap-2" disabled={scanStatus === "success"}>
-              <Camera className="w-4 h-4" />
-              Buka Kamera & Scan QR
+              <Camera className="w-4 h-4" /> Buka Kamera & Scan QR
             </Button>
           )}
-
           {cameraActive && (
             <Button variant="outline" onClick={stopCamera} className="w-full gap-2">
-              <X className="w-4 h-4" />
-              Hentikan Kamera
+              <X className="w-4 h-4" /> Hentikan Kamera
             </Button>
           )}
 
           <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full gap-2" disabled={scanStatus === "success"}>
-            <Upload className="w-4 h-4" />
-            Upload Foto QR (alternatif)
+            <Upload className="w-4 h-4" /> Upload Foto QR (alternatif)
           </Button>
 
           {(scanStatus || camError) && (
-            <Button variant="ghost" onClick={() => { setScanStatus(null); setScanResultName(""); setCamError(null); cooldown.current = false; }} className="w-full gap-2 text-xs">
+            <Button variant="ghost" onClick={resetScan} className="w-full gap-2 text-xs">
               <RefreshCw className="w-3.5 h-3.5" /> Scan Ulang
             </Button>
           )}

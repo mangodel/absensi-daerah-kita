@@ -97,7 +97,7 @@ function OperatorForm({ onSave }) {
       }}
     >
       <div className="absolute inset-0 bg-black/40" />
-      <div className="relative z-10">
+      <div className="relative z-10 w-full flex items-center justify-center">
         <VolunteerLogin onSuccess={handleLoginSuccess} />
       </div>
     </div>
@@ -113,11 +113,26 @@ function ScannerPanel({ event, operator, onBack }) {
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("scan"); // "scan" | "list"
 
-  const { data: participants = [] } = useQuery({
+  const { data: allParticipants = [] } = useQuery({
     queryKey: ["vol-participants", event.id],
     queryFn: () => base44.entities.EventParticipant.filter({ event_id: event.id }),
     enabled: !!event.id,
   });
+
+  // Filter peserta berdasarkan kelompok operator (jika ada)
+  const participants = operator?.kelompok
+    ? allParticipants.filter(p =>
+        !p.organization || // jika tidak ada info kelompok, tampilkan semua
+        p.organization?.toLowerCase().includes(operator.kelompok.toLowerCase()) ||
+        p.organization === operator.kelompok
+      ).length > 0
+      ? allParticipants.filter(p =>
+          !p.organization ||
+          p.organization?.toLowerCase().includes(operator.kelompok.toLowerCase()) ||
+          p.organization === operator.kelompok
+        )
+      : allParticipants // fallback: tampilkan semua jika filter menghasilkan kosong
+    : allParticipants;
 
   const { data: checkins = [], refetch: refetchCheckins } = useQuery({
     queryKey: ["vol-checkins", event.id],
