@@ -9,7 +9,7 @@ export default function CameraScanner({ onScan, active }) {
     <div className={`py-2 ${active ? "block" : "hidden"}`}>
       <QRPhotoScanner
         onScan={onScan}
-        label="Foto QR Peserta"
+        label="Aktifkan Kamera & Foto QR"
       />
     </div>
   );
