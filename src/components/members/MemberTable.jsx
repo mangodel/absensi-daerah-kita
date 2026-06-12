@@ -77,7 +77,7 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                 <TableCell className="text-sm text-muted-foreground">{member.desa}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.kelompok}</TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {member.dapukan && member.dapukan !== "Jamaah Biasa" && member.dapukan !== "Jamaah" ? (
+                  {member.dapukan && member.dapukan !== "Jamaah" ? (
                     <Badge variant="secondary" className="text-xs">{member.dapukan}</Badge>
                   ) : (
                     <span className="text-xs text-muted-foreground">Jamaah</span>

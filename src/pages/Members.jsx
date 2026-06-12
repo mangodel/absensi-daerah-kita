@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Upload, Search, SlidersHorizontal, X, IdCard, Loader2 } from "lucide-react";
+import { Plus, Upload, Search, SlidersHorizontal, X, IdCard, Loader2, Wand2 } from "lucide-react";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, DAPUKAN_LIST, DAPUKAN_4S } from "@/lib/constants";
 import MemberFormDialog from "@/components/members/MemberFormDialog";
@@ -43,6 +43,7 @@ export default function Members() {
 
   const queryClient = useQueryClient();
   const [assigningIds, setAssigningIds] = useState(false);
+  const [settingDapukan, setSettingDapukan] = useState(false);
 
   const { data: allMembers = [], isLoading } = useQuery({
     queryKey: ["members"],
@@ -131,6 +132,18 @@ export default function Members() {
     setAssigningIds(false);
   };
 
+  const handleSetDefaultDapukan = async () => {
+    setSettingDapukan(true);
+    try {
+      await base44.functions.invoke('setDefaultDapukan', {});
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    } catch (error) {
+      console.error('Failed to set default dapukan:', error);
+    } finally {
+      setSettingDapukan(false);
+    }
+  };
+
   const handleSave = (data) => {
     if (editMember) {
       updateMutation.mutate({ id: editMember.id, data });
@@ -187,6 +200,12 @@ export default function Members() {
           </div>
           {canManageMembers && (
             <>
+              {allMembers.some(m => !m.dapukan || m.dapukan === "anggota" || m.dapukan === "Anggota") && (
+                <Button variant="outline" onClick={handleSetDefaultDapukan} disabled={settingDapukan} className="text-primary border-primary/30 hover:bg-primary/10">
+                  {settingDapukan ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
+                  Reset Dapukan
+                </Button>
+              )}
               {allMembers.some(m => !m.member_id) && (
                 <Button variant="outline" onClick={handleAssignMissingIds} disabled={assigningIds} className="text-primary border-primary/30 hover:bg-primary/10">
                   {assigningIds ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <IdCard className="w-4 h-4 mr-2" />}
