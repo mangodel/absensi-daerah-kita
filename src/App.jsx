@@ -35,6 +35,7 @@ const JamaahSurvey = lazy(() => import('@/pages/JamaahSurvey'));
 const JamaahAbsensi = lazy(() => import('@/pages/JamaahAbsensi'));
 const JamaahEvents = lazy(() => import('@/pages/JamaahEvents'));
 const Login = lazy(() => import('@/pages/Login'));
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'));
 
 // Loading fallback component
 const PageLoadingFallback = () => (
@@ -62,6 +63,7 @@ const AuthenticatedApp = () => {
       <Routes>
         {/* Public routes - tidak perlu menunggu auth check */}
         <Route path="/login" element={<SuspendedPage><Login /></SuspendedPage>} />
+        <Route path="/reset-password" element={<SuspendedPage><ResetPassword /></SuspendedPage>} />
         <Route path="/jamaah-login" element={<SuspendedPage><JamaahLogin /></SuspendedPage>} />
         <Route path="/jamaah/signup" element={<SuspendedPage><JamaahSignup /></SuspendedPage>} />
         <Route path="/event-register/:eventId" element={<SuspendedPage><EventRegister /></SuspendedPage>} />
