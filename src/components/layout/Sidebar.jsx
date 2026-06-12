@@ -31,6 +31,7 @@ const navItems = [
   { label: "Pindah Kelompok", icon: ArrowRightLeft, path: "/transfers" },
   { label: "Struktur Organisasi", icon: Building2, path: "/structure" },
   { label: "Portal Jamaah", icon: UserCircle, path: "/jamaah" },
+  { label: "Scan Volunteer", icon: ScanLine, path: "/scanner-volunteer", adminOnly: true },
   { label: "Broadcast", icon: Megaphone, path: "/broadcast", adminOnly: true },
   { label: "Survei", icon: ClipboardList, path: "/survey", adminOnly: true },
 ];

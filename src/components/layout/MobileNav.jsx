@@ -40,6 +40,7 @@ export default function MobileNav() {
     { label: "Absensi Event", icon: ScanLine, path: "/event-attendance" },
     { label: "Pengingat", icon: Bell, path: "/reminders", badge: urgentCount },
     { label: "Portal", icon: UserCircle, path: "/jamaah" },
+    ...((isSuperAdmin || isAdminDesa) ? [{ label: "Scan Vol", icon: ScanLine, path: "/scanner-volunteer" }] : []),
     ...((isSuperAdmin || isAdminDesa) ? [{ label: "Broadcast", icon: Megaphone, path: "/broadcast" }] : []),
     ...((isSuperAdmin || isAdminDesa) ? [{ label: "Survei", icon: ClipboardList, path: "/survey" }] : []),
     ...(canAccessSettings ? [{ label: "Setelan", icon: Settings, path: "/settings" }] : []),
