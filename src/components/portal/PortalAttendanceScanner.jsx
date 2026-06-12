@@ -225,14 +225,11 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
             </div>
           )}
 
-          {/* Video always in DOM — never hidden so refs + events always work */}
-          <video ref={videoRef} autoPlay playsInline muted
-            className={`w-full rounded-xl object-cover bg-black ${cameraActive ? "max-h-64 block" : "h-0 invisible absolute"}`}
-          />
-          {/* Viewfinder overlay — only shown when active */}
-          {cameraActive && (
-            <div className="relative rounded-xl overflow-hidden -mt-1">
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10" style={{top: 0}}>
+          {/* Video always in DOM — overflow-hidden hides without display:none which breaks stream */}
+          <div className={`overflow-hidden rounded-xl transition-all duration-300 bg-black ${cameraActive ? "max-h-72" : "max-h-0"}`}>
+            <div className="relative">
+              <video ref={videoRef} autoPlay playsInline muted className="w-full max-h-64 object-cover" />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-48 h-48 relative">
                   <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-white rounded-tl-md" />
                   <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-white rounded-tr-md" />
@@ -250,7 +247,8 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
                 </button>
               </div>
             </div>
-          )}
+          </div>
+
 
           {!cameraActive && (
             <Button onClick={() => startCamera()} className="w-full gap-2" disabled={scanStatus === "success"}>

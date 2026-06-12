@@ -56,28 +56,26 @@ export default function CameraScanner({ onScan, active }) {
     cooldown.current = false;
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("Browser tidak mendukung akses kamera. Gunakan Upload Foto di bawah.");
+      setError("Browser tidak mendukung akses kamera. Gunakan Upload Foto.");
       return;
     }
 
     let stream;
     try {
-      // Coba dengan constraint ideal dulu
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: facing } },
         audio: false,
       });
     } catch {
       try {
-        // Fallback: tanpa constraint apapun
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       } catch (err) {
         if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
           setError("Izin kamera ditolak. Buka pengaturan browser → izinkan kamera untuk situs ini, lalu refresh halaman.");
         } else if (err.name === "NotFoundError") {
-          setError("Kamera tidak ditemukan pada perangkat ini. Gunakan Upload Foto.");
+          setError("Kamera tidak ditemukan. Gunakan Upload Foto.");
         } else if (err.name === "NotReadableError" || err.name === "AbortError") {
-          setError("Kamera sedang digunakan aplikasi lain. Tutup aplikasi lain lalu coba lagi.");
+          setError("Kamera sedang digunakan aplikasi lain. Tutup lalu coba lagi.");
         } else {
           setError(`Tidak dapat membuka kamera (${err.name}). Coba Upload Foto.`);
         }
@@ -87,20 +85,14 @@ export default function CameraScanner({ onScan, active }) {
 
     streamRef.current = stream;
     const video = videoRef.current;
-    if (!video) {
-      stream.getTracks().forEach(t => t.stop());
-      setError("Komponen video tidak siap. Coba refresh halaman.");
-      return;
-    }
+    if (!video) { stream.getTracks().forEach(t => t.stop()); return; }
     video.srcObject = stream;
-    // Use both onloadedmetadata and oncanplay for broader browser support
+
     const onReady = () => {
       video.play().then(() => {
         setCameraActive(true);
         rafRef.current = requestAnimationFrame(scanLoop);
-      }).catch(err => {
-        setError("Gagal memulai video: " + err.message);
-      });
+      }).catch(err => setError("Gagal memulai video: " + err.message));
       video.onloadedmetadata = null;
       video.oncanplay = null;
     };
@@ -134,51 +126,49 @@ export default function CameraScanner({ onScan, active }) {
     img.src = url;
   };
 
-  // Cleanup on unmount or when active turns false
   useEffect(() => {
     if (!active) stopCamera();
     return () => stopCamera();
   }, [active, stopCamera]);
 
-  // Component always renders so refs are always valid in the DOM
-  // We just hide the whole thing when not active
+  // Always render — never unmount so videoRef stays valid
   return (
     <div className={active ? "space-y-3" : "hidden"}>
-      {/* Always in DOM */}
       <canvas ref={canvasRef} className="hidden" />
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
 
-      {/* Video — always mounted, shown/hidden via CSS */}
-      <div className={`relative rounded-xl overflow-hidden bg-black ${cameraActive ? "block" : "hidden"}`}>
-        <video
-          ref={videoRef}
-          className="w-full max-h-72 object-cover"
-          autoPlay
-          playsInline
-          muted
-        />
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-52 h-52 relative">
-            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-md" />
-            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-md" />
-            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-md" />
-            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-md" />
-            <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary/80 animate-pulse" />
+      {/* 
+        Video is ALWAYS in the DOM but wrapped in overflow-hidden container.
+        Using max-h to show/hide avoids display:none which breaks getUserMedia on some browsers.
+      */}
+      <div className={`overflow-hidden rounded-xl transition-all duration-300 bg-black ${cameraActive ? "max-h-80" : "max-h-0"}`}>
+        <div className="relative">
+          <video ref={videoRef} className="w-full max-h-72 object-cover" autoPlay playsInline muted />
+          {/* Viewfinder */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-52 h-52 relative">
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-md" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-md" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-md" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-md" />
+              <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary/80 animate-pulse" />
+            </div>
           </div>
-        </div>
-        <div className="absolute top-2 right-2 flex gap-2 z-10">
-          <button onClick={flipCamera} className="bg-black/50 rounded-full p-2 text-white hover:bg-black/70">
-            <FlipHorizontal className="w-4 h-4" />
-          </button>
-          <button onClick={stopCamera} className="bg-black/50 rounded-full p-2 text-white hover:bg-black/70">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        {lastScanned && (
-          <div className="absolute bottom-2 left-2 right-2 bg-accent text-white rounded-lg px-3 py-2 text-sm font-medium text-center z-10">
-            ✓ Scanned: {lastScanned}
+          {/* Controls */}
+          <div className="absolute top-2 right-2 flex gap-2 z-10">
+            <button onClick={flipCamera} className="bg-black/50 rounded-full p-2 text-white hover:bg-black/70">
+              <FlipHorizontal className="w-4 h-4" />
+            </button>
+            <button onClick={stopCamera} className="bg-black/50 rounded-full p-2 text-white hover:bg-black/70">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}
+          {lastScanned && (
+            <div className="absolute bottom-2 left-2 right-2 bg-accent text-white rounded-lg px-3 py-2 text-sm font-medium text-center z-10">
+              ✓ Scanned: {lastScanned}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Idle / Error state */}

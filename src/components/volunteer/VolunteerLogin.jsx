@@ -11,6 +11,7 @@ const SESSION_KEY = "volunteer_operator";
 export default function VolunteerLogin({ onSuccess }) {
   const { config } = useAppConfig();
   const [nama, setNama] = useState("");
+  const [phone, setPhone] = useState("");
   const [kelompok, setKelompok] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,6 +32,7 @@ export default function VolunteerLogin({ onSuccess }) {
     const operator = {
       id: `vol_${Date.now()}`,
       nama: nama.trim(),
+      phone: phone.trim(),
       desa: desaFromKelompok,
       kelompok: kelompok,
     };
@@ -63,6 +65,18 @@ export default function VolunteerLogin({ onSuccess }) {
                 disabled={isLoading}
                 className="h-11"
                 required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Nomor Telepon</label>
+              <Input
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="Nomor telepon (opsional)"
+                type="tel"
+                disabled={isLoading}
+                className="h-11"
               />
             </div>
 
