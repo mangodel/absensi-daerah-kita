@@ -9,24 +9,27 @@ import { useToast } from "@/components/ui/use-toast";
 import MemberCardDialog from "@/components/members/MemberCardDialog";
 
 export default function MemberCardDesignManager() {
-  const { config, reload } = useAppConfig();
-  const { toast } = useToast();
-  const logoInputRef = useRef();
-  
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [cardDesign, setCardDesign] = useState({
-    bg_gradient: config.card_bg_gradient || "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e40af 100%)",
-    accent_color: config.card_accent_color || "#60a5fa",
-    logo_url: config.card_logo_url || config.logo_url || "",
-    show_member_id: config.card_show_member_id !== false,
-    show_desa_kelompok: config.card_show_desa_kelompok !== false,
-    show_dapukan: config.card_show_dapukan !== false,
-    show_birth_year: config.card_show_birth_year !== false,
-    show_qr_code: config.card_show_qr_code !== false,
-    allow_register_portal: config.allow_register_portal !== false,
-  });
+   const { config, reload } = useAppConfig();
+   const { toast } = useToast();
+   const logoInputRef = useRef();
+   const bgImageInputRef = useRef();
+
+   const [saving, setSaving] = useState(false);
+   const [uploading, setUploading] = useState(false);
+   const [uploadingBg, setUploadingBg] = useState(false);
+   const [showPreview, setShowPreview] = useState(false);
+   const [cardDesign, setCardDesign] = useState({
+     bg_gradient: config.card_bg_gradient || "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e40af 100%)",
+     bg_image_url: config.card_bg_image_url || "",
+     accent_color: config.card_accent_color || "#60a5fa",
+     logo_url: config.card_logo_url || config.logo_url || "",
+     show_member_id: config.card_show_member_id !== false,
+     show_desa_kelompok: config.card_show_desa_kelompok !== false,
+     show_dapukan: config.card_show_dapukan !== false,
+     show_birth_year: config.card_show_birth_year !== false,
+     show_qr_code: config.card_show_qr_code !== false,
+     allow_register_portal: config.allow_register_portal !== false,
+   });
 
   const previewMember = {
     member_id: "AUNZ000001",
@@ -47,6 +50,15 @@ export default function MemberCardDesignManager() {
     setUploading(false);
   };
 
+  const handleBgImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBg(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setCardDesign(prev => ({ ...prev, bg_image_url: file_url }));
+    setUploadingBg(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -61,6 +73,7 @@ export default function MemberCardDesignManager() {
       };
 
       await upsertConfig("card_bg_gradient", cardDesign.bg_gradient, "Member Card Background Gradient");
+       await upsertConfig("card_bg_image_url", cardDesign.bg_image_url, "Member Card Background Image");
        await upsertConfig("card_accent_color", cardDesign.accent_color, "Member Card Accent Color");
        await upsertConfig("card_logo_url", cardDesign.logo_url, "Member Card Logo");
        await upsertConfig("card_show_member_id", cardDesign.show_member_id, "Show Member ID");
@@ -84,16 +97,36 @@ export default function MemberCardDesignManager() {
         <h2 className="font-semibold text-sm text-foreground">Desain Kartu Member Digital</h2>
         <p className="text-xs text-muted-foreground">Sesuaikan tampilan kartu member yang ditampilkan di portal jamaah</p>
 
-        {/* Background Gradient */}
-        <div className="space-y-2 pt-2 border-t border-border">
-          <Label className="text-xs text-muted-foreground">Background Gradient CSS</Label>
-          <p className="text-[11px] text-muted-foreground">Contoh: linear-gradient(135deg, #color1 0%, #color2 100%)</p>
-          <Input
-            value={cardDesign.bg_gradient}
-            onChange={e => setCardDesign(prev => ({ ...prev, bg_gradient: e.target.value }))}
-            placeholder="linear-gradient(135deg, #1e1b4b 0%, #1e40af 100%)"
-            className="text-xs font-mono"
-          />
+        {/* Background Options */}
+        <div className="space-y-3 pt-2 border-t border-border">
+          <div>
+            <Label className="text-xs text-muted-foreground">Background Gambar (opsional)</Label>
+            <p className="text-[11px] text-muted-foreground mb-2">Jika diupload, gambar akan digunakan sebagai background kartu</p>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-secondary/30 overflow-hidden shrink-0">
+                {cardDesign.bg_image_url ? <img src={cardDesign.bg_image_url} alt="Background" className="w-full h-full object-cover" /> : <ImageIcon className="w-5 h-5 text-muted-foreground" />}
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <input ref={bgImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleBgImageUpload} />
+                <Button size="sm" variant="outline" onClick={() => bgImageInputRef.current?.click()} disabled={uploadingBg}>
+                  {uploadingBg ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+                  {uploadingBg ? "Mengupload..." : "Upload Gambar"}
+                </Button>
+                {cardDesign.bg_image_url && <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setCardDesign(prev => ({ ...prev, bg_image_url: "" }))}>Hapus</Button>}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs text-muted-foreground">Background Gradient CSS (fallback)</Label>
+            <p className="text-[11px] text-muted-foreground">Digunakan jika gambar tidak ada. Contoh: linear-gradient(135deg, #color1 0%, #color2 100%)</p>
+            <Input
+              value={cardDesign.bg_gradient}
+              onChange={e => setCardDesign(prev => ({ ...prev, bg_gradient: e.target.value }))}
+              placeholder="linear-gradient(135deg, #1e1b4b 0%, #1e40af 100%)"
+              className="text-xs font-mono"
+            />
+          </div>
         </div>
 
         {/* Accent Color */}

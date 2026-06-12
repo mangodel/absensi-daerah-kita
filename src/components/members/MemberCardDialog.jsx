@@ -18,6 +18,7 @@ export default function MemberCardDialog({ member, open, onClose }) {
   const isGenerus = age !== null && age < 18;
 
   const bgGradient = config.card_bg_gradient || "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e40af 100%)";
+  const bgImageUrl = config.card_bg_image_url;
   const accentColor = config.card_accent_color || "#60a5fa";
   const cardLogo = config.card_logo_url || config.logo_url;
   const showMemberId = config.card_show_member_id !== false;
@@ -90,7 +91,12 @@ export default function MemberCardDialog({ member, open, onClose }) {
         </div>
 
         {/* Card */}
-        <div ref={cardRef} className="rounded-2xl overflow-hidden shadow-xl" style={{ background: bgGradient }}>
+         <div ref={cardRef} className="rounded-2xl overflow-hidden shadow-xl" style={{ 
+           backgroundImage: bgImageUrl ? `url(${bgImageUrl})` : "none",
+           backgroundSize: "cover",
+           backgroundPosition: "center",
+           background: bgImageUrl ? undefined : bgGradient
+         }}>
           {/* Header */}
           <div className="px-5 pt-5 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">

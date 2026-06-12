@@ -23,6 +23,7 @@ export default function MemberCardPortal({ member }) {
   const isGenerus = age !== null && age < 18;
 
   const bgGradient = config.card_bg_gradient || "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e40af 100%)";
+  const bgImageUrl = config.card_bg_image_url;
   const accentColor = config.card_accent_color || "#60a5fa";
   const cardLogo = config.card_logo_url || config.logo_url;
   const showMemberId = config.card_show_member_id !== false;
@@ -88,7 +89,14 @@ export default function MemberCardPortal({ member }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Card Preview */}
-          <div ref={cardRef} className="rounded-xl overflow-hidden shadow-lg" style={{ background: bgGradient, width: "100%", aspectRatio: "1.586" }}>
+          <div ref={cardRef} className="rounded-xl overflow-hidden shadow-lg" style={{ 
+            backgroundImage: bgImageUrl ? `url(${bgImageUrl})` : "none",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            background: bgImageUrl ? undefined : bgGradient,
+            width: "100%", 
+            aspectRatio: "1.586" 
+          }}>
             <div className="px-4 pt-4 pb-2 flex items-center justify-between h-full flex-col">
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
