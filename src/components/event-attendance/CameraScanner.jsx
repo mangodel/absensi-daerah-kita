@@ -1,39 +1,33 @@
-import { useRef, useState } from "react";
-import { Camera, Upload } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Camera, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import jsQR from "jsqr";
 
-// Decode QR from an image element using jsQR
+// Decode QR from an image file using BarcodeDetector (if available)
 async function decodeQRFromFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code) resolve(code.data.trim().toUpperCase());
-        else reject(new Error("QR Code tidak ditemukan dalam gambar."));
-      };
-      img.onerror = () => reject(new Error("Gagal memuat gambar."));
-      img.src = e.target.result;
-    };
-    reader.onerror = () => reject(new Error("Gagal membaca file."));
-    reader.readAsDataURL(file);
-  });
+  if (!("BarcodeDetector" in window)) {
+    throw new Error("Browser ini tidak mendukung pemindaian otomatis. Gunakan tab 'Input ID' untuk memasukkan ID secara manual.");
+  }
+  const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+  const bitmap = await createImageBitmap(file);
+  const codes = await detector.detect(bitmap);
+  if (!codes || codes.length === 0) {
+    throw new Error("QR Code tidak ditemukan. Coba foto ulang dengan lebih jelas dan pencahayaan cukup.");
+  }
+  return codes[0].rawValue.trim().toUpperCase();
 }
 
 export default function CameraScanner({ onScan, active }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [lastScanned, setLastScanned] = useState(null);
+  const [supported, setSupported] = useState(true);
   const inputRef = useRef(null);
   const cooldown = useRef(false);
+
+  useEffect(() => {
+    // Check BarcodeDetector support on mount
+    setSupported("BarcodeDetector" in window);
+  }, []);
 
   const handleCapture = async (e) => {
     const file = e.target.files?.[0];
@@ -57,7 +51,6 @@ export default function CameraScanner({ onScan, active }) {
       setError(err.message || "QR Code tidak terbaca.");
     } finally {
       setLoading(false);
-      // Reset input so same file can be captured again
       if (inputRef.current) inputRef.current.value = "";
     }
   };
@@ -66,7 +59,6 @@ export default function CameraScanner({ onScan, active }) {
 
   return (
     <div className="space-y-3">
-      {/* Hidden file input for camera capture */}
       <input
         ref={inputRef}
         type="file"
@@ -77,13 +69,27 @@ export default function CameraScanner({ onScan, active }) {
       />
 
       <div className="bg-secondary/40 rounded-xl p-6 flex flex-col items-center gap-3 text-center">
-        <Camera className="w-12 h-12 text-primary opacity-70" />
-        <p className="text-sm text-muted-foreground">
-          Tekan tombol di bawah, arahkan kamera ke QR Code peserta, lalu foto.
-        </p>
+        {supported ? (
+          <>
+            <ScanLine className="w-12 h-12 text-primary opacity-70" />
+            <p className="text-sm text-muted-foreground">
+              Tekan tombol di bawah, arahkan kamera ke QR Code peserta, lalu foto.
+            </p>
+          </>
+        ) : (
+          <>
+            <Camera className="w-12 h-12 text-amber-500 opacity-70" />
+            <p className="text-sm text-amber-700 font-medium">
+              Scan kamera tidak didukung di browser ini.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Gunakan tab <strong>Input ID</strong> untuk memasukkan ID peserta secara manual, atau buka di Chrome/Edge.
+            </p>
+          </>
+        )}
 
         {lastScanned && (
-          <div className="bg-accent/10 border border-accent/30 rounded-lg px-3 py-2 text-sm text-accent font-medium">
+          <div className="bg-accent/10 border border-accent/30 rounded-lg px-3 py-2 text-sm text-accent font-medium w-full">
             ✓ Scanned: {lastScanned}
           </div>
         )}
@@ -95,21 +101,23 @@ export default function CameraScanner({ onScan, active }) {
         )}
       </div>
 
-      <Button
-        type="button"
-        className="w-full"
-        disabled={loading}
-        onClick={() => {
-          setError(null);
-          inputRef.current?.click();
-        }}
-      >
-        {loading ? (
-          <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" /> Memproses...</>
-        ) : (
-          <><Camera className="w-4 h-4 mr-2" /> Buka Kamera / Scan QR</>
-        )}
-      </Button>
+      {supported && (
+        <Button
+          type="button"
+          className="w-full"
+          disabled={loading}
+          onClick={() => {
+            setError(null);
+            inputRef.current?.click();
+          }}
+        >
+          {loading ? (
+            <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />Memproses...</>
+          ) : (
+            <><Camera className="w-4 h-4 mr-2" />Buka Kamera / Scan QR</>
+          )}
+        </Button>
+      )}
     </div>
   );
 }
