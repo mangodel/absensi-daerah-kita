@@ -22,6 +22,7 @@ import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2,
 import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
 import BroadcastInbox from "@/components/portal/BroadcastInbox";
 import MemberCardPortal from "@/components/portal/MemberCardPortal";
+import { useAppConfig } from "@/lib/AppConfigContext";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -59,16 +60,18 @@ const READONLY_FIELDS = [
 ];
 
 export default function JamaahPortal() {
-  const navigate = useNavigate();
-  const { user: adminUser } = useAuth();
-  const queryClient = useQueryClient();
-  const [jamaahUser, setJamaahUser] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [editData, setEditData] = useState({});
-  const [emailError, setEmailError] = useState("");
-  const [registeringEmail, setRegisteringEmail] = useState(false);
-  const [editingFamily, setEditingFamily] = useState(null);
-  const [familyEditData, setFamilyEditData] = useState({});
+   const navigate = useNavigate();
+   const { user: adminUser } = useAuth();
+   const { config } = useAppConfig();
+   const queryClient = useQueryClient();
+   const [jamaahUser, setJamaahUser] = useState(null);
+   const [checkingAuth, setCheckingAuth] = useState(true);
+   const [editData, setEditData] = useState({});
+   const [emailError, setEmailError] = useState("");
+   const [registeringEmail, setRegisteringEmail] = useState(false);
+   const [editingFamily, setEditingFamily] = useState(null);
+   const [familyEditData, setFamilyEditData] = useState({});
+   const allowRegister = config.allow_register_portal !== false;
 
   // Check jamaah login status on mount
   useEffect(() => {
@@ -224,13 +227,15 @@ export default function JamaahPortal() {
               <p className="text-xs text-muted-foreground mb-4">Silakan login terlebih dahulu untuk mengakses portal jamaah</p>
             </div>
             <div className="flex gap-2">
-              <Link to="/jamaah-login" className="flex-1">
-                <Button className="w-full">Masuk</Button>
-              </Link>
-              <Link to="/jamaah/signup" className="flex-1">
-                <Button variant="outline" className="w-full">Daftar</Button>
-              </Link>
-            </div>
+               <Link to="/jamaah-login" className="flex-1">
+                 <Button className="w-full">Masuk</Button>
+               </Link>
+               {allowRegister && (
+                 <Link to="/jamaah/signup" className="flex-1">
+                   <Button variant="outline" className="w-full">Daftar</Button>
+                 </Link>
+               )}
+             </div>
           </CardContent>
         </Card>
       </div>
@@ -261,29 +266,31 @@ export default function JamaahPortal() {
           </div>
           <div className="flex items-center gap-2">
             {jamaahUser?.email ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-destructive hover:bg-destructive/10 gap-1.5"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Keluar</span>
-              </Button>
-            ) : (
-              <>
-                <Link to="/jamaah-login">
-                  <Button variant="outline" size="sm">
-                    Masuk
-                  </Button>
-                </Link>
-                <Link to="/jamaah/signup">
-                  <Button size="sm">
-                    Daftar
-                  </Button>
-                </Link>
-              </>
-            )}
+               <Button
+                 variant="ghost"
+                 size="sm"
+                 onClick={handleLogout}
+                 className="text-destructive hover:bg-destructive/10 gap-1.5"
+               >
+                 <LogOut className="w-4 h-4" />
+                 <span className="hidden sm:inline">Keluar</span>
+               </Button>
+             ) : (
+               <>
+                 <Link to="/jamaah-login">
+                   <Button variant="outline" size="sm">
+                     Masuk
+                   </Button>
+                 </Link>
+                 {allowRegister && (
+                   <Link to="/jamaah/signup">
+                     <Button size="sm">
+                       Daftar
+                     </Button>
+                   </Link>
+                 )}
+               </>
+             )}
           </div>
         </div>
       </header>

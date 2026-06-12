@@ -25,6 +25,7 @@ export default function MemberCardDesignManager() {
     show_dapukan: config.card_show_dapukan !== false,
     show_birth_year: config.card_show_birth_year !== false,
     show_qr_code: config.card_show_qr_code !== false,
+    allow_register_portal: config.allow_register_portal !== false,
   });
 
   const previewMember = {
@@ -60,13 +61,14 @@ export default function MemberCardDesignManager() {
       };
 
       await upsertConfig("card_bg_gradient", cardDesign.bg_gradient, "Member Card Background Gradient");
-      await upsertConfig("card_accent_color", cardDesign.accent_color, "Member Card Accent Color");
-      await upsertConfig("card_logo_url", cardDesign.logo_url, "Member Card Logo");
-      await upsertConfig("card_show_member_id", cardDesign.show_member_id, "Show Member ID");
-      await upsertConfig("card_show_desa_kelompok", cardDesign.show_desa_kelompok, "Show Desa/Kelompok");
-      await upsertConfig("card_show_dapukan", cardDesign.show_dapukan, "Show Dapukan");
-      await upsertConfig("card_show_birth_year", cardDesign.show_birth_year, "Show Birth Year");
-      await upsertConfig("card_show_qr_code", cardDesign.show_qr_code, "Show QR Code");
+       await upsertConfig("card_accent_color", cardDesign.accent_color, "Member Card Accent Color");
+       await upsertConfig("card_logo_url", cardDesign.logo_url, "Member Card Logo");
+       await upsertConfig("card_show_member_id", cardDesign.show_member_id, "Show Member ID");
+       await upsertConfig("card_show_desa_kelompok", cardDesign.show_desa_kelompok, "Show Desa/Kelompok");
+       await upsertConfig("card_show_dapukan", cardDesign.show_dapukan, "Show Dapukan");
+       await upsertConfig("card_show_birth_year", cardDesign.show_birth_year, "Show Birth Year");
+       await upsertConfig("card_show_qr_code", cardDesign.show_qr_code, "Show QR Code");
+       await upsertConfig("allow_register_portal", cardDesign.allow_register_portal, "Allow Register Button in Portal");
 
       await reload();
       toast({ title: "Desain kartu berhasil disimpan!" });
@@ -154,6 +156,20 @@ export default function MemberCardDesignManager() {
               </label>
             ))}
           </div>
+          </div>
+
+          {/* Portal Registration */}
+          <div className="space-y-2 pt-2 border-t border-border">
+          <Label className="text-xs text-muted-foreground">Portal Jamaah</Label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={cardDesign.allow_register_portal}
+              onChange={e => setCardDesign(prev => ({ ...prev, allow_register_portal: e.target.checked }))}
+              className="rounded"
+            />
+            <span className="text-xs text-muted-foreground">Tampilkan tombol "Daftar Akun Baru" di portal</span>
+          </label>
         </div>
 
         {/* Preview Button */}
