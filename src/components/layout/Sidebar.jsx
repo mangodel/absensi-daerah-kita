@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell, FolderOpen, LogOut, ScanLine, UserCircle, Megaphone } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, ArrowRightLeft, Building2, ChevronLeft, ChevronRight, CalendarDays, Settings, FileBarChart, Bell, FolderOpen, LogOut, ScanLine, UserCircle, Megaphone, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -32,6 +32,7 @@ const navItems = [
   { label: "Struktur Organisasi", icon: Building2, path: "/structure" },
   { label: "Portal Jamaah", icon: UserCircle, path: "/jamaah" },
   { label: "Broadcast", icon: Megaphone, path: "/broadcast", adminOnly: true },
+  { label: "Survei", icon: ClipboardList, path: "/survey", adminOnly: true },
 ];
 
 export default function Sidebar() {
@@ -55,6 +56,7 @@ export default function Sidebar() {
     if (item.path === "/transfers") return isSuperAdmin || isAdminDesa || isAdminKelompok;
     if (item.path === "/structure") return isSuperAdmin || isAdminDesa || isAdminKelompok;
     if (item.path === "/broadcast") return isSuperAdmin || isAdminDesa || isAdminKelompok;
+    if (item.path === "/survey") return isSuperAdmin || isAdminDesa || isAdminKelompok;
     if (item.adminOnly) return isSuperAdmin || isAdminDesa || isAdminKelompok;
     return true;
   });

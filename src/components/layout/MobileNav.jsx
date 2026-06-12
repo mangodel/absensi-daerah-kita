@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, CalendarDays, Bell, FileBarChart, Settings, FolderOpen, LogOut, ScanLine, UserCircle, Megaphone, GitBranch } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, CalendarDays, Bell, FileBarChart, Settings, FolderOpen, LogOut, ScanLine, UserCircle, Megaphone, GitBranch, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/lib/useUserRole";
 import { useQuery } from "@tanstack/react-query";
@@ -41,6 +41,7 @@ export default function MobileNav() {
     { label: "Pengingat", icon: Bell, path: "/reminders", badge: urgentCount },
     { label: "Portal", icon: UserCircle, path: "/jamaah" },
     ...((isSuperAdmin || isAdminDesa) ? [{ label: "Broadcast", icon: Megaphone, path: "/broadcast" }] : []),
+    ...((isSuperAdmin || isAdminDesa) ? [{ label: "Survei", icon: ClipboardList, path: "/survey" }] : []),
     ...(canAccessSettings ? [{ label: "Setelan", icon: Settings, path: "/settings" }] : []),
   ];
 

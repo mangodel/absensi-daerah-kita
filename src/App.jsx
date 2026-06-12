@@ -30,6 +30,7 @@ const EventRegister = lazy(() => import('@/pages/EventRegister'));
 const JamaahPortal = lazy(() => import('@/pages/JamaahPortal'));
 const JamaahLogin = lazy(() => import('@/pages/JamaahLogin'));
 const Broadcast = lazy(() => import('@/pages/Broadcast'));
+const Survey = lazy(() => import('@/pages/Survey'));
 const JamaahSignup = lazy(() => import('@/pages/JamaahSignup'));
 const JamaahSurvey = lazy(() => import('@/pages/JamaahSurvey'));
 const JamaahAbsensi = lazy(() => import('@/pages/JamaahAbsensi'));
@@ -85,6 +86,7 @@ const AuthenticatedApp = () => {
           <Route path="/documents" element={<SuspendedPage><Documents /></SuspendedPage>} />
           <Route path="/event-attendance" element={<SuspendedPage><EventAttendance /></SuspendedPage>} />
           <Route path="/broadcast" element={<SuspendedPage><Broadcast /></SuspendedPage>} />
+          <Route path="/survey" element={<SuspendedPage><Survey /></SuspendedPage>} />
           <Route path="/jamaah" element={<SuspendedPage><JamaahPortal /></SuspendedPage>} />
           <Route path="/jamaah/survey" element={<SuspendedPage><JamaahSurvey /></SuspendedPage>} />
           <Route path="/jamaah/absensi" element={<SuspendedPage><JamaahAbsensi /></SuspendedPage>} />
