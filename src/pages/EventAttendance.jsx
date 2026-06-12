@@ -16,10 +16,16 @@ import { id } from "date-fns/locale";
 export default function EventAttendance() {
   const [activeEventId, setActiveEventId] = useState(null);
   const [tab, setTab] = useState("scanner");
+  const [eventTypeFilter, setEventTypeFilter] = useState("all");
 
   const { data: events = [] } = useQuery({
     queryKey: ["event-sessions"],
     queryFn: () => base44.entities.EventSession.list("-created_date"),
+  });
+
+  const { data: mainEvents = [] } = useQuery({
+    queryKey: ["events"],
+    queryFn: () => base44.entities.Event.list("-date"),
   });
 
   const { data: formConfigs = [] } = useQuery({
@@ -27,7 +33,27 @@ export default function EventAttendance() {
     queryFn: () => base44.entities.EventFormConfig.list(),
   });
 
-  const activeEvents = events.filter(e => e.status === "Active");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Filter events from today onwards
+  const filteredEvents = events.filter(e => {
+    if (!e.event_date) return false;
+    const eventDate = new Date(e.event_date);
+    eventDate.setHours(0, 0, 0, 0);
+    return eventDate >= today && e.status === "Active";
+  });
+
+  // Separate QR events (has linked_event_id) and non-QR events
+  const qrEvents = filteredEvents.filter(e => e.linked_event_id);
+  const nonQrEvents = filteredEvents.filter(e => !e.linked_event_id);
+
+  const displayEvents = 
+    eventTypeFilter === "qr" ? qrEvents :
+    eventTypeFilter === "non-qr" ? nonQrEvents :
+    filteredEvents;
+
+  const activeEvents = filteredEvents.filter(e => e.status === "Active");
   const activeEvent = events.find(e => e.id === activeEventId);
   const formConfig = formConfigs.find(c => c.event_id === activeEventId) || null;
 
@@ -39,20 +65,30 @@ export default function EventAttendance() {
           <p className="text-sm text-muted-foreground mt-0.5">Registrasi online, QR scan & dashboard kehadiran</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={activeEventId || ""} onValueChange={v => setActiveEventId(v || null)}>
-            <SelectTrigger className="w-56">
-              <SelectValue placeholder="Pilih Event Aktif..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={null}>— Semua Event —</SelectItem>
-              {events.map(e => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.event_name}
-                  {e.event_date ? ` · ${format(new Date(e.event_date), "dd MMM", { locale: id })}` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+           <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
+             <SelectTrigger className="w-44">
+               <SelectValue />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="all">Semua Event</SelectItem>
+               <SelectItem value="qr">Event QR ({qrEvents.length})</SelectItem>
+               <SelectItem value="non-qr">Event Non-QR ({nonQrEvents.length})</SelectItem>
+             </SelectContent>
+           </Select>
+           <Select value={activeEventId || ""} onValueChange={v => setActiveEventId(v || null)}>
+             <SelectTrigger className="w-56">
+               <SelectValue placeholder="Pilih Event Aktif..." />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value={null}>— Semua Event —</SelectItem>
+               {displayEvents.map(e => (
+                 <SelectItem key={e.id} value={e.id}>
+                   {e.event_name}
+                   {e.event_date ? ` · ${format(new Date(e.event_date), "dd MMM", { locale: id })}` : ""}
+                 </SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
           {activeEvent && (
             <Badge className={`text-xs ${activeEvent.status === "Active" ? "bg-accent/10 text-accent border-accent/20" : "bg-secondary text-muted-foreground"}`}>
               {activeEvent.status}

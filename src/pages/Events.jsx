@@ -135,18 +135,15 @@ export default function Events() {
   const kelompokOptions = filterDesa !== "all" ? (config.desa_kelompok_map || {})[filterDesa] || [] : [];
 
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
+  now.setHours(0, 0, 0, 0);
+  const todayString = now.toISOString().split("T")[0];
 
   const filtered = events.filter(e => {
     if (!e.date) return false;
     const eventDate = new Date(e.date);
-    // Hanya tampilkan upcoming events di bulan ini
-    const isUpcomingThisMonth =
-      eventDate.getFullYear() === currentYear &&
-      eventDate.getMonth() + 1 === currentMonth &&
-      eventDate >= new Date(now.toISOString().split("T")[0]); // >= hari ini
-    if (!isUpcomingThisMonth) return false;
+    eventDate.setHours(0, 0, 0, 0);
+    // Hanya tampilkan upcoming events dari hari ini ke depan
+    if (eventDate < now) return false;
 
     const matchLevel = filterLevel === "all" || e.level === filterLevel;
     const matchDesa = filterDesa === "all" || e.desa === filterDesa || (filterDesa !== "all" && e.level === "Daerah");

@@ -73,14 +73,16 @@ export default function Attendance() {
   });
 
   // Admin kelompok: show their kelompok events + Daerah + Desa of their desa
-  // Filter: only current month/year events (no future events)
+  // Filter: from today onwards
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   const events = filterEvents(allEvents).filter(e => {
     if (!e.date) return false;
     const eDate = new Date(e.date);
-    const eMonth = eDate.getMonth() + 1;
-    const eYear = eDate.getFullYear();
-    // Only show events up to current month — no future events
-    if (eYear > currentYear || (eYear === currentYear && eMonth > currentMonth)) return false;
+    eDate.setHours(0, 0, 0, 0);
+    // Show events from today onwards
+    if (eDate < today) return false;
     if (isAdminKelompok) {
       return e.level === "Daerah" ||
         (e.level === "Desa" && e.desa === userDesa) ||

@@ -20,6 +20,7 @@ import { isToday, isPast, format } from "date-fns";
 import { id } from "date-fns/locale";
 import { MONTHS } from "@/lib/constants";
 import KelompokAttendanceDetail from "@/components/dashboard/KelompokAttendanceDetail";
+import { toast } from "sonner";
 
 function pct(val, total) {
   if (!total) return "0%";
@@ -118,8 +119,22 @@ export default function Dashboard() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [syncingAttendance, setSyncingAttendance] = useState(false);
   const queryClient = useQueryClient();
   const { filterMembers, filterEvents, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
+
+  const handleSyncAttendance = async () => {
+    setSyncingAttendance(true);
+    try {
+      const res = await base44.functions.invoke('syncEventAttendance', {});
+      toast.success(res.data.message || 'Sinkronisasi berhasil');
+      queryClient.invalidateQueries({ queryKey: ["attendances"] });
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Gagal sinkronisasi');
+    } finally {
+      setSyncingAttendance(false);
+    }
+  };
 
   const { data: allMembers = [] } = useQuery({ queryKey: ["members"], queryFn: () => base44.entities.Member.list() });
   const { data: attendances = [] } = useQuery({ queryKey: ["attendances"], queryFn: () => base44.entities.Attendance.list() });
@@ -200,22 +215,27 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 pb-20 md:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 pt-2">
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground mb-2">{pt.dashboard || "Dashboard"}</h1>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <p className="text-base text-muted-foreground">{pt.dashboard_subtitle || "Ringkasan data"}</p>
-            <Badge variant="outline" className="text-[11px] bg-primary/5 border-primary/20 text-primary w-fit">{scopeLabel}</Badge>
-          </div>
-        </div>
-        <div className="shrink-0">
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {[currentYear, currentYear - 1, currentYear - 2].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+         <div className="flex-1">
+           <h1 className="text-3xl font-bold text-foreground mb-2">{pt.dashboard || "Dashboard"}</h1>
+           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+             <p className="text-base text-muted-foreground">{pt.dashboard_subtitle || "Ringkasan data"}</p>
+             <Badge variant="outline" className="text-[11px] bg-primary/5 border-primary/20 text-primary w-fit">{scopeLabel}</Badge>
+           </div>
+         </div>
+         <div className="shrink-0 flex items-center gap-3">
+           {isSuperAdmin && (
+             <Button size="sm" variant="outline" onClick={handleSyncAttendance} disabled={syncingAttendance} className="text-xs h-9">
+               {syncingAttendance ? '🔄 Sinkronisasi...' : '⚡ Sinkronisasi Absensi'}
+             </Button>
+           )}
+           <Select value={selectedYear} onValueChange={setSelectedYear}>
+             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+             <SelectContent>
+               {[currentYear, currentYear - 1, currentYear - 2].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+             </SelectContent>
+           </Select>
+         </div>
+       </div>
 
       {urgentReminders.length > 0 && (
         <Link to="/reminders" className="flex items-center gap-3 bg-destructive/5 border border-destructive/20 rounded-xl px-4 py-3 hover:bg-destructive/10 transition-colors">
