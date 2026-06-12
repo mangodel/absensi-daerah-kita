@@ -350,15 +350,50 @@ export default function SurveyManager() {
                     </div>
 
                     {q.type !== "text" && (
-                      <div className="space-y-1">
-                        <Label className="text-xs">Pilihan (pisahkan dengan ;)</Label>
-                        <Textarea
-                          value={q.options.join("; ")}
-                          onChange={(e) => handleUpdateQuestion(q.id, "options", e.target.value.split(";").map(o => o.trim()).filter(o => o))}
-                          placeholder="Contoh: Ya; Tidak; Ragu-ragu"
-                          rows={2}
-                          className="text-xs"
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Pilihan Jawaban</Label>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleUpdateQuestion(q.id, "options", [...q.options, ""])}
+                            className="h-6 text-xs px-2"
+                          >
+                            <Plus className="w-3 h-3 mr-1" /> Tambah
+                          </Button>
+                        </div>
+                        <div className="space-y-1.5">
+                          {q.options.map((opt, optIdx) => (
+                            <div key={optIdx} className="flex gap-2 items-center">
+                              <Input
+                                value={opt}
+                                onChange={(e) => {
+                                  const newOpts = [...q.options];
+                                  newOpts[optIdx] = e.target.value;
+                                  handleUpdateQuestion(q.id, "options", newOpts);
+                                }}
+                                placeholder={`Pilihan ${optIdx + 1}`}
+                                className="text-xs h-8"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  const newOpts = q.options.filter((_, i) => i !== optIdx);
+                                  handleUpdateQuestion(q.id, "options", newOpts);
+                                }}
+                                className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        {q.options.length === 0 && (
+                          <p className="text-[10px] text-muted-foreground italic">Tekan "Tambah" untuk membuat pilihan pertama</p>
+                        )}
                       </div>
                     )}
                   </Card>

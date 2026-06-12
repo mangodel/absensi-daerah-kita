@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Send, Bell, Mail, Users, Clock, Plus, Trash2 } from "lucide-react";
+import { Send, Bell, Mail, Users, Clock, Plus, Trash2, Video } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import BroadcastDialog from "@/components/broadcast/BroadcastDialog";
@@ -99,6 +99,14 @@ export default function Broadcast() {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{b.message}</p>
+                  {b.zoom_link && (
+                    <div className="mb-3 flex items-center gap-2 text-xs">
+                      <Video className="w-3.5 h-3.5 text-primary" />
+                      <a href={b.zoom_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">
+                        {b.zoom_link}
+                      </a>
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Users className="w-3.5 h-3.5" />

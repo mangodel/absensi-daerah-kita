@@ -10,6 +10,10 @@
       "type": "string",
       "description": "Isi pesan broadcast"
     },
+    "zoom_link": {
+      "type": "string",
+      "description": "Link zoom untuk event (optional)"
+    },
     "target_scope": {
       "type": "string",
       "enum": [

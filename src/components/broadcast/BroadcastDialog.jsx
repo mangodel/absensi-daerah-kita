@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Users, Mail, Bell, AlertCircle } from "lucide-react";
+import { Send, Users, Mail, Bell, AlertCircle, Video } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -26,6 +26,7 @@ export default function BroadcastDialog({
 
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [zoomLink, setZoomLink] = useState("");
   const [scope, setScope] = useState(scopeOverride || "Semua");
   const [targetDesa, setTargetDesa] = useState(desaOverride || "");
   const [targetKelompok, setTargetKelompok] = useState(kelompokOverride || "");
@@ -68,6 +69,7 @@ export default function BroadcastDialog({
       const res = await base44.functions.invoke("sendBroadcast", {
         title,
         message,
+        zoom_link: zoomLink,
         target_scope: scope,
         target_desa: targetDesa,
         target_kelompok: targetKelompok,
@@ -83,7 +85,7 @@ export default function BroadcastDialog({
       });
 
       // Reset form
-      setTitle(""); setMessage(""); setScope("Semua");
+      setTitle(""); setMessage(""); setZoomLink(""); setScope("Semua");
       setTargetDesa(""); setTargetKelompok(""); setChannel("Portal");
       onSent?.();
       onOpenChange(false);
@@ -192,6 +194,20 @@ export default function BroadcastDialog({
               onChange={e => setMessage(e.target.value)}
               rows={4}
               className="resize-none"
+            />
+          </div>
+
+          {/* Zoom Link (Opsional) */}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-2">
+              <Video className="w-4 h-4" />
+              Link Zoom (Opsional)
+            </Label>
+            <Input
+              placeholder="https://zoom.us/j/..."
+              value={zoomLink}
+              onChange={e => setZoomLink(e.target.value)}
+              type="url"
             />
           </div>
 

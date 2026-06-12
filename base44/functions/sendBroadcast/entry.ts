@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { title, message, target_scope, target_desa, target_kelompok, recipient_ids, channel } = body;
+    const { title, message, zoom_link, target_scope, target_desa, target_kelompok, recipient_ids, channel } = body;
 
     if (!title || !message) {
       return Response.json({ error: 'title dan message wajib diisi' }, { status: 400 });
@@ -48,6 +48,10 @@ Deno.serve(async (req) => {
             body: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
               <h2 style="color: #4f46e5; margin-bottom: 16px;">${title}</h2>
               <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; white-space: pre-wrap; line-height: 1.6;">${message}</div>
+              ${zoom_link ? `<div style="margin-top: 20px; padding: 16px; background: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 4px;">
+                <p style="margin: 0 0 8px 0; color: #0c4a6e; font-weight: bold;">🔗 Link Zoom:</p>
+                <a href="${zoom_link}" style="color: #0284c7; text-decoration: none; font-weight: bold;">${zoom_link}</a>
+              </div>` : ''}
               <p style="color: #888; font-size: 12px; margin-top: 24px;">Pesan ini dikirim oleh ${user.full_name || user.email} melalui Portal Jamaah.</p>
             </div>`
           });
@@ -63,6 +67,7 @@ Deno.serve(async (req) => {
     const broadcast = await base44.asServiceRole.entities.Broadcast.create({
       title,
       message,
+      zoom_link: zoom_link || '',
       target_scope: target_scope || 'Semua',
       target_desa: target_desa || '',
       target_kelompok: target_kelompok || '',
