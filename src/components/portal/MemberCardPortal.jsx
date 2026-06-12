@@ -109,23 +109,21 @@ export default function MemberCardPortal({ member }) {
                 <div className="flex-1 space-y-1">
                   {showMemberId && (
                     <div>
-                      <p className="text-white/70 text-[7px] uppercase tracking-wider">ID</p>
-                      <p className="text-white font-mono font-bold text-[11px]">{member.member_id}</p>
+                      <p className="text-white font-mono font-bold text-[13px]">{member.member_id}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-white/70 text-[7px] uppercase">Nama</p>
-                    <p className="text-white font-semibold text-[9px] truncate">{member.full_name}</p>
+                    <p className="text-white font-bold text-[11px] truncate">{member.full_name}</p>
                   </div>
                   {showDesaKelompok && (
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="space-y-0.5">
                       <div>
-                        <p className="text-white/70 text-[7px] uppercase">Desa</p>
-                        <p className="text-white text-[8px] truncate">{member.desa}</p>
+                        <p className="text-white/70 text-[6px] uppercase">Desa</p>
+                        <p className="text-white font-semibold text-[9px] truncate">{member.desa}</p>
                       </div>
                       <div>
-                        <p className="text-white/70 text-[7px] uppercase">Kelompok</p>
-                        <p className="text-white text-[8px] truncate">{member.kelompok}</p>
+                        <p className="text-white/70 text-[6px] uppercase">Kelompok</p>
+                        <p className="text-white font-semibold text-[9px] truncate">{member.kelompok}</p>
                       </div>
                     </div>
                   )}

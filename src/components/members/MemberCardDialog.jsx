@@ -114,32 +114,30 @@ export default function MemberCardDialog({ member, open, onClose }) {
           <div className="px-5 pb-5 flex items-end justify-between gap-3">
             <div className="flex-1 min-w-0 space-y-2">
               {/* ID */}
-              {showMemberId && (
-                <div>
-                  <p className="text-white/70 text-[9px] uppercase tracking-wider">ID Member</p>
-                  <p className="text-white font-mono font-bold text-base tracking-wider">
-                    {member.member_id || "—"}
-                  </p>
-                </div>
-              )}
-              {/* Name */}
-              <div>
-                <p className="text-white/70 text-[9px] uppercase tracking-wider">Nama</p>
-                <p className="text-white font-semibold text-sm leading-tight truncate">{member.full_name}</p>
-              </div>
-              {/* Desa / Kelompok */}
-              {showDesaKelompok && (
-                <div className="grid grid-cols-2 gap-2">
+                  {showMemberId && (
+                    <div>
+                      <p className="text-white font-mono font-bold text-lg tracking-widest">
+                        {member.member_id || "—"}
+                      </p>
+                    </div>
+                  )}
+                  {/* Name */}
                   <div>
-                    <p className="text-white/70 text-[9px] uppercase tracking-wider">Desa</p>
-                    <p className="text-white text-xs truncate">{member.desa || "—"}</p>
+                    <p className="text-white font-bold text-base leading-tight">{member.full_name}</p>
                   </div>
-                  <div>
-                    <p className="text-white/70 text-[9px] uppercase tracking-wider">Kelompok</p>
-                    <p className="text-white text-xs truncate">{member.kelompok || "—"}</p>
-                  </div>
-                </div>
-              )}
+                  {/* Desa / Kelompok */}
+                  {showDesaKelompok && (
+                    <div className="space-y-1.5">
+                      <div>
+                        <p className="text-white/70 text-[8px] uppercase tracking-wider">Desa</p>
+                        <p className="text-white font-semibold text-sm truncate">{member.desa || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/70 text-[8px] uppercase tracking-wider">Kelompok</p>
+                        <p className="text-white font-semibold text-sm truncate">{member.kelompok || "—"}</p>
+                      </div>
+                    </div>
+                  )}
               {/* Dapukan */}
               {showDapukan && member.dapukan && member.dapukan !== "Jamaah" && (
                 <div>
