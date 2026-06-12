@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserRoleManager from "@/components/settings/UserRoleManager";
 import GoogleSheetSync from "@/components/settings/GoogleSheetSync";
 import SurveyManager from "@/components/settings/SurveyManager";
+import MemberCardDesignManager from "@/components/settings/MemberCardDesignManager";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const PAGE_TITLE_FIELDS = [
@@ -238,6 +239,7 @@ export default function Settings() {
       <Tabs defaultValue="general">
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="general" className="flex items-center gap-1.5"><SettingsIcon className="w-3.5 h-3.5" /> Umum</TabsTrigger>
+          <TabsTrigger value="card" className="flex items-center gap-1.5"><Image className="w-3.5 h-3.5" /> Kartu Member</TabsTrigger>
           <TabsTrigger value="surveys" className="flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Survei</TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Akses Pengguna</TabsTrigger>
           <TabsTrigger value="gsheet" className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Google Sheet</TabsTrigger>
@@ -476,6 +478,11 @@ export default function Settings() {
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Simpan Pengaturan
           </Button>
+        </TabsContent>
+
+        {/* ---- TAB KARTU MEMBER ---- */}
+        <TabsContent value="card" className="mt-4">
+          <MemberCardDesignManager />
         </TabsContent>
 
         {/* ---- TAB SURVEI ---- */}

@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, X, CalendarDays } from "lucide-react";
 import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
 import BroadcastInbox from "@/components/portal/BroadcastInbox";
+import MemberCardPortal from "@/components/portal/MemberCardPortal";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -300,6 +301,13 @@ export default function JamaahPortal() {
 
         {/* Inbox Broadcast dari Pengurus */}
         {myMember && <BroadcastInbox member={myMember} />}
+
+        {/* Kartu Member Digital */}
+        {myMember && (
+          <div className="mb-4">
+            <MemberCardPortal member={myMember} />
+          </div>
+        )}
 
         {/* Laporan Kelengkapan Profil */}
         {myMember && (
