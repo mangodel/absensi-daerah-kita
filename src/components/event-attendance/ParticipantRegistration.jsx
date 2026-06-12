@@ -14,10 +14,10 @@ import { useToast } from "@/components/ui/use-toast";
 
 function generateParticipantId(existing) {
   const maxNum = existing.reduce((max, p) => {
-    const num = parseInt((p.participant_id || "P000000").replace("P", ""), 10);
+    const num = parseInt((p.participant_id || "AUNZ000000").replace("AUNZ", ""), 10);
     return num > max ? num : max;
   }, 0);
-  return `P${String(maxNum + 1).padStart(6, "0")}`;
+  return `AUNZ${String(maxNum + 1).padStart(6, "0")}`;
 }
 
 const empty = { full_name: "", phone: "", email: "", organization: "", notes: "" };

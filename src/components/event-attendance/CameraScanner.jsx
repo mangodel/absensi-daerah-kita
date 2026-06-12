@@ -5,7 +5,7 @@
  * - Fallback: file picker (gallery/file system) on any device
  */
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Camera, X, ScanLine, FlipHorizontal, Upload, CheckCircle, Monitor } from "lucide-react";
+import { Camera, X, ScanLine, FlipHorizontal, CheckCircle, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import jsQR from "jsqr";
 
@@ -40,7 +40,6 @@ export default function CameraScanner({ onScan, active }) {
   const streamRef = useRef(null);
   const rafRef = useRef(null);
   const cameraInputRef = useRef(null);
-  const galleryInputRef = useRef(null);
   const scanCooldown = useRef(false);
   const mountedRef = useRef(true);
 
@@ -192,8 +191,6 @@ export default function CameraScanner({ onScan, active }) {
       <canvas ref={canvasRef} className="hidden" aria-hidden="true" />
       {/* Camera input — triggers native camera on mobile */}
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileChange(e, true)} />
-      {/* Gallery input — no capture, opens file picker */}
-      <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, false)} />
 
       {/* Live video — always in DOM, visibility via height */}
       <div className="rounded-xl overflow-hidden bg-black transition-all duration-300" style={{ height: cameraOn ? "260px" : "0px" }}>
@@ -266,15 +263,6 @@ export default function CameraScanner({ onScan, active }) {
           )}
         </div>
       )}
-
-      {/* Gallery / file fallback — always shown */}
-      <div className="border-t border-border pt-3">
-        <p className="text-xs text-muted-foreground text-center mb-2">Atau pilih foto QR dari galeri / file:</p>
-        <Button type="button" variant="outline" className="w-full" onClick={() => galleryInputRef.current?.click()}>
-          <Upload className="w-4 h-4 mr-2" />
-          Pilih dari Galeri / File
-        </Button>
-      </div>
 
       {!cameraOn && lastScan && (
         <div className="bg-accent/10 border border-accent/30 rounded-lg px-3 py-2 text-sm text-accent font-medium text-center flex items-center justify-center gap-2">

@@ -195,12 +195,12 @@ export default function QRScanner({ eventId, eventName, formConfig }) {
       {mode === "manual" && (
         <form onSubmit={handleManualSubmit} className="bg-card border border-border rounded-xl p-6 space-y-4">
           <h3 className="font-semibold text-center text-lg">Scan / Ketik ID Peserta</h3>
-          <p className="text-xs text-center text-muted-foreground">Arahkan scanner barcode ke kolom ini, atau ketik manual ID peserta (P000001)</p>
+          <p className="text-xs text-center text-muted-foreground">Arahkan scanner barcode ke kolom ini, atau ketik manual ID peserta (AUNZ000001)</p>
           <Input
             autoFocus
             value={manualId}
             onChange={e => setManualId(e.target.value.toUpperCase())}
-            placeholder="P000001"
+            placeholder="AUNZ000001"
             className="text-center text-2xl font-mono h-14 tracking-widest"
           />
           <Button type="submit" className="w-full h-12 text-base" disabled={!manualId || checkinMut.isPending}>

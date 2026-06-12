@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Camera, CheckCircle, XCircle, RefreshCw, ImageIcon } from "lucide-react";
+import { QrCode, Camera, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import jsQR from "jsqr";
 
@@ -20,7 +20,6 @@ function decodeQRFromImage(imgEl) {
 
 export default function PortalAttendanceScanner({ member, user, volunteerLevel }) {
   const cameraFileRef = useRef(null);
-  const galleryFileRef = useRef(null);
   const cooldown = useRef(false);
 
   // Dynamically set capture attribute after mount to ensure browser honors it
@@ -110,9 +109,8 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
 
   return (
     <div className="space-y-4">
-      {/* Hidden file inputs — capture set dynamically for iOS/Android compatibility */}
+      {/* Hidden file input — capture set dynamically for iOS/Android compatibility */}
       <input ref={cameraFileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-      <input ref={galleryFileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       {activeSessions.length > 0 && (
         <Card className="border-accent/30 bg-accent/5">
@@ -167,29 +165,17 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
             </div>
           )}
 
-          {/* Scan buttons — no live stream, purely file-based */}
+          {/* Scan button — camera only */}
           {scanStatus !== "success" && (
-            <div className="grid grid-cols-1 gap-3">
-              <Button
-                size="lg"
-                className="w-full gap-2"
-                onClick={() => { resetScan(); setCaptureAttr(cameraFileRef); cameraFileRef.current?.click(); }}
-                disabled={processing}
-              >
-                <Camera className="w-5 h-5" />
-                Foto QR dengan Kamera
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => { resetScan(); galleryFileRef.current?.click(); }}
-                disabled={processing}
-              >
-                <ImageIcon className="w-4 h-4" />
-                Pilih dari Galeri / File
-              </Button>
-            </div>
+            <Button
+              size="lg"
+              className="w-full gap-2"
+              onClick={() => { resetScan(); setCaptureAttr(cameraFileRef); cameraFileRef.current?.click(); }}
+              disabled={processing}
+            >
+              <Camera className="w-5 h-5" />
+              Foto QR dengan Kamera
+            </Button>
           )}
 
           {(scanStatus || camError) && (
@@ -199,8 +185,7 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
           )}
 
           <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
-            📷 Tekan <strong>Foto QR</strong> → arahkan kamera ke QR code → ambil foto.<br />
-            Atau pilih gambar QR dari galeri.
+            📷 Tekan <strong>Foto QR</strong> → arahkan kamera ke QR code → ambil foto.
           </p>
         </CardContent>
       </Card>

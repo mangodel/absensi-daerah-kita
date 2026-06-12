@@ -11,10 +11,10 @@ import { DAPUKAN_LIST } from "@/lib/constants";
 
 function generateParticipantId(existing) {
   const maxNum = existing.reduce((max, p) => {
-    const num = parseInt((p.participant_id || "P000000").replace("P", ""), 10);
+    const num = parseInt((p.participant_id || "AUNZ000000").replace("AUNZ", ""), 10);
     return num > max ? num : max;
   }, 0);
-  return `P${String(maxNum + 1).padStart(6, "0")}`;
+  return `AUNZ${String(maxNum + 1).padStart(6, "0")}`;
 }
 
 export default function MemberImport({ eventId, participants, onImported }) {
@@ -81,13 +81,13 @@ export default function MemberImport({ eventId, participants, onImported }) {
     const toImport = members.filter(m => selected.has(m.id));
     let counter = existing.length;
     const maxNum = existing.reduce((max, p) => {
-      const num = parseInt((p.participant_id || "P000000").replace("P", ""), 10);
+      const num = parseInt((p.participant_id || "AUNZ000000").replace("AUNZ", ""), 10);
       return num > max ? num : max;
     }, 0);
 
     const records = toImport.map((m, i) => {
       const num = maxNum + i + 1;
-      const pid = `P${String(num).padStart(6, "0")}`;
+      const pid = `AUNZ${String(num).padStart(6, "0")}`;
       return {
         full_name: m.full_name,
         phone: m.phone || "",

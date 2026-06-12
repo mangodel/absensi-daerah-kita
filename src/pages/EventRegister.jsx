@@ -26,10 +26,10 @@ const DEFAULT_FIELDS = [
 
 function generatePid(existing) {
   const max = existing.reduce((m, p) => {
-    const n = parseInt((p.participant_id || "P000000").replace("P", ""), 10);
+    const n = parseInt((p.participant_id || "AUNZ000000").replace("AUNZ", ""), 10);
     return n > m ? n : m;
   }, 0);
-  return `P${String(max + 1).padStart(6, "0")}`;
+  return `AUNZ${String(max + 1).padStart(6, "0")}`;
 }
 
 function calcDistance(lat1, lng1, lat2, lng2) {
