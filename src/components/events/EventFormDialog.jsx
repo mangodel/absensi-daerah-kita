@@ -39,6 +39,10 @@ function applyParticipantFilter(pool, filter) {
     const age = currentYear - (m.birth_year || currentYear);
     return age >= 15 && age <= 17;
   });
+  if (filter === "dewasa") return pool.filter(m => {
+    const age = currentYear - (m.birth_year || currentYear);
+    return !m.birth_year || age >= 18;
+  });
   if (filter === "usia_nikah") return pool.filter(m => {
     const age = currentYear - (m.birth_year || currentYear);
     return age >= 18 && (m.marital_status === "Belum Menikah" || !m.marital_status);
@@ -65,6 +69,7 @@ function getEligibleCount(members, dapukanList, participantFilter, desa, kelompo
 
 const PRESET_FILTERS = [
   { value: "4s", label: "4S (Keimaman, PKU/KU, Penerobos, Aghniya, Mubaligh)" },
+  { value: "dewasa", label: "Dewasa (Semua Gender 18+)" },
   { value: "mubaligh_both", label: "Semua Mubaligh & Mubalighot" },
   { value: "mubaligh_only", label: "Mubaligh Saja" },
   { value: "mubalighot_only", label: "Mubalighot Saja" },

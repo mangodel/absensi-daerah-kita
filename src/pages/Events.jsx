@@ -27,6 +27,7 @@ export default function Events() {
   const [filterMubaligh, setFilterMubaligh] = useState("all");
   const [filterIbuIbu, setFilterIbuIbu] = useState("all");
   const [filterGender, setFilterGender] = useState("all");
+  const [filterParticipant, setFilterParticipant] = useState("all");
   const navigate = useNavigate();
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
@@ -111,8 +112,10 @@ export default function Events() {
     if (filterIbuIbu === "ibu_ibu") matchIbuIbu = e.participant_filter === "ibu_ibu";
     let matchGender = true;
     if (filterGender !== "all") matchGender = e.participant_filter === "ibu_ibu" || !e.participant_filter;
+    let matchParticipant = true;
+    if (filterParticipant !== "all") matchParticipant = e.participant_filter === filterParticipant;
 
-    return matchLevel && matchDesa && matchKelompok && matchMubaligh && matchIbuIbu && matchGender;
+    return matchLevel && matchDesa && matchKelompok && matchMubaligh && matchIbuIbu && matchGender && matchParticipant;
   }).sort((a, b) => {
     // Sort by desa → kelompok → date
     const desaCompare = (a.desa || "").localeCompare(b.desa || "");
@@ -209,11 +212,16 @@ export default function Events() {
                 <SelectItem value="laki-laki">Laki-laki</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterIbuIbu} onValueChange={setFilterIbuIbu}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <Select value={filterParticipant} onValueChange={setFilterParticipant}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Filter Peserta" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="all">Semua Peserta</SelectItem>
+                <SelectItem value="dewasa">Dewasa (18+)</SelectItem>
                 <SelectItem value="ibu_ibu">Ibu-ibu</SelectItem>
+                <SelectItem value="usia_nikah">Usia Nikah (Lajang 18+)</SelectItem>
+                <SelectItem value="generus_smp">Generus SMP (12–14 thn)</SelectItem>
+                <SelectItem value="generus_sma">Generus SMA (15–17 thn)</SelectItem>
+                <SelectItem value="mubaligh_both">Mubaligh & Mubalighot</SelectItem>
               </SelectContent>
             </Select>
           </div>
