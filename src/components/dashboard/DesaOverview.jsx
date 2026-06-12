@@ -112,8 +112,8 @@ export default function DesaOverview({ members }) {
                   const kMembers = desaMembers.filter(m => m.kelompok === k && m.status === "Aktif");
                   const kKK = countKK(kMembers);
                   const thisYear = new Date().getFullYear();
-                  const dewasa = kMembers.filter(m => !m.birth_year || (thisYear - m.birth_year) >= 22);
-                  const generus = kMembers.filter(m => m.birth_year && (thisYear - m.birth_year) < 22);
+                  const dewasa = kMembers.filter(m => !m.birth_year || (thisYear - m.birth_year) >= 18);
+                  const generus = kMembers.filter(m => m.birth_year && (thisYear - m.birth_year) < 18);
                   const sortedKMembers = [...dewasa, ...generus];
                   return (
                     <div key={k} className="text-xs space-y-1.5 bg-card/60 rounded-lg p-2 border border-border/40">
@@ -128,14 +128,14 @@ export default function DesaOverview({ members }) {
                       </div>
                       {/* Ringkasan dewasa & generus dengan nomor */}
                       <div className="flex gap-3 text-[10px] text-muted-foreground">
-                        <span className="text-primary font-medium">Dewasa: {dewasa.length}</span>
-                        <span className="text-purple-600 font-medium">Generus: {generus.length}</span>
+                        <span className="text-primary font-medium">Dewasa (18+): {dewasa.length}</span>
+                        <span className="text-purple-600 font-medium">Generus (&lt;18): {generus.length}</span>
                       </div>
                       {sortedKMembers.length > 0 && (
                         <div className="space-y-0.5 max-h-32 overflow-y-auto">
                           {sortedKMembers.map((m, i) => {
                             const age = m.birth_year ? (new Date().getFullYear() - m.birth_year) : null;
-                            const isGenerus = age !== null && age < 22;
+                            const isGenerus = age !== null && age < 18;
                             return (
                               <div key={m.id} className="flex items-center gap-1.5">
                                 <span className="w-4 text-[9px] text-muted-foreground text-right shrink-0">{i + 1}.</span>

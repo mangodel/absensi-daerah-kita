@@ -237,6 +237,45 @@ export default function Dashboard() {
 
        <GenerusBreakdown members={members} />
 
+      {/* Daftar anggota bernomor urut: Dewasa (18+) dulu lalu Generus — admin desa & kelompok */}
+      {(isAdminDesa || isAdminKelompok) && (
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+          <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" />
+            {isAdminKelompok ? `Daftar Anggota — ${userKelompok}` : `Daftar Anggota per Kelompok — ${userDesa}`}
+          </h3>
+          {isAdminKelompok && (
+            <KelompokAttendanceDetail
+              members={members}
+              attendances={attendances}
+              kelompok={userKelompok}
+              month={new Date().getMonth() + 1}
+              year={new Date().getFullYear()}
+            />
+          )}
+          {isAdminDesa && userDesa && (() => {
+            const kelompoks = (config.desa_kelompok_map || {})[userDesa] || [];
+            if (kelompoks.length === 0) return <p className="text-xs text-muted-foreground">Belum ada kelompok terdaftar.</p>;
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {kelompoks.map(k => (
+                  <div key={k} className="rounded-xl border border-border p-3 space-y-2">
+                    <p className="text-sm font-semibold text-foreground">{k}</p>
+                    <KelompokAttendanceDetail
+                      members={members}
+                      attendances={attendances}
+                      kelompok={k}
+                      month={new Date().getMonth() + 1}
+                      year={new Date().getFullYear()}
+                    />
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {upcomingEvents.length > 0 && (
         <div className="bg-card border border-border rounded-2xl p-5">
           <h3 className="font-semibold text-sm text-foreground mb-3">Kegiatan Mendatang</h3>
@@ -271,35 +310,7 @@ export default function Dashboard() {
 
       {(isAdminDesa || isAdminKelompok) && <MonthlyAttendanceSummary />}
 
-      {/* Detail kehadiran per kelompok dengan pengelompokan dewasa/generus — khusus admin desa */}
-      {isAdminDesa && userDesa && (() => {
-        const kelompoks = (config.desa_kelompok_map || {})[userDesa] || [];
-        const currentMonth = new Date().getMonth() + 1;
-        const currentYear = new Date().getFullYear();
-        if (kelompoks.length === 0) return null;
-        return (
-          <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-            <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
-              <Users className="w-4 h-4 text-primary" />
-              Detail Anggota per Kelompok — {userDesa}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {kelompoks.map(k => (
-                <div key={k} className="rounded-xl border border-border p-3 space-y-2">
-                  <p className="text-sm font-semibold text-foreground">{k}</p>
-                  <KelompokAttendanceDetail
-                    members={members}
-                    attendances={attendances}
-                    kelompok={k}
-                    month={currentMonth}
-                    year={currentYear}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
+
 
       {/* Pindah Kelompok — untuk admin desa & kelompok */}
       {(isAdminDesa || isAdminKelompok) && (
@@ -363,20 +374,6 @@ export default function Dashboard() {
               <p className="text-2xl font-bold text-accent">{attendanceRate}%</p>
               <p className="text-xs text-muted-foreground mt-1">Kehadiran {selectedYear}</p>
             </div>
-          </div>
-
-          {/* Detail anggota kelompok: dewasa dulu lalu generus, dengan kehadiran bulan ini */}
-          <div className="border border-border rounded-xl p-3 space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Daftar Anggota — Kehadiran Bulan Ini
-            </p>
-            <KelompokAttendanceDetail
-              members={members}
-              attendances={attendances}
-              kelompok={userKelompok}
-              month={new Date().getMonth() + 1}
-              year={new Date().getFullYear()}
-            />
           </div>
 
           <AttendanceChart attendances={scopedAttendances} year={Number(selectedYear)} />

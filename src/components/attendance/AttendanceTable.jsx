@@ -100,7 +100,7 @@ function MemberRow({ member, idx, onStatusChange }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium truncate">{member.full_name}</p>
-            {!isDewasa && (
+            {!isDewasa && age !== null && (
               <Badge variant="outline" className="text-[9px] px-1 py-0 bg-purple-50 text-purple-600 border-purple-200 shrink-0">Generus</Badge>
             )}
           </div>
