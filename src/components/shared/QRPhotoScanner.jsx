@@ -47,9 +47,9 @@ export default function QRPhotoScanner({ onScan, processing = false, disabled = 
 
    // Create a completely fresh input element each time to avoid Safari caching
    const input = document.createElement("input");
-   input.type = "file";
-   input.accept = "image/*";
-   // Always set capture="environment" to trigger rear camera on all devices
+   input.setAttribute("type", "file");
+   input.setAttribute("accept", "image/*");
+   // Force camera capture on all devices - must be set before click
    input.setAttribute("capture", "environment");
 
    input.onchange = async (e) => {
@@ -75,6 +75,7 @@ export default function QRPhotoScanner({ onScan, processing = false, disabled = 
      }
    };
 
+   // Must append and click immediately for capture to work
    document.body.appendChild(input);
    input.click();
   }, [onScan]);
