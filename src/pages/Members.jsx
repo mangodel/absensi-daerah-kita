@@ -104,8 +104,6 @@ export default function Members() {
     function memberPriority(m) {
       const dapukanRank = PRIORITY_DAPUKAN.indexOf(m.dapukan);
       const levelRank = PRIORITY_LEVEL.indexOf(m.dapukan_level ?? "Kelompok");
-      // Lower number = higher priority
-      // If dapukan not in list (Jamaah biasa), rank = 999
       const dRank = dapukanRank === -1 ? 999 : dapukanRank;
       const lRank = levelRank === -1 ? 2 : levelRank;
       return lRank * 1000 + dRank;
@@ -113,16 +111,21 @@ export default function Members() {
 
     const sorted = [...noId].sort((a, b) => memberPriority(a) - memberPriority(b));
 
-    // Find max existing number to continue from
     let maxNum = allMembers.reduce((max, m) => {
       if (!m.member_id) return max;
       const num = parseInt(m.member_id.replace("AUNZ", ""), 10);
       return !isNaN(num) && num > max ? num : max;
     }, 0);
 
+    // Process with 100ms delay between requests to avoid rate limit
     for (const m of sorted) {
       maxNum++;
-      await base44.entities.Member.update(m.id, { member_id: `AUNZ${String(maxNum).padStart(6, "0")}` });
+      try {
+        await base44.entities.Member.update(m.id, { member_id: `AUNZ${String(maxNum).padStart(6, "0")}` });
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(`Failed to assign ID to ${m.full_name}:`, error);
+      }
     }
     queryClient.invalidateQueries({ queryKey: ["members"] });
     setAssigningIds(false);
