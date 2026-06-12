@@ -74,7 +74,10 @@ export default function Login() {
             {orgSubtitle && <p className="text-sm text-muted-foreground mt-0.5">{orgSubtitle}</p>}
           </div>
           <p className="text-xs text-muted-foreground">Masuk untuk mengakses portal admin</p>
-        </div>
+          <a href="/jamaah-login" className="text-xs text-primary hover:underline text-center block">
+            Masuk sebagai Jamaah →
+          </a>
+          </div>
 
         {!showForgot ? (
           <>
