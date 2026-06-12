@@ -125,16 +125,24 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
     const video = videoRef.current;
     if (!video) { stream.getTracks().forEach(t => t.stop()); return; }
     video.srcObject = stream;
+    let played = false;
     const onReady = () => {
+      if (played) return;
+      played = true;
+      video.onloadedmetadata = null;
+      video.oncanplay = null;
       video.play().then(() => {
         setCameraActive(true);
         rafRef.current = requestAnimationFrame(scanLoop);
       }).catch(err => setCamError("Gagal memulai video: " + err.message));
-      video.onloadedmetadata = null;
-      video.oncanplay = null;
     };
-    video.onloadedmetadata = onReady;
-    video.oncanplay = onReady;
+    if (video.readyState >= 1) {
+      onReady();
+    } else {
+      video.onloadedmetadata = onReady;
+      video.oncanplay = onReady;
+      setTimeout(onReady, 2500);
+    }
   }, [facingMode, stopCamera, scanLoop]);
 
   const flipCamera = useCallback(() => {

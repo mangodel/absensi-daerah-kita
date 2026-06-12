@@ -107,21 +107,45 @@ export default function DesaOverview({ members }) {
                   <span className="text-destructive font-medium">{inactive} tidak aktif</span>
                 </div>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {kelompoks.map(k => {
-                  const kMembers = desaMembers.filter(m => m.kelompok === k);
+                  const kMembers = desaMembers.filter(m => m.kelompok === k && m.status === "Aktif");
                   const kKK = countKK(kMembers);
+                  const thisYear = new Date().getFullYear();
+                  const dewasa = kMembers.filter(m => !m.birth_year || (thisYear - m.birth_year) >= 22);
+                  const generus = kMembers.filter(m => m.birth_year && (thisYear - m.birth_year) < 22);
+                  const sortedKMembers = [...dewasa, ...generus];
                   return (
-                    <div key={k} className="text-xs space-y-1">
+                    <div key={k} className="text-xs space-y-1.5 bg-card/60 rounded-lg p-2 border border-border/40">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">{k}</span>
+                        <span className="font-medium text-foreground">{k}</span>
                         <div className="flex items-center gap-3">
                           <span className="text-muted-foreground flex items-center gap-0.5">
                             <Home className="w-2.5 h-2.5" />{kKK} KK
                           </span>
-                          <span className="font-medium text-foreground w-8 text-right">{kMembers.length}</span>
+                          <span className="font-semibold text-foreground">{kMembers.length}</span>
                         </div>
                       </div>
+                      {/* Ringkasan dewasa & generus dengan nomor */}
+                      <div className="flex gap-3 text-[10px] text-muted-foreground">
+                        <span className="text-primary font-medium">Dewasa: {dewasa.length}</span>
+                        <span className="text-purple-600 font-medium">Generus: {generus.length}</span>
+                      </div>
+                      {sortedKMembers.length > 0 && (
+                        <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                          {sortedKMembers.map((m, i) => {
+                            const age = m.birth_year ? (new Date().getFullYear() - m.birth_year) : null;
+                            const isGenerus = age !== null && age < 22;
+                            return (
+                              <div key={m.id} className="flex items-center gap-1.5">
+                                <span className="w-4 text-[9px] text-muted-foreground text-right shrink-0">{i + 1}.</span>
+                                <span className={isGenerus ? "text-purple-600" : "text-foreground"}>{m.full_name}</span>
+                                {isGenerus && <span className="text-[9px] text-purple-400">(Generus)</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                       <GenerusMiniChart memberList={kMembers} />
                     </div>
                   );

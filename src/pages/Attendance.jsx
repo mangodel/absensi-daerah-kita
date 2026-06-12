@@ -36,6 +36,7 @@ export default function Attendance() {
   const [filterVisa, setFilterVisa] = useState("all");
   const [filterMuballigh, setFilterMuballigh] = useState("all"); // "all" | "muballigh_only" | "muballighot_only" | "muballigh_both"
   const [filterDapukan, setFilterDapukan] = useState("all");
+  const [filterAgeGroup, setFilterAgeGroup] = useState("all"); // "all" | "dewasa" | "generus"
   const [attendanceData, setAttendanceData] = useState({});
   const [saving, setSaving] = useState(false);
   const [viewYear, setViewYear] = useState(String(currentYear));
@@ -140,11 +141,26 @@ export default function Attendance() {
     if (filterMuballigh === "muballigh_only") matchMuballigh = m.muballigh_status === "Muballigh";
     else if (filterMuballigh === "muballighot_only") matchMuballigh = m.muballigh_status === "Muballighot";
     else if (filterMuballigh === "muballigh_both") matchMuballigh = m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot";
-    return matchDesa && matchKelompok && matchVisa && matchDapukan && matchMuballigh;
+    let matchAge = true;
+    if (filterAgeGroup === "dewasa") {
+      const age = m.birth_year ? thisYear - m.birth_year : 999;
+      matchAge = age >= 22;
+    } else if (filterAgeGroup === "generus") {
+      const age = m.birth_year ? thisYear - m.birth_year : 999;
+      matchAge = age < 22;
+    }
+    return matchDesa && matchKelompok && matchVisa && matchDapukan && matchMuballigh && matchAge;
   });
 
   const handleStatusChange = (memberId, status) => {
-    setAttendanceData(prev => ({ ...prev, [memberId]: status }));
+    setAttendanceData(prev => {
+      if (status === null) {
+        const next = { ...prev };
+        delete next[memberId];
+        return next;
+      }
+      return { ...prev, [memberId]: status };
+    });
   };
 
   const saveMutation = useMutation({
@@ -308,11 +324,12 @@ export default function Attendance() {
                       <MobileSelect value={filterVisa} onValueChange={setFilterVisa} label="Visa" options={["all", ...VISA_STATUS_LIST]} placeholder="Visa" />
                       <MobileSelect value={filterMuballigh} onValueChange={setFilterMuballigh} label="Muballigh" options={["all", "muballigh_both", "muballigh_only", "muballighot_only"]} placeholder="Muballigh" />
                       {selectedEvent.level === "Daerah" && (
-                        <MobileSelect value={filterDapukan} onValueChange={setFilterDapukan} label="Dapukan" options={["all", ...DAPUKAN_LIST]} placeholder="Dapukan" />
+                       <MobileSelect value={filterDapukan} onValueChange={setFilterDapukan} label="Dapukan" options={["all", ...DAPUKAN_LIST]} placeholder="Dapukan" />
                       )}
-                    </>
-                  ) : (
-                    <>
+                      <MobileSelect value={filterAgeGroup} onValueChange={setFilterAgeGroup} label="Usia" options={["all", "dewasa", "generus"]} placeholder="Usia" />
+                      </>
+                      ) : (
+                      <>
                       <Select value={filterVisa} onValueChange={setFilterVisa}>
                         <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -329,6 +346,14 @@ export default function Attendance() {
                           <SelectItem value="muballighot_only">Mubalighot Saja</SelectItem>
                         </SelectContent>
                       </Select>
+                      <Select value={filterAgeGroup} onValueChange={setFilterAgeGroup}>
+                        <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Semua Usia</SelectItem>
+                          <SelectItem value="dewasa">Jamaah Dewasa (22+)</SelectItem>
+                          <SelectItem value="generus">Generus (&lt;22 thn)</SelectItem>
+                        </SelectContent>
+                      </Select>
                       {selectedEvent.level === "Daerah" && (
                         <Select value={filterDapukan} onValueChange={setFilterDapukan}>
                           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
@@ -338,8 +363,8 @@ export default function Attendance() {
                           </SelectContent>
                         </Select>
                       )}
-                    </>
-                  )}
+                      </>
+                      )}
                   <Button onClick={handleSave} disabled={isSaving || filledCount === 0} className="ml-auto">
                     {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                     Simpan ({filledCount})
