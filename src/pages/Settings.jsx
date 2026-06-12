@@ -46,6 +46,8 @@ export default function Settings() {
   const [volunteerLogoUrl, setVolunteerLogoUrl] = useState("");
   const [uploadingVolunteerLogo, setUploadingVolunteerLogo] = useState(false);
   const [adminLoginBgUrl, setAdminLoginBgUrl] = useState("");
+  const [daerahLogoUrl, setDaerahLogoUrl] = useState("");
+  const [uploadingDaerahLogo, setUploadingDaerahLogo] = useState(false);
   const [orgName, setOrgName] = useState("");
   const [orgSubtitle, setOrgSubtitle] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
@@ -62,6 +64,7 @@ export default function Settings() {
   const loginBannerInputRef = useRef();
   const adminLoginBgInputRef = useRef();
   const volunteerLogoInputRef = useRef();
+  const daerahLogoInputRef = useRef();
 
   useEffect(() => {
     setOrgName(config.org_name || "");
@@ -73,6 +76,7 @@ export default function Settings() {
     setLoginBannerUrl(config.login_banner_url || "");
     setAdminLoginBgUrl(config.admin_login_bg_url || "");
     setVolunteerLogoUrl(config.volunteer_logo_url || "");
+    setDaerahLogoUrl(config.daerah_logo_url || "");
     setPageTitles({ ...config.page_titles });
     setDesaKelompokMap(JSON.parse(JSON.stringify(config.desa_kelompok_map || {})));
   }, [config]);
@@ -151,6 +155,15 @@ export default function Settings() {
     setUploadingAdminLoginBg(false);
   };
 
+  const handleDaerahLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDaerahLogo(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setDaerahLogoUrl(file_url);
+    setUploadingDaerahLogo(false);
+  };
+
   const handleLoginBannerUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -171,6 +184,7 @@ export default function Settings() {
     await upsertConfig("admin_login_bg_url", adminLoginBgUrl, "Background Halaman Login Admin");
     await upsertConfig("login_banner_url", loginBannerUrl, "Banner Portal Jamaah Login");
     await upsertConfig("volunteer_logo_url", volunteerLogoUrl, "Logo Portal Volunteer");
+    await upsertConfig("daerah_logo_url", daerahLogoUrl, "Logo Daerah");
     await upsertConfig("page_titles", pageTitles, "Judul Halaman");
     await upsertConfig("desa_kelompok_map", desaKelompokMap, "Peta Desa-Kelompok");
     await reload();
@@ -323,6 +337,26 @@ export default function Settings() {
                 </div>
               </div>
               <Input value={volunteerLogoUrl} onChange={e => setVolunteerLogoUrl(e.target.value)} placeholder="Atau masukkan URL logo (https://...)" className="text-xs" />
+              </div>
+
+              {/* Logo Daerah */}
+              <div className="space-y-2 pt-2 border-t border-border">
+              <Label className="text-xs text-muted-foreground">Logo Daerah</Label>
+              <p className="text-[11px] text-muted-foreground">Logo daerah yang ditampilkan di Portal Jamaah dan halaman Reset Password.</p>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-secondary/30 overflow-hidden shrink-0">
+                  {daerahLogoUrl ? <img src={daerahLogoUrl} alt="Daerah Logo" className="w-full h-full object-contain" /> : <Image className="w-5 h-5 text-muted-foreground" />}
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <input ref={daerahLogoInputRef} type="file" accept="image/*" className="hidden" onChange={handleDaerahLogoUpload} />
+                  <Button size="sm" variant="outline" onClick={() => daerahLogoInputRef.current?.click()} disabled={uploadingDaerahLogo}>
+                    {uploadingDaerahLogo ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+                    {uploadingDaerahLogo ? "Mengupload..." : "Upload Logo"}
+                  </Button>
+                  {daerahLogoUrl && <Button size="sm" variant="ghost" className="text-destructive ml-2" onClick={() => setDaerahLogoUrl("")}>Hapus</Button>}
+                </div>
+              </div>
+              <Input value={daerahLogoUrl} onChange={e => setDaerahLogoUrl(e.target.value)} placeholder="Atau masukkan URL logo (https://...)" className="text-xs" />
               </div>
 
               {/* Background Halaman Login Admin */}

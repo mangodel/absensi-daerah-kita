@@ -250,15 +250,17 @@ export default function JamaahPortal() {
     );
   }
 
+  const daerahLogoUrl = config.daerah_logo_url;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-30 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
-            </div>
+          <div className="flex items-center gap-3">
+            {daerahLogoUrl && (
+              <img src={daerahLogoUrl} alt="Logo Daerah" className="h-8 object-contain" />
+            )}
             <div>
               <p className="text-sm font-semibold text-foreground leading-tight">{jamaahUser?.full_name || "Portal Jamaah"}</p>
               <p className="text-[10px] text-muted-foreground">{jamaahUser?.email || "Guest"}</p>

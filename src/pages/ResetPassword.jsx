@@ -7,9 +7,10 @@ import { Loader2, KeyRound, CheckCircle2 } from "lucide-react";
 import { useAppConfig } from "@/lib/AppConfigContext";
 
 export default function ResetPassword() {
-  const { config } = useAppConfig();
-  const logoSrc = config.login_logo_url || config.logo_url;
-  const orgName = config.org_name || "Sistem Organisasi";
+   const { config } = useAppConfig();
+   const logoSrc = config.login_logo_url || config.logo_url;
+   const daerahLogoSrc = config.daerah_logo_url;
+   const orgName = config.org_name || "Sistem Organisasi";
 
   const urlParams = new URLSearchParams(window.location.search);
   const resetToken = urlParams.get("token") || "";
@@ -52,6 +53,11 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <div className="bg-card border border-border rounded-2xl p-8 max-w-sm w-full shadow-lg space-y-6">
         <div className="text-center space-y-3">
+          {daerahLogoSrc && (
+            <div className="flex justify-center mb-2">
+              <img src={daerahLogoSrc} alt="Logo Daerah" className="h-12 w-auto object-contain" />
+            </div>
+          )}
           {logoSrc ? (
             <img src={logoSrc} alt={orgName} className="h-16 w-auto object-contain mx-auto" />
           ) : (
