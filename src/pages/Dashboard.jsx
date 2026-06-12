@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home, Megaphone, Plus, ArrowRightLeft } from "lucide-react";
+import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home, Megaphone, Plus, ArrowRightLeft, AlertCircle } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import GenerusBreakdown from "@/components/dashboard/GenerusBreakdown";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
@@ -19,7 +19,7 @@ import { Link } from "react-router-dom";
 import { isToday, isPast, format } from "date-fns";
 import { id } from "date-fns/locale";
 import { MONTHS } from "@/lib/constants";
-import { AlertCircle } from "lucide-react";
+import KelompokAttendanceDetail from "@/components/dashboard/KelompokAttendanceDetail";
 
 function pct(val, total) {
   if (!total) return "0%";
@@ -271,6 +271,36 @@ export default function Dashboard() {
 
       {(isAdminDesa || isAdminKelompok) && <MonthlyAttendanceSummary />}
 
+      {/* Detail kehadiran per kelompok dengan pengelompokan dewasa/generus — khusus admin desa */}
+      {isAdminDesa && userDesa && (() => {
+        const kelompoks = (config.desa_kelompok_map || {})[userDesa] || [];
+        const currentMonth = new Date().getMonth() + 1;
+        const currentYear = new Date().getFullYear();
+        if (kelompoks.length === 0) return null;
+        return (
+          <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+            <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              Detail Anggota per Kelompok — {userDesa}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {kelompoks.map(k => (
+                <div key={k} className="rounded-xl border border-border p-3 space-y-2">
+                  <p className="text-sm font-semibold text-foreground">{k}</p>
+                  <KelompokAttendanceDetail
+                    members={members}
+                    attendances={attendances}
+                    kelompok={k}
+                    month={currentMonth}
+                    year={currentYear}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Pindah Kelompok — untuk admin desa & kelompok */}
       {(isAdminDesa || isAdminKelompok) && (
         <Link to="/transfers" className="block">
@@ -334,6 +364,21 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground mt-1">Kehadiran {selectedYear}</p>
             </div>
           </div>
+
+          {/* Detail anggota kelompok: dewasa dulu lalu generus, dengan kehadiran bulan ini */}
+          <div className="border border-border rounded-xl p-3 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Daftar Anggota — Kehadiran Bulan Ini
+            </p>
+            <KelompokAttendanceDetail
+              members={members}
+              attendances={attendances}
+              kelompok={userKelompok}
+              month={new Date().getMonth() + 1}
+              year={new Date().getFullYear()}
+            />
+          </div>
+
           <AttendanceChart attendances={scopedAttendances} year={Number(selectedYear)} />
           {upcomingEvents.length > 0 && (
             <div>
