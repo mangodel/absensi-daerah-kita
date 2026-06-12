@@ -66,8 +66,7 @@ export default function KelompokAttendanceDetail({ members, attendances, kelompo
                 m.isGenerus ? "bg-purple-50 dark:bg-purple-950/20" : "bg-background"
               }`}
             >
-              <span className="w-5 text-[10px] text-muted-foreground text-right shrink-0">{m.no}.</span>
-              <span className={`flex-1 truncate ${m.isGenerus ? "text-purple-700" : "text-foreground"}`}>
+                      <span className={`flex-1 truncate ${m.isGenerus ? "text-purple-700" : "text-foreground"}`}>
                 {m.full_name}
               </span>
               {m.rate !== null ? (

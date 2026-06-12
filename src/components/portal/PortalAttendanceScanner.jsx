@@ -23,6 +23,13 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
   const galleryFileRef = useRef(null);
   const cooldown = useRef(false);
 
+  // Dynamically set capture attribute after mount to ensure browser honors it
+  const setCaptureAttr = (ref) => {
+    if (ref.current) {
+      ref.current.setAttribute("capture", "environment");
+    }
+  };
+
   const [scanStatus, setScanStatus] = useState(null); // null | "success" | "error"
   const [scanResultName, setScanResultName] = useState("");
   const [camError, setCamError] = useState(null);
@@ -103,8 +110,8 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
 
   return (
     <div className="space-y-4">
-      {/* Hidden file inputs */}
-      <input ref={cameraFileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+      {/* Hidden file inputs — capture set dynamically for iOS/Android compatibility */}
+      <input ref={cameraFileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       <input ref={galleryFileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       {activeSessions.length > 0 && (
@@ -166,7 +173,7 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
               <Button
                 size="lg"
                 className="w-full gap-2"
-                onClick={() => { resetScan(); cameraFileRef.current?.click(); }}
+                onClick={() => { resetScan(); setCaptureAttr(cameraFileRef); cameraFileRef.current?.click(); }}
                 disabled={processing}
               >
                 <Camera className="w-5 h-5" />

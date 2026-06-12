@@ -159,20 +159,20 @@ export default function Members() {
       </div>
 
       {/* Search + filter bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+      <div className="space-y-2">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Cari nama jamaah..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Cari nama jamaah..." className="pl-10 bg-card" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <Button variant="outline" onClick={() => setShowAdvanced(v => !v)} className="relative">
-          <SlidersHorizontal className="w-4 h-4 mr-2" /> Filter
+        <Button variant="outline" onClick={() => setShowAdvanced(v => !v)} className="relative w-full justify-center gap-2">
+          <SlidersHorizontal className="w-4 h-4" /> Filter
           {activeFilterCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{activeFilterCount}</span>
+            <span className="ml-1 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{activeFilterCount}</span>
+          )}
+          {activeFilterCount > 0 && (
+            <span onClick={e => { e.stopPropagation(); resetFilters(); }} className="ml-auto text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></span>
           )}
         </Button>
-        {activeFilterCount > 0 && (
-          <Button variant="ghost" size="icon" onClick={resetFilters} className="text-muted-foreground"><X className="w-4 h-4" /></Button>
-        )}
       </div>
 
       {/* Advanced Filters Panel */}

@@ -126,26 +126,11 @@ export default function DesaOverview({ members }) {
                           <span className="font-semibold text-foreground">{kMembers.length}</span>
                         </div>
                       </div>
-                      {/* Ringkasan dewasa & generus dengan nomor */}
+                      {/* Ringkasan dewasa & generus */}
                       <div className="flex gap-3 text-[10px] text-muted-foreground">
                         <span className="text-primary font-medium">Dewasa (18+): {dewasa.length}</span>
                         <span className="text-purple-600 font-medium">Generus (&lt;18): {generus.length}</span>
                       </div>
-                      {sortedKMembers.length > 0 && (
-                        <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                          {sortedKMembers.map((m, i) => {
-                            const age = m.birth_year ? (new Date().getFullYear() - m.birth_year) : null;
-                            const isGenerus = age !== null && age < 18;
-                            return (
-                              <div key={m.id} className="flex items-center gap-1.5">
-                                <span className="w-4 text-[9px] text-muted-foreground text-right shrink-0">{i + 1}.</span>
-                                <span className={isGenerus ? "text-purple-600" : "text-foreground"}>{m.full_name}</span>
-                                {isGenerus && <span className="text-[9px] text-purple-400">(Generus)</span>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
                       <GenerusMiniChart memberList={kMembers} />
                     </div>
                   );

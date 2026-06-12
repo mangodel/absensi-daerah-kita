@@ -232,11 +232,11 @@ export default function CameraScanner({ onScan, active }) {
     <div className="space-y-3">
       {/* These elements MUST stay in DOM always */}
       <canvas ref={canvasRef} className="hidden" aria-hidden="true" />
+      {/* capture set dynamically so browser doesn't cache a stale attribute */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleFileUpload}
       />
@@ -306,26 +306,30 @@ export default function CameraScanner({ onScan, active }) {
               {error}
             </div>
           )}
-          <Button type="button" className="w-full" onClick={() => startCamera()}>
+          <Button type="button" variant="outline" className="w-full" onClick={() => { if (fileInputRef.current) { fileInputRef.current.setAttribute("capture", "environment"); fileInputRef.current.click(); } }}>
+            <Camera className="w-4 h-4 mr-2" />
+            Foto QR (Kamera)
+          </Button>
+          <Button type="button" className="w-full mt-2" onClick={() => startCamera()}>
             <Camera className="w-4 h-4 mr-2" />
             Aktifkan Kamera
           </Button>
         </div>
       )}
 
-      {/* Upload fallback */}
+      {/* Upload fallback — gallery only (no capture attr) */}
       <div className="border-t border-border pt-3">
         <p className="text-xs text-muted-foreground text-center mb-2">
-          Atau upload foto QR Code jika kamera bermasalah:
+          Atau pilih foto QR dari galeri:
         </p>
         <Button
           type="button"
           variant="outline"
           className="w-full"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => { if (fileInputRef.current) { fileInputRef.current.removeAttribute("capture"); fileInputRef.current.click(); } }}
         >
           <Upload className="w-4 h-4 mr-2" />
-          Upload Foto QR
+          Pilih dari Galeri
         </Button>
       </div>
 
