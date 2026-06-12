@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowRightLeft, ArrowRight, Plus, Search, Users, UserCheck } from "lucide-react";
 import { useAppConfig } from "@/lib/AppConfigContext";
-import { format } from "date-fns";
+import { format, isWithinInterval, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Transfers() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -29,8 +30,9 @@ export default function Transfers() {
   const [saving, setSaving] = useState(false);
 
   const [searchHistory, setSearchHistory] = useState("");
-  const [filterHistoryDesa, setFilterHistoryDesa] = useState("all");
-  const [filterHistoryKelompok, setFilterHistoryKelompok] = useState("all");
+   const [filterHistoryDesa, setFilterHistoryDesa] = useState("all");
+   const [filterHistoryKelompok, setFilterHistoryKelompok] = useState("all");
+   const [activeTab, setActiveTab] = useState("new");
 
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
@@ -69,6 +71,18 @@ export default function Transfers() {
   const historyDesaList = [...new Set([...transfers.map(t => t.from_desa), ...transfers.map(t => t.to_desa)].filter(Boolean))].sort();
   const historyKelompokList = [...new Set([...transfers.map(t => t.from_kelompok), ...transfers.map(t => t.to_kelompok)].filter(Boolean))].sort();
 
+  // Filter for recent transfers (current month + previous month)
+  const now = new Date();
+  const currentMonthStart = startOfMonth(now);
+  const prevMonthStart = startOfMonth(subMonths(now, 1));
+  const currentMonthEnd = endOfMonth(now);
+
+  const recentTransfers = transfers.filter(t => {
+    if (!t.transfer_date) return false;
+    const tDate = new Date(t.transfer_date);
+    return isWithinInterval(tDate, { start: prevMonthStart, end: currentMonthEnd });
+  });
+
   const filteredTransfers = transfers.filter(t => {
     if (searchHistory) {
       const q = searchHistory.toLowerCase();
@@ -82,6 +96,18 @@ export default function Transfers() {
     }
     return true;
   });
+
+  // Sort by desa, then kelompok
+  const sortByDesaKelompok = (a, b) => {
+    const aDesa = a.to_desa || a.from_desa;
+    const bDesa = b.to_desa || b.from_desa;
+    if (aDesa !== bDesa) return (aDesa || "").localeCompare(bDesa || "");
+    const aKel = a.to_kelompok || a.from_kelompok;
+    const bKel = b.to_kelompok || b.from_kelompok;
+    return (aKel || "").localeCompare(bKel || "");
+  };
+
+  const recentTransfersSorted = [...recentTransfers].sort(sortByDesaKelompok);
 
   const toKelompokOptions = toDesa ? (config.desa_kelompok_map || {})[toDesa] || [] : [];
 
@@ -165,76 +191,139 @@ export default function Transfers() {
         </Button>
       </div>
 
-      {/* Search + filter history */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Cari nama, desa, atau kelompok..." className="pl-10" value={searchHistory} onChange={e => setSearchHistory(e.target.value)} />
-        </div>
-        <Select value={filterHistoryDesa} onValueChange={v => { setFilterHistoryDesa(v); setFilterHistoryKelompok("all"); }}>
-          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Filter Desa" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Desa</SelectItem>
-            {historyDesaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filterHistoryKelompok} onValueChange={setFilterHistoryKelompok}>
-          <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="Filter Kelompok" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Kelompok</SelectItem>
-            {historyKelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Tabs: Baru vs History */}
+       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+         <TabsList className="grid w-full sm:w-80 grid-cols-2">
+           <TabsTrigger value="new">Baru ({transfers.length})</TabsTrigger>
+           <TabsTrigger value="history">Riwayat Bulan Ini ({recentTransfers.length})</TabsTrigger>
+         </TabsList>
 
-      {transfers.length === 0 ? (
-        <div className="bg-card rounded-2xl border border-border p-12 text-center">
-          <p className="text-muted-foreground">Belum ada riwayat perpindahan.</p>
-        </div>
-      ) : (
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary/50">
-                  <TableHead className="font-semibold text-xs">Nama</TableHead>
-                  <TableHead className="font-semibold text-xs">Dari</TableHead>
-                  <TableHead className="font-semibold text-xs"></TableHead>
-                  <TableHead className="font-semibold text-xs">Ke</TableHead>
-                  <TableHead className="font-semibold text-xs">Tanggal</TableHead>
-                  <TableHead className="font-semibold text-xs">Alasan</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTransfers.map(t => (
-                  <TableRow key={t.id} className="hover:bg-secondary/30">
-                    <TableCell className="font-medium">{t.member_name}</TableCell>
-                    <TableCell>
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">{t.from_desa}</span>
-                        <br />
-                        <Badge variant="outline" className="text-[10px] mt-0.5">{t.from_kelompok}</Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell><ArrowRight className="w-4 h-4 text-primary" /></TableCell>
-                    <TableCell>
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">{t.to_desa}</span>
-                        <br />
-                        <Badge variant="outline" className="text-[10px] mt-0.5 border-primary/30 text-primary">{t.to_kelompok}</Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {t.transfer_date ? format(new Date(t.transfer_date), "dd MMM yyyy") : "-"}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{t.reason || "-"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
+         {/* Baru Tab */}
+         <TabsContent value="new" className="space-y-4">
+           {/* Search + filter history */}
+           <div className="flex flex-col sm:flex-row gap-3">
+             <div className="relative flex-1">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+               <Input placeholder="Cari nama, desa, atau kelompok..." className="pl-10" value={searchHistory} onChange={e => setSearchHistory(e.target.value)} />
+             </div>
+             <Select value={filterHistoryDesa} onValueChange={v => { setFilterHistoryDesa(v); setFilterHistoryKelompok("all"); }}>
+               <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Filter Desa" /></SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">Semua Desa</SelectItem>
+                 {historyDesaList.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+               </SelectContent>
+             </Select>
+             <Select value={filterHistoryKelompok} onValueChange={setFilterHistoryKelompok}>
+               <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="Filter Kelompok" /></SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">Semua Kelompok</SelectItem>
+                 {historyKelompokList.map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
+               </SelectContent>
+             </Select>
+           </div>
+
+           {transfers.length === 0 ? (
+             <div className="bg-card rounded-2xl border border-border p-12 text-center">
+               <p className="text-muted-foreground">Belum ada riwayat perpindahan.</p>
+             </div>
+           ) : (
+             <div className="bg-card rounded-2xl border border-border overflow-hidden">
+               <div className="overflow-x-auto">
+                 <Table>
+                   <TableHeader>
+                     <TableRow className="bg-secondary/50">
+                       <TableHead className="font-semibold text-xs">Nama</TableHead>
+                       <TableHead className="font-semibold text-xs">Dari</TableHead>
+                       <TableHead className="font-semibold text-xs"></TableHead>
+                       <TableHead className="font-semibold text-xs">Ke</TableHead>
+                       <TableHead className="font-semibold text-xs">Tanggal</TableHead>
+                       <TableHead className="font-semibold text-xs">Alasan</TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {filteredTransfers.map(t => (
+                       <TableRow key={t.id} className="hover:bg-secondary/30">
+                         <TableCell className="font-medium">{t.member_name}</TableCell>
+                         <TableCell>
+                           <div className="text-xs">
+                             <span className="text-muted-foreground">{t.from_desa}</span>
+                             <br />
+                             <Badge variant="outline" className="text-[10px] mt-0.5">{t.from_kelompok}</Badge>
+                           </div>
+                         </TableCell>
+                         <TableCell><ArrowRight className="w-4 h-4 text-primary" /></TableCell>
+                         <TableCell>
+                           <div className="text-xs">
+                             <span className="text-muted-foreground">{t.to_desa}</span>
+                             <br />
+                             <Badge variant="outline" className="text-[10px] mt-0.5 border-primary/30 text-primary">{t.to_kelompok}</Badge>
+                           </div>
+                         </TableCell>
+                         <TableCell className="text-xs text-muted-foreground">
+                           {t.transfer_date ? format(new Date(t.transfer_date), "dd MMM yyyy") : "-"}
+                         </TableCell>
+                         <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{t.reason || "-"}</TableCell>
+                       </TableRow>
+                     ))}
+                   </TableBody>
+                 </Table>
+               </div>
+             </div>
+           )}
+         </TabsContent>
+
+         {/* History Tab */}
+         <TabsContent value="history" className="space-y-4">
+           {recentTransfers.length === 0 ? (
+             <div className="bg-card rounded-2xl border border-border p-12 text-center">
+               <p className="text-muted-foreground">Belum ada perpindahan bulan lalu atau bulan ini.</p>
+             </div>
+           ) : (
+             <div className="bg-card rounded-2xl border border-border overflow-hidden">
+               <div className="overflow-x-auto">
+                 <Table>
+                   <TableHeader>
+                     <TableRow className="bg-secondary/50">
+                       <TableHead className="font-semibold text-xs">Nama</TableHead>
+                       <TableHead className="font-semibold text-xs">Dari</TableHead>
+                       <TableHead className="font-semibold text-xs"></TableHead>
+                       <TableHead className="font-semibold text-xs">Ke</TableHead>
+                       <TableHead className="font-semibold text-xs">Tanggal</TableHead>
+                       <TableHead className="font-semibold text-xs">Alasan</TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {recentTransfersSorted.map(t => (
+                       <TableRow key={t.id} className="hover:bg-secondary/30">
+                         <TableCell className="font-medium">{t.member_name}</TableCell>
+                         <TableCell>
+                           <div className="text-xs">
+                             <span className="text-muted-foreground">{t.from_desa}</span>
+                             <br />
+                             <Badge variant="outline" className="text-[10px] mt-0.5">{t.from_kelompok}</Badge>
+                           </div>
+                         </TableCell>
+                         <TableCell><ArrowRight className="w-4 h-4 text-primary" /></TableCell>
+                         <TableCell>
+                           <div className="text-xs">
+                             <span className="text-muted-foreground">{t.to_desa}</span>
+                             <br />
+                             <Badge variant="outline" className="text-[10px] mt-0.5 border-primary/30 text-primary">{t.to_kelompok}</Badge>
+                           </div>
+                         </TableCell>
+                         <TableCell className="text-xs text-muted-foreground">
+                           {t.transfer_date ? format(new Date(t.transfer_date), "dd MMM yyyy") : "-"}
+                         </TableCell>
+                         <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{t.reason || "-"}</TableCell>
+                       </TableRow>
+                     ))}
+                   </TableBody>
+                 </Table>
+               </div>
+             </div>
+           )}
+         </TabsContent>
+       </Tabs>
 
       {/* Transfer Dialog — multi select */}
       <Dialog open={dialogOpen} onOpenChange={(v) => { if (!v) resetDialog(); setDialogOpen(v); }}>
