@@ -98,17 +98,14 @@ export default function MemberCardPortal({ member }) {
           }}>
             <div className="px-7 pt-5 pb-6 flex flex-col justify-between h-full">
               {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {cardLogo && (
-                    <img src={cardLogo} alt="Logo" className="h-11 object-contain" />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-white font-bold text-[18px] leading-tight">DAERAH AUSTRALIA & NEW ZEALAND</p>
+              <div className="flex items-center gap-3">
+                {cardLogo && (
+                  <div className="bg-white rounded-xl p-2 flex items-center justify-center">
+                    <img src={cardLogo} alt="Logo" className="h-10 object-contain" />
                   </div>
-                </div>
-                <div className="bg-accent px-4 py-2 rounded-full">
-                  <p className="text-white font-semibold text-[12px]">Jamaah</p>
+                )}
+                <div className="flex-1">
+                  <p className="text-white font-bold text-[18px] leading-tight">DAERAH AUSTRALIA & NEW ZEALAND</p>
                 </div>
               </div>
 
