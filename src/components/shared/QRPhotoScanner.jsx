@@ -44,17 +44,21 @@ export default function QRPhotoScanner({ onScan, processing = false, disabled = 
   const triggerCamera = useCallback(() => {
     setStatus(null);
     setErrorMsg("");
+    setIsProcessing(true);
 
     // Create a completely fresh input element each time to avoid Safari caching
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.capture = "environment"; // Direct property assignment for maximum compatibility
+    // Set capture attribute BEFORE appending to DOM
+    input.setAttribute("capture", "environment");
 
     input.onchange = async (e) => {
       const file = e.target.files?.[0];
-      if (!file) return;
-      setIsProcessing(true);
+      if (!file) {
+        setIsProcessing(false);
+        return;
+      }
       try {
         const value = await decodeQRFromFile(file);
         if (value) {
@@ -70,13 +74,17 @@ export default function QRPhotoScanner({ onScan, processing = false, disabled = 
         setErrorMsg("Gagal memproses foto. Coba lagi.");
       } finally {
         setIsProcessing(false);
-        input.remove();
       }
     };
 
-    // Append and trigger click immediately
+    input.oncancel = () => {
+      setIsProcessing(false);
+    };
+
+    // Append to DOM, then click immediately
     document.body.appendChild(input);
     input.click();
+    input.remove();
   }, [onScan]);
 
   const busy = isProcessing || processing;
