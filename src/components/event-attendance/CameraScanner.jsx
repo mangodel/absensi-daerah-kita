@@ -1,140 +1,134 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Html5Qrcode } from "html5-qrcode";
-import { Camera, CameraOff, RefreshCw } from "lucide-react";
+import { Camera, CameraOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const DIV_ID = "qr-camera-reader";
-
 export default function CameraScanner({ onScan, active }) {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const animRef = useRef(null);
+  const detectorRef = useRef(null);
+  const cooldownRef = useRef(false);
   const [started, setStarted] = useState(false);
   const [error, setError] = useState(null);
-  const [cameras, setCameras] = useState([]);
-  const [selectedCam, setSelectedCam] = useState(null);
-  const scannerRef = useRef(null);
-  const lastScanned = useRef("");
-  const cooldown = useRef(false);
 
-  // cleanup on unmount or when active turns false
   useEffect(() => {
     if (!active) stopScanner();
-    return () => { stopScanner(); };
+    return () => stopScanner();
   }, [active]);
 
-  const stopScanner = async () => {
-    if (scannerRef.current) {
-      try {
-        const s = scannerRef.current;
-        scannerRef.current = null;
-        if (await s.getState() === 2 /* SCANNING */) await s.stop();
-        s.clear();
-      } catch (_) {}
+  const stopScanner = useCallback(() => {
+    if (animRef.current) {
+      cancelAnimationFrame(animRef.current);
+      animRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
     setStarted(false);
-  };
+  }, []);
 
-  const startScanner = useCallback(async (cameraId) => {
-    setError(null);
-    const el = document.getElementById(DIV_ID);
-    if (!el) { setError("Elemen kamera tidak ditemukan."); return; }
+  const scanLoop = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const detector = detectorRef.current;
 
-    if (scannerRef.current) {
-      try {
-        const s = scannerRef.current;
-        scannerRef.current = null;
-        if (await s.getState() === 2) await s.stop();
-        s.clear();
-      } catch (_) {}
+    if (!video || !canvas || !detector || video.readyState < 2) {
+      animRef.current = requestAnimationFrame(scanLoop);
+      return;
     }
 
-    try {
-      const scanner = new Html5Qrcode(DIV_ID, { verbose: false });
-      scannerRef.current = scanner;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
 
-      const camConfig = cameraId ? cameraId : { facingMode: "environment" };
-
-      // Optimize camera config untuk kompatibilitas lebih baik
-      const scanConfig = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        disableFlip: false,
-      };
-
-      // Tambah timeout untuk device yang lambat
-      const scannerPromise = scanner.start(camConfig, scanConfig, (text) => {
-        const val = text.trim().toUpperCase();
-        if (cooldown.current || val === lastScanned.current) return;
-        cooldown.current = true;
-        lastScanned.current = val;
-        onScan(val);
-        setTimeout(() => {
-          cooldown.current = false;
-          lastScanned.current = "";
-        }, 2500);
-      }, () => {});
-
-      await Promise.race([
-        scannerPromise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000))
-      ]);
-
-      setStarted(true);
-      setError(null);
-    } catch (err) {
-      scannerRef.current = null;
-      const msg = (err?.message || "").toLowerCase();
-      
-      if (msg.includes("permission") || msg.includes("denied")) {
-        setError("Akses kamera ditolak. Buka Settings → izinkan Kamera untuk situs ini, lalu refresh halaman.");
-      } else if (msg.includes("notfound") || msg.includes("not found") || msg.includes("no camera")) {
-        setError("Kamera tidak ditemukan di perangkat ini.");
-      } else if (msg.includes("timeout") || msg.includes("abort")) {
-        setError("Waktu tunggu kamera habis. Periksa permission kamera dan refresh halaman.");
-      } else {
-        setError(`Gagal mengakses kamera: ${msg || "unknown error"}`);
-      }
-    }
+    detector.detect(canvas)
+      .then(codes => {
+        if (codes.length > 0 && !cooldownRef.current) {
+          const val = codes[0].rawValue.trim().toUpperCase();
+          cooldownRef.current = true;
+          onScan(val);
+          setTimeout(() => { cooldownRef.current = false; }, 2500);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (streamRef.current) {
+          animRef.current = requestAnimationFrame(scanLoop);
+        }
+      });
   }, [onScan]);
 
-  const loadCameras = async () => {
-    try {
-      const list = await Html5Qrcode.getCameras();
-      setCameras(list || []);
-      return list || [];
-    } catch (_) {
-      return [];
+  const startScanner = useCallback(async () => {
+    setError(null);
+
+    if (!("BarcodeDetector" in window)) {
+      setError("Browser Anda belum mendukung scanner otomatis. Gunakan mode 'Input ID' atau 'Cari Nama' sebagai alternatif.");
+      return;
     }
-  };
 
-  const handleStart = async () => {
-    const list = await loadCameras();
-    // prefer back/environment camera
-    const backCam = list.find(c => /back|rear|environment/i.test(c.label));
-    const cam = backCam || list[0];
-    setSelectedCam(cam?.id || null);
-    await startScanner(cam?.id || null);
-  };
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("Browser tidak mendukung akses kamera. Gunakan HTTPS dan browser terbaru.");
+      return;
+    }
 
-  const switchCamera = async () => {
-    const others = cameras.filter(c => c.id !== selectedCam);
-    const next = others[0];
-    if (!next) return;
-    setSelectedCam(next.id);
-    await startScanner(next.id);
-  };
+    try {
+      detectorRef.current = new window.BarcodeDetector({ formats: ["qr_code"] });
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      setStarted(true);
+      animRef.current = requestAnimationFrame(scanLoop);
+    } catch (err) {
+      streamRef.current = null;
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        setError("Akses kamera ditolak. Buka pengaturan browser → Izin → aktifkan Kamera untuk situs ini, lalu refresh.");
+      } else if (err.name === "NotFoundError") {
+        setError("Kamera tidak ditemukan di perangkat ini.");
+      } else if (err.name === "NotReadableError") {
+        setError("Kamera sedang digunakan aplikasi lain. Tutup aplikasi lain lalu coba lagi.");
+      } else {
+        setError("Gagal mengakses kamera. Pastikan izin kamera sudah diberikan dan gunakan koneksi HTTPS.");
+      }
+    }
+  }, [scanLoop]);
 
   return (
     <div className="space-y-3">
-      {/* Camera viewport */}
-      <div
-        id={DIV_ID}
-        className={started ? "rounded-xl overflow-hidden border border-border w-full max-w-sm mx-auto" : "hidden"}
-      />
+      {/* Video viewport */}
+      <div className={started ? "rounded-xl overflow-hidden border border-border w-full max-w-sm mx-auto" : "hidden"}>
+        <video
+          ref={videoRef}
+          playsInline
+          muted
+          autoPlay
+          className="w-full block"
+        />
+      </div>
+      <canvas ref={canvasRef} className="hidden" />
 
       {!started && (
         <div className="bg-secondary/40 rounded-xl p-8 flex flex-col items-center gap-3">
           <Camera className="w-10 h-10 text-muted-foreground opacity-50" />
           <p className="text-sm text-muted-foreground text-center">
-            Kamera belum aktif. Izinkan akses kamera saat diminta browser.
+            Kamera belum aktif. Tekan tombol di bawah dan izinkan akses kamera.
           </p>
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center max-w-xs">
@@ -144,33 +138,22 @@ export default function CameraScanner({ onScan, active }) {
         </div>
       )}
 
-      {started && error && (
-        <p className="text-xs text-destructive text-center">{error}</p>
-      )}
-
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={started ? "outline" : "default"}
-          className="flex-1"
-          onClick={started ? stopScanner : handleStart}
-        >
-          {started ? (
-            <><CameraOff className="w-4 h-4 mr-2" /> Stop Kamera</>
-          ) : (
-            <><Camera className="w-4 h-4 mr-2" /> Aktifkan Kamera</>
-          )}
-        </Button>
-        {started && cameras.length > 1 && (
-          <Button type="button" variant="outline" size="icon" onClick={switchCamera} title="Ganti kamera">
-            <RefreshCw className="w-4 h-4" />
-          </Button>
+      <Button
+        type="button"
+        variant={started ? "outline" : "default"}
+        className="w-full"
+        onClick={started ? stopScanner : startScanner}
+      >
+        {started ? (
+          <><CameraOff className="w-4 h-4 mr-2" /> Stop Kamera</>
+        ) : (
+          <><Camera className="w-4 h-4 mr-2" /> Aktifkan Kamera</>
         )}
-      </div>
+      </Button>
 
       {started && (
         <p className="text-xs text-center text-muted-foreground">
-          Arahkan kamera ke QR Code peserta. Setiap scan memiliki jeda 2.5 detik.
+          Arahkan kamera ke QR Code peserta. Jeda 2.5 detik antar scan.
         </p>
       )}
     </div>
