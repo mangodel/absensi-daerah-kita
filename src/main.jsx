@@ -16,6 +16,20 @@ if ('serviceWorker' in navigator) {
   }
 }
 
+// Block BarcodeDetector so html5-qrcode (if cached) does not crash the app.
+// We use jsQR exclusively for QR scanning.
+if (typeof window !== 'undefined') {
+  window.BarcodeDetector = undefined;
+  // Override getSupportedFormats to safely return empty array
+  try {
+    Object.defineProperty(window, 'BarcodeDetector', {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+  } catch (_) {}
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <App />
 )
