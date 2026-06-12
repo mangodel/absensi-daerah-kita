@@ -54,11 +54,9 @@ export default function CameraScanner({ onScan, active }) {
 
       // Optimize camera config untuk kompatibilitas lebih baik
       const scanConfig = {
-        fps: 15,
-        qrbox: { width: 240, height: 240 },
-        aspectRatio: 1.0,
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
         disableFlip: false,
-        formatsToSupport: [Html5Qrcode.SupportedFormats.QR_CODE],
       };
 
       // Tambah timeout untuk device yang lambat
