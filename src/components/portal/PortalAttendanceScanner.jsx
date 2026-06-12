@@ -1,37 +1,18 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Camera, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { QrCode, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import jsQR from "jsqr";
-
-function decodeQRFromImage(imgEl) {
-  const canvas = document.createElement("canvas");
-  canvas.width = imgEl.naturalWidth || imgEl.width;
-  canvas.height = imgEl.naturalHeight || imgEl.height;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  return jsQR(imgData.data, canvas.width, canvas.height, { inversionAttempts: "attemptBoth" });
-}
+import QRPhotoScanner from "@/components/shared/QRPhotoScanner";
 
 export default function PortalAttendanceScanner({ member, user, volunteerLevel }) {
-  const cameraFileRef = useRef(null);
-  const cooldown = useRef(false);
-
-  // Dynamically set capture attribute after mount to ensure browser honors it
-  const setCaptureAttr = (ref) => {
-    if (ref.current) {
-      ref.current.setAttribute("capture", "environment");
-    }
-  };
+  const cooldown = { current: false };
 
   const [scanStatus, setScanStatus] = useState(null); // null | "success" | "error"
   const [scanResultName, setScanResultName] = useState("");
-  const [camError, setCamError] = useState(null);
   const [processing, setProcessing] = useState(false);
 
   const { data: activeSessions = [] } = useQuery({
@@ -40,10 +21,9 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
   });
 
   const handleCheckin = useCallback(async (qrValue) => {
-    if (cooldown.current) return;
+    if (cooldown.current || processing) return;
     cooldown.current = true;
     setProcessing(true);
-    setCamError(null);
     const clean = qrValue.trim().toUpperCase();
     try {
       const participants = await base44.entities.EventParticipant.filter({ qr_code_value: clean });
@@ -77,41 +57,17 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
       toast.error("Terjadi kesalahan saat memproses absensi.");
       setTimeout(() => { cooldown.current = false; setScanStatus(null); }, 3000);
     }
-  }, [user]);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCamError(null);
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const code = decodeQRFromImage(img);
-      URL.revokeObjectURL(url);
-      if (code?.data) {
-        handleCheckin(code.data);
-      } else {
-        setCamError("QR Code tidak terdeteksi. Pastikan gambar jelas dan QR terlihat penuh.");
-      }
-      if (e.target) e.target.value = "";
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); setCamError("Gagal membaca file gambar."); };
-    img.src = url;
-  };
+  }, [user, processing]);
 
   const resetScan = () => {
     setScanStatus(null);
     setScanResultName("");
-    setCamError(null);
     cooldown.current = false;
     setProcessing(false);
   };
 
   return (
     <div className="space-y-4">
-      {/* Hidden file input — capture set dynamically for iOS/Android compatibility */}
-      <input ref={cameraFileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-
       {activeSessions.length > 0 && (
         <Card className="border-accent/30 bg-accent/5">
           <CardContent className="p-4">
@@ -134,7 +90,6 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Status feedback */}
           {scanStatus === "success" && (
             <div className="flex items-center gap-3 p-4 rounded-xl bg-accent/10 border border-accent/20">
               <CheckCircle className="w-8 h-8 text-accent shrink-0" />
@@ -153,40 +108,16 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
               </div>
             </div>
           )}
-          {processing && !scanStatus && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0" />
-              <p className="text-sm text-primary">Memproses absensi...</p>
-            </div>
-          )}
-          {camError && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
-              ⚠️ {camError}
-            </div>
-          )}
 
-          {/* Scan button — camera only */}
           {scanStatus !== "success" && (
-            <Button
-              size="lg"
-              className="w-full gap-2"
-              onClick={() => { resetScan(); setCaptureAttr(cameraFileRef); cameraFileRef.current?.click(); }}
-              disabled={processing}
-            >
-              <Camera className="w-5 h-5" />
-              Foto QR dengan Kamera
-            </Button>
+            <QRPhotoScanner onScan={handleCheckin} processing={processing} />
           )}
 
-          {(scanStatus || camError) && (
+          {(scanStatus || processing) && (
             <Button variant="ghost" onClick={resetScan} className="w-full gap-2 text-xs">
               <RefreshCw className="w-3.5 h-3.5" /> Scan Ulang
             </Button>
           )}
-
-          <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
-            📷 Tekan <strong>Foto QR</strong> → arahkan kamera ke QR code → ambil foto.
-          </p>
         </CardContent>
       </Card>
     </div>

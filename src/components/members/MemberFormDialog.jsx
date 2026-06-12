@@ -65,11 +65,12 @@ const emptyMember = {
 };
 
 function generateMemberId(allMembers) {
-  const maxNum = allMembers.reduce((max, m) => {
-    if (!m.member_id) return max;
+  let maxNum = 0;
+  for (const m of allMembers) {
+    if (!m.member_id) continue;
     const num = parseInt(m.member_id.replace("AUNZ", ""), 10);
-    return !isNaN(num) && num > max ? num : max;
-  }, 0);
+    if (!isNaN(num) && num > maxNum) maxNum = num;
+  }
   return `AUNZ${String(maxNum + 1).padStart(6, "0")}`;
 }
 

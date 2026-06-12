@@ -96,13 +96,31 @@ export default function Members() {
     const noId = allMembers.filter(m => !m.member_id);
     if (noId.length === 0) return;
     setAssigningIds(true);
-    // Find max existing number
+
+    // Priority order: Keimaman Daerah first, then Pengurus Daerah, then Desa, then Kelompok, then Jamaah
+    const PRIORITY_DAPUKAN = ["Ki", "Wakil", "KU", "PKU", "Penerobos", "Aghnia", "Muballigh 4S", "Muballigh Daerah", "Muballigh Desa", "Muballigh Kelompok", "PJP", "PJK", "Kepala Keluarga"];
+    const PRIORITY_LEVEL = ["Daerah", "Desa", "Kelompok"];
+
+    function memberPriority(m) {
+      const dapukanRank = PRIORITY_DAPUKAN.indexOf(m.dapukan);
+      const levelRank = PRIORITY_LEVEL.indexOf(m.dapukan_level ?? "Kelompok");
+      // Lower number = higher priority
+      // If dapukan not in list (Jamaah biasa), rank = 999
+      const dRank = dapukanRank === -1 ? 999 : dapukanRank;
+      const lRank = levelRank === -1 ? 2 : levelRank;
+      return lRank * 1000 + dRank;
+    }
+
+    const sorted = [...noId].sort((a, b) => memberPriority(a) - memberPriority(b));
+
+    // Find max existing number to continue from
     let maxNum = allMembers.reduce((max, m) => {
       if (!m.member_id) return max;
       const num = parseInt(m.member_id.replace("AUNZ", ""), 10);
       return !isNaN(num) && num > max ? num : max;
     }, 0);
-    for (const m of noId) {
+
+    for (const m of sorted) {
       maxNum++;
       await base44.entities.Member.update(m.id, { member_id: `AUNZ${String(maxNum).padStart(6, "0")}` });
     }
