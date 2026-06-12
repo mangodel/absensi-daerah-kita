@@ -91,6 +91,10 @@ export default function CameraScanner({ onScan, active }) {
       if (mountedRef.current) setError("Browser tidak mendukung akses kamera. Gunakan Upload Foto.");
       return;
     }
+    // Ensure BarcodeDetector (old code) never runs — jsQR only
+    if (typeof window !== "undefined" && window.__barcodeDetectorInstance) {
+      try { window.__barcodeDetectorInstance = null; } catch (_) {}
+    }
 
     let stream = null;
 
