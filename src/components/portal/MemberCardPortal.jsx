@@ -8,7 +8,6 @@ import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { toast } from "sonner";
 import QRCodeDisplay from "@/components/event-attendance/QRCodeDisplay";
-import { Badge } from "@/components/ui/badge";
 
 export default function MemberCardPortal({ member }) {
   const { config } = useAppConfig();
@@ -34,7 +33,7 @@ export default function MemberCardPortal({ member }) {
 
   const handleDownloadPNG = async () => {
     if (!cardRef.current) return;
-    const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true, backgroundColor: null });
+    const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, backgroundColor: null, logging: false });
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
     a.download = `KartuMember-${member.member_id}.png`;
@@ -44,7 +43,7 @@ export default function MemberCardPortal({ member }) {
   const handleDownloadPDF = async () => {
     if (!cardRef.current) return;
     const { jsPDF } = await import("jspdf");
-    const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true, backgroundColor: null });
+    const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, backgroundColor: null, logging: false });
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -97,49 +96,35 @@ export default function MemberCardPortal({ member }) {
             width: "100%", 
             aspectRatio: "1.586" 
           }}>
-            <div className="px-4 pt-4 pb-2 flex items-center justify-between h-full flex-col">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
+            <div className="px-5 py-4 flex flex-col justify-between h-full">
+              {/* Header */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
                   {cardLogo && (
-                    <img src={cardLogo} alt="Logo" className="w-6 h-6 object-contain rounded" />
+                    <img src={cardLogo} alt="Logo" className="h-10 object-contain" />
                   )}
-                  <div>
-                    <p className="text-white font-bold text-[10px] leading-tight">{config.org_name || "Organisasi"}</p>
-                    <p className="text-white/70 text-[8px] leading-tight">{config.org_subtitle || ""}</p>
-                  </div>
                 </div>
-                <Badge className={`text-[8px] px-1.5 py-0.5 ${isGenerus ? "bg-amber-500/80 text-white" : "text-white/70"}`}>
-                  {isGenerus ? "Generus" : "Jamaah"}
-                </Badge>
               </div>
 
-              <div className="w-full flex items-end justify-between gap-2">
-                <div className="flex-1 space-y-1">
+              {/* Main Content */}
+              <div className="space-y-3 flex-1 flex flex-col justify-between">
+                <div className="space-y-2">
                   {showMemberId && (
-                    <div>
-                      <p className="text-white font-mono font-bold text-[13px]">{member.member_id}</p>
-                    </div>
+                    <p className="text-white font-mono font-bold text-[16px] tracking-wide">{member.member_id}</p>
                   )}
-                  <div>
-                    <p className="text-white font-bold text-[11px] truncate">{member.full_name}</p>
-                  </div>
+                  <p className="text-white font-bold text-[18px] leading-tight">{member.full_name}</p>
                   {showDesaKelompok && (
-                    <div className="space-y-0.5">
-                      <div>
-                        <p className="text-white/70 text-[6px] uppercase">Desa</p>
-                        <p className="text-white font-semibold text-[9px] truncate">{member.desa}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/70 text-[6px] uppercase">Kelompok</p>
-                        <p className="text-white font-semibold text-[9px] truncate">{member.kelompok}</p>
-                      </div>
+                    <div className="space-y-1 pt-1">
+                      <p className="text-white/80 text-[13px]"><span className="text-white/60 text-[10px]">DESA</span><br/>{member.desa}</p>
+                      <p className="text-white/80 text-[13px]"><span className="text-white/60 text-[10px]">KELOMPOK</span><br/>{member.kelompok}</p>
                     </div>
                   )}
                 </div>
 
+                {/* QR Code */}
                 {showQR && member.member_id && (
-                  <div className="bg-white rounded-lg p-1 shrink-0">
-                    <QRCodeDisplay value={member.member_id} size={48} />
+                  <div className="bg-white rounded-lg p-2 w-fit self-center">
+                    <QRCodeDisplay value={member.member_id} size={80} />
                   </div>
                 )}
               </div>

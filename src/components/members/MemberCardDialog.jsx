@@ -1,6 +1,5 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Download, Printer } from "lucide-react";
 import QRCodeDisplay from "@/components/event-attendance/QRCodeDisplay";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -29,7 +28,7 @@ export default function MemberCardDialog({ member, open, onClose }) {
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
-    const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true, backgroundColor: null });
+    const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, backgroundColor: null, logging: false });
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
     a.download = `KartuMember-${member.member_id || member.full_name}.png`;
@@ -40,7 +39,7 @@ export default function MemberCardDialog({ member, open, onClose }) {
     if (!cardRef.current) return;
     // Simple PDF generation - convert to canvas then use jsPDF
     const { jsPDF } = await import("jspdf");
-    const canvas = await html2canvas(cardRef.current, { scale: 3, useCORS: true, backgroundColor: null });
+    const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, backgroundColor: null, logging: false });
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -95,76 +94,41 @@ export default function MemberCardDialog({ member, open, onClose }) {
            backgroundImage: bgImageUrl ? `url(${bgImageUrl})` : "none",
            backgroundSize: "cover",
            backgroundPosition: "center",
-           background: bgImageUrl ? undefined : bgGradient
+           background: bgImageUrl ? undefined : bgGradient,
+           aspectRatio: "1.586"
          }}>
-          {/* Header */}
-          <div className="px-5 pt-5 pb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {cardLogo && (
-                <img src={cardLogo} alt="Logo" className="w-8 h-8 object-contain rounded" />
-              )}
-              <div>
-                <p className="text-white font-bold text-xs leading-tight">{config.org_name || "Organisasi"}</p>
-                <p className="text-white/70 text-[9px] leading-tight">{config.org_subtitle || ""}</p>
+          <div className="px-5 py-4 flex flex-col justify-between h-full">
+            {/* Header */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                {cardLogo && (
+                  <img src={cardLogo} alt="Logo" className="h-10 object-contain" />
+                )}
               </div>
             </div>
-            <Badge className={`text-[9px] px-2 py-0.5 ${isGenerus ? "bg-amber-500/80 text-white" : "text-white/70"}`}>
-              {isGenerus ? "Generus" : "Jamaah"}
-            </Badge>
-          </div>
 
-          {/* Divider */}
-          <div className="mx-5 h-px bg-white/20 mb-4" />
-
-          {/* Body */}
-          <div className="px-5 pb-5 flex items-end justify-between gap-3">
-            <div className="flex-1 min-w-0 space-y-2">
-              {/* ID */}
-                  {showMemberId && (
-                    <div>
-                      <p className="text-white font-mono font-bold text-lg tracking-widest">
-                        {member.member_id || "—"}
-                      </p>
-                    </div>
-                  )}
-                  {/* Name */}
-                  <div>
-                    <p className="text-white font-bold text-base leading-tight">{member.full_name}</p>
+            {/* Main Content */}
+            <div className="space-y-3 flex-1 flex flex-col justify-between">
+              <div className="space-y-2">
+                {showMemberId && (
+                  <p className="text-white font-mono font-bold text-[16px] tracking-wide">{member.member_id}</p>
+                )}
+                <p className="text-white font-bold text-[18px] leading-tight">{member.full_name}</p>
+                {showDesaKelompok && (
+                  <div className="space-y-1 pt-1">
+                    <p className="text-white/80 text-[13px]"><span className="text-white/60 text-[10px]">DESA</span><br/>{member.desa}</p>
+                    <p className="text-white/80 text-[13px]"><span className="text-white/60 text-[10px]">KELOMPOK</span><br/>{member.kelompok}</p>
                   </div>
-                  {/* Desa / Kelompok */}
-                  {showDesaKelompok && (
-                    <div className="space-y-1.5">
-                      <div>
-                        <p className="text-white/70 text-[8px] uppercase tracking-wider">Desa</p>
-                        <p className="text-white font-semibold text-sm truncate">{member.desa || "—"}</p>
-                      </div>
-                      <div>
-                        <p className="text-white/70 text-[8px] uppercase tracking-wider">Kelompok</p>
-                        <p className="text-white font-semibold text-sm truncate">{member.kelompok || "—"}</p>
-                      </div>
-                    </div>
-                  )}
-              {/* Dapukan */}
-              {showDapukan && member.dapukan && member.dapukan !== "Jamaah" && (
-                <div>
-                  <p className="text-white/70 text-[9px] uppercase tracking-wider">Dapukan</p>
-                  <p className="text-white text-xs">{member.dapukan}</p>
+                )}
+              </div>
+
+              {/* QR Code */}
+              {showQR && member.member_id && (
+                <div className="bg-white rounded-lg p-2 w-fit self-center">
+                  <QRCodeDisplay value={member.member_id} size={100} />
                 </div>
               )}
             </div>
-
-            {/* QR Code */}
-            {showQR && member.member_id && (
-              <div className="bg-white rounded-xl p-1.5 shrink-0">
-                <QRCodeDisplay value={member.member_id} size={72} />
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="bg-black/20 px-5 py-2 flex items-center justify-between">
-            <p className="text-white/70 text-[9px]">Status: <span className={`font-semibold ${member.status === "Aktif" ? "text-green-400" : "text-red-400"}`}>{member.status || "Aktif"}</span></p>
-            {showBirthYear && age && <p className="text-white/70 text-[9px]">Lahir: {member.birth_year} ({age} th)</p>}
           </div>
         </div>
 
