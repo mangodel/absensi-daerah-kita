@@ -39,10 +39,14 @@ function EventSelector({ onSelect }) {
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
-            <Calendar className="w-8 h-8 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Portal Volunteer</h1>
+          {config.volunteer_logo_url ? (
+            <img src={config.volunteer_logo_url} alt="Logo" className="w-20 h-20 object-contain mx-auto rounded-2xl" />
+          ) : (
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
+              <Calendar className="w-8 h-8 text-primary" />
+            </div>
+          )}
+          <h1 className="text-2xl font-bold text-foreground">{config.org_name || "Portal Volunteer"}</h1>
           <p className="text-sm text-muted-foreground">Pilih kegiatan yang akan dicatat absensinya</p>
         </div>
 

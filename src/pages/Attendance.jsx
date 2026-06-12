@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectGroup, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MONTHS, VISA_STATUS_LIST, DAPUKAN_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
@@ -73,7 +73,14 @@ export default function Attendance() {
   });
 
   // Admin kelompok: show their kelompok events + Daerah + Desa of their desa
+  // Filter: only current month/year events (no future events)
   const events = filterEvents(allEvents).filter(e => {
+    if (!e.date) return false;
+    const eDate = new Date(e.date);
+    const eMonth = eDate.getMonth() + 1;
+    const eYear = eDate.getFullYear();
+    // Only show events up to current month — no future events
+    if (eYear > currentYear || (eYear === currentYear && eMonth > currentMonth)) return false;
     if (isAdminKelompok) {
       return e.level === "Daerah" ||
         (e.level === "Desa" && e.desa === userDesa) ||
@@ -81,6 +88,13 @@ export default function Attendance() {
     }
     return true;
   });
+
+  // Group events by level for grouped select
+  const groupedEvents = {
+    "Daerah": events.filter(e => e.level === "Daerah"),
+    "Desa": events.filter(e => e.level === "Desa"),
+    "Kelompok": events.filter(e => e.level === "Kelompok"),
+  };
 
   const selectedEvent = allEvents.find(e => e.id === selectedEventId);
 
@@ -242,17 +256,28 @@ export default function Attendance() {
             </h3>
             <Select value={selectedEventId} onValueChange={v => { setSelectedEventId(v); setAttendanceData({}); }}>
               <SelectTrigger>
-                <SelectValue placeholder="Pilih kegiatan terlebih dahulu..." />
+                <SelectValue placeholder="Pilih kegiatan bulan ini..." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">— Pilih Kegiatan —</SelectItem>
-                {events.map(e => (
-                  <SelectItem key={e.id} value={e.id}>
-                    [{e.level}] {e.name} — {e.date ? format(new Date(e.date), "dd MMM yyyy", { locale: id }) : ""}
-                    {e.desa ? ` (${e.desa}` : ""}
-                    {e.kelompok ? ` / ${e.kelompok})` : (e.desa ? ")" : "")}
-                  </SelectItem>
-                ))}
+                {["Daerah", "Desa", "Kelompok"].map(level => {
+                  const grp = groupedEvents[level];
+                  if (!grp || grp.length === 0) return null;
+                  return (
+                    <SelectGroup key={level}>
+                      <SelectLabel className={`text-xs font-bold px-2 py-1 ${levelColors[level]}`}>
+                        ▸ {level}
+                      </SelectLabel>
+                      {grp.map(e => (
+                        <SelectItem key={e.id} value={e.id} className="pl-4">
+                          {e.name} — {e.date ? format(new Date(e.date), "dd MMM yyyy", { locale: id }) : ""}
+                          {e.desa ? ` (${e.desa}` : ""}
+                          {e.kelompok ? ` / ${e.kelompok})` : (e.desa ? ")" : "")}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  );
+                })}
               </SelectContent>
             </Select>
 

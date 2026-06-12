@@ -43,6 +43,8 @@ export default function Settings() {
   const [uploadingLoginBg, setUploadingLoginBg] = useState(false);
   const [uploadingLoginBanner, setUploadingLoginBanner] = useState(false);
   const [uploadingAdminLoginBg, setUploadingAdminLoginBg] = useState(false);
+  const [volunteerLogoUrl, setVolunteerLogoUrl] = useState("");
+  const [uploadingVolunteerLogo, setUploadingVolunteerLogo] = useState(false);
   const [adminLoginBgUrl, setAdminLoginBgUrl] = useState("");
   const [orgName, setOrgName] = useState("");
   const [orgSubtitle, setOrgSubtitle] = useState("");
@@ -59,6 +61,7 @@ export default function Settings() {
   const loginBgInputRef = useRef();
   const loginBannerInputRef = useRef();
   const adminLoginBgInputRef = useRef();
+  const volunteerLogoInputRef = useRef();
 
   useEffect(() => {
     setOrgName(config.org_name || "");
@@ -69,6 +72,7 @@ export default function Settings() {
     setLoginBgUrl(config.login_bg_url || "");
     setLoginBannerUrl(config.login_banner_url || "");
     setAdminLoginBgUrl(config.admin_login_bg_url || "");
+    setVolunteerLogoUrl(config.volunteer_logo_url || "");
     setPageTitles({ ...config.page_titles });
     setDesaKelompokMap(JSON.parse(JSON.stringify(config.desa_kelompok_map || {})));
   }, [config]);
@@ -129,6 +133,15 @@ export default function Settings() {
     setUploadingLoginBg(false);
   };
 
+  const handleVolunteerLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingVolunteerLogo(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setVolunteerLogoUrl(file_url);
+    setUploadingVolunteerLogo(false);
+  };
+
   const handleAdminLoginBgUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -157,6 +170,7 @@ export default function Settings() {
     await upsertConfig("login_bg_url", loginBgUrl, "Background Portal Jamaah Login");
     await upsertConfig("admin_login_bg_url", adminLoginBgUrl, "Background Halaman Login Admin");
     await upsertConfig("login_banner_url", loginBannerUrl, "Banner Portal Jamaah Login");
+    await upsertConfig("volunteer_logo_url", volunteerLogoUrl, "Logo Portal Volunteer");
     await upsertConfig("page_titles", pageTitles, "Judul Halaman");
     await upsertConfig("desa_kelompok_map", desaKelompokMap, "Peta Desa-Kelompok");
     await reload();
@@ -289,6 +303,26 @@ export default function Settings() {
                 </div>
               </div>
               <Input value={loginLogoUrl} onChange={e => setLoginLogoUrl(e.target.value)} placeholder="Atau masukkan URL logo login (https://...)" className="text-xs" />
+              </div>
+
+              {/* Logo Portal Volunteer */}
+              <div className="space-y-2 pt-2 border-t border-border">
+              <Label className="text-xs text-muted-foreground">Logo Portal Volunteer Scan</Label>
+              <p className="text-[11px] text-muted-foreground">Logo yang muncul di halaman pemilihan event pada portal volunteer.</p>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-secondary/30 overflow-hidden shrink-0">
+                  {volunteerLogoUrl ? <img src={volunteerLogoUrl} alt="Volunteer Logo" className="w-full h-full object-contain" /> : <Image className="w-5 h-5 text-muted-foreground" />}
+                </div>
+                <div className="space-y-1.5 flex-1">
+                  <input ref={volunteerLogoInputRef} type="file" accept="image/*" className="hidden" onChange={handleVolunteerLogoUpload} />
+                  <Button size="sm" variant="outline" onClick={() => volunteerLogoInputRef.current?.click()} disabled={uploadingVolunteerLogo}>
+                    {uploadingVolunteerLogo ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
+                    {uploadingVolunteerLogo ? "Mengupload..." : "Upload Logo"}
+                  </Button>
+                  {volunteerLogoUrl && <Button size="sm" variant="ghost" className="text-destructive ml-2" onClick={() => setVolunteerLogoUrl("")}>Hapus</Button>}
+                </div>
+              </div>
+              <Input value={volunteerLogoUrl} onChange={e => setVolunteerLogoUrl(e.target.value)} placeholder="Atau masukkan URL logo (https://...)" className="text-xs" />
               </div>
 
               {/* Background Halaman Login Admin */}
