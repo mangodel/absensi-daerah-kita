@@ -23,8 +23,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit2, Loader2, Copy } from "lucide-react";
+import { Plus, Trash2, Edit2, Loader2, BarChart2 } from "lucide-react";
 import { toast } from "sonner";
+import SurveyResultSummary from "./SurveyResultSummary";
 
 const QUESTION_TYPES = ["text", "radio", "checkbox"];
 
@@ -33,6 +34,7 @@ export default function SurveyManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSurvey, setEditingSurvey] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [rekapSurvey, setRekapSurvey] = useState(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [questions, setQuestions] = useState([]);
@@ -141,6 +143,10 @@ export default function SurveyManager() {
     setDialogOpen(true);
   };
 
+  if (rekapSurvey) {
+    return <SurveyResultSummary survey={rekapSurvey} onBack={() => setRekapSurvey(null)} />;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -184,6 +190,15 @@ export default function SurveyManager() {
                     </p>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setRekapSurvey(survey)}
+                      className="text-primary hover:bg-primary/10"
+                      title="Lihat Rekap"
+                    >
+                      <BarChart2 className="w-4 h-4" />
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
