@@ -3,13 +3,6 @@ import { Camera, X, ScanLine, FlipHorizontal, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import jsQR from "jsqr";
 
-/**
- * CameraScanner — universal QR scanner via jsQR + getUserMedia
- * 
- * Key design: <video> and <canvas> are ALWAYS mounted in the DOM so refs
- * are always valid before startCamera() is called.  Visibility is toggled
- * via CSS classes, never via conditional rendering.
- */
 export default function CameraScanner({ onScan, active }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -63,35 +56,56 @@ export default function CameraScanner({ onScan, active }) {
     cooldown.current = false;
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("Browser tidak mendukung akses kamera langsung. Gunakan Upload Foto di bawah.");
+      setError("Browser tidak mendukung akses kamera. Gunakan Upload Foto di bawah.");
       return;
     }
 
+    let stream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      // Coba dengan constraint ideal dulu
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facing } },
         audio: false,
       });
-      streamRef.current = stream;
-      const video = videoRef.current; // always in DOM
-      video.srcObject = stream;
-      video.onloadedmetadata = () => {
-        video.play().then(() => {
-          setCameraActive(true);
-          rafRef.current = requestAnimationFrame(scanLoop);
-        }).catch(err => setError("Gagal memulai video: " + err.message));
-      };
-    } catch (err) {
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        setError("Izin kamera ditolak. Izinkan akses kamera di pengaturan browser lalu coba lagi.");
-      } else if (err.name === "NotFoundError") {
-        setError("Kamera tidak ditemukan. Gunakan Upload Foto sebagai alternatif.");
-      } else if (err.name === "NotReadableError") {
-        setError("Kamera sedang dipakai aplikasi lain. Tutup lalu coba lagi.");
-      } else {
-        setError(`Gagal mengakses kamera (${err.name}). Coba Upload Foto.`);
+    } catch {
+      try {
+        // Fallback: tanpa constraint apapun
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch (err) {
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+          setError("Izin kamera ditolak. Buka pengaturan browser → izinkan kamera untuk situs ini, lalu refresh halaman.");
+        } else if (err.name === "NotFoundError") {
+          setError("Kamera tidak ditemukan pada perangkat ini. Gunakan Upload Foto.");
+        } else if (err.name === "NotReadableError" || err.name === "AbortError") {
+          setError("Kamera sedang digunakan aplikasi lain. Tutup aplikasi lain lalu coba lagi.");
+        } else {
+          setError(`Tidak dapat membuka kamera (${err.name}). Coba Upload Foto.`);
+        }
+        return;
       }
     }
+
+    streamRef.current = stream;
+    const video = videoRef.current;
+    if (!video) {
+      stream.getTracks().forEach(t => t.stop());
+      setError("Komponen video tidak siap. Coba refresh halaman.");
+      return;
+    }
+    video.srcObject = stream;
+    // Use both onloadedmetadata and oncanplay for broader browser support
+    const onReady = () => {
+      video.play().then(() => {
+        setCameraActive(true);
+        rafRef.current = requestAnimationFrame(scanLoop);
+      }).catch(err => {
+        setError("Gagal memulai video: " + err.message);
+      });
+      video.onloadedmetadata = null;
+      video.oncanplay = null;
+    };
+    video.onloadedmetadata = onReady;
+    video.oncanplay = onReady;
   }, [facingMode, stopCamera, scanLoop]);
 
   const flipCamera = useCallback(() => {
@@ -114,29 +128,35 @@ export default function CameraScanner({ onScan, active }) {
       const code = jsQR(imgData.data, img.width, img.height, { inversionAttempts: "attemptBoth" });
       URL.revokeObjectURL(url);
       if (code?.data) triggerScan(code.data);
-      else setError("QR Code tidak ditemukan di foto. Coba foto yang lebih jelas.");
+      else setError("QR Code tidak ditemukan di foto. Coba foto lebih jelas/terang.");
       if (fileInputRef.current) fileInputRef.current.value = "";
     };
     img.src = url;
   };
 
+  // Cleanup on unmount or when active turns false
   useEffect(() => {
     if (!active) stopCamera();
     return () => stopCamera();
   }, [active, stopCamera]);
 
-  if (!active) return null;
-
+  // Component always renders so refs are always valid in the DOM
+  // We just hide the whole thing when not active
   return (
-    <div className="space-y-3">
-      {/* Always in DOM — refs always valid */}
+    <div className={active ? "space-y-3" : "hidden"}>
+      {/* Always in DOM */}
       <canvas ref={canvasRef} className="hidden" />
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
 
-      {/* Camera view — always in DOM, CSS controls visibility */}
+      {/* Video — always mounted, shown/hidden via CSS */}
       <div className={`relative rounded-xl overflow-hidden bg-black ${cameraActive ? "block" : "hidden"}`}>
-        <video ref={videoRef} className="w-full max-h-72 object-cover" autoPlay playsInline muted />
-        {/* Viewfinder corners */}
+        <video
+          ref={videoRef}
+          className="w-full max-h-72 object-cover"
+          autoPlay
+          playsInline
+          muted
+        />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-52 h-52 relative">
             <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-md" />
@@ -146,7 +166,6 @@ export default function CameraScanner({ onScan, active }) {
             <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary/80 animate-pulse" />
           </div>
         </div>
-        {/* Controls */}
         <div className="absolute top-2 right-2 flex gap-2 z-10">
           <button onClick={flipCamera} className="bg-black/50 rounded-full p-2 text-white hover:bg-black/70">
             <FlipHorizontal className="w-4 h-4" />
@@ -162,11 +181,11 @@ export default function CameraScanner({ onScan, active }) {
         )}
       </div>
 
-      {/* Idle state — shown when camera not active */}
+      {/* Idle / Error state */}
       {!cameraActive && (
         <div className="bg-secondary/40 rounded-xl p-6 flex flex-col items-center gap-3 text-center">
           <ScanLine className="w-12 h-12 text-primary opacity-70" />
-          <p className="text-sm text-muted-foreground">Tekan tombol di bawah untuk membuka kamera dan scan QR Code secara otomatis.</p>
+          <p className="text-sm text-muted-foreground">Tekan tombol di bawah untuk membuka kamera.</p>
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive w-full text-left">
               {error}

@@ -100,30 +100,41 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
       return;
     }
 
+    let stream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facing } },
         audio: false,
       });
-      streamRef.current = stream;
-      // videoRef always in DOM — set srcObject then play
-      const video = videoRef.current;
-      video.srcObject = stream;
-      video.onloadedmetadata = () => {
-        video.play().then(() => {
-          setCameraActive(true);
-          rafRef.current = requestAnimationFrame(scanLoop);
-        }).catch(err => setCamError("Gagal memulai kamera: " + err.message));
-      };
-    } catch (err) {
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        setCamError("Izin kamera ditolak. Silakan izinkan akses kamera di pengaturan browser.");
-      } else if (err.name === "NotFoundError") {
-        setCamError("Kamera tidak ditemukan pada perangkat ini.");
-      } else {
-        setCamError(`Tidak dapat membuka kamera (${err.name}). Gunakan Upload Foto.`);
+    } catch {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch (err) {
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+          setCamError("Izin kamera ditolak. Buka pengaturan browser → izinkan kamera, lalu refresh.");
+        } else if (err.name === "NotFoundError") {
+          setCamError("Kamera tidak ditemukan. Gunakan Upload Foto.");
+        } else {
+          setCamError(`Tidak dapat membuka kamera (${err.name}). Gunakan Upload Foto.`);
+        }
+        return;
       }
     }
+
+    streamRef.current = stream;
+    const video = videoRef.current;
+    if (!video) { stream.getTracks().forEach(t => t.stop()); return; }
+    video.srcObject = stream;
+    const onReady = () => {
+      video.play().then(() => {
+        setCameraActive(true);
+        rafRef.current = requestAnimationFrame(scanLoop);
+      }).catch(err => setCamError("Gagal memulai video: " + err.message));
+      video.onloadedmetadata = null;
+      video.oncanplay = null;
+    };
+    video.onloadedmetadata = onReady;
+    video.oncanplay = onReady;
   }, [facingMode, stopCamera, scanLoop]);
 
   const flipCamera = useCallback(() => {
@@ -214,27 +225,32 @@ export default function PortalAttendanceScanner({ member, user, volunteerLevel }
             </div>
           )}
 
-          {/* Live camera — visible via CSS toggle, always mounted */}
-          <div className={`relative rounded-xl overflow-hidden bg-black ${cameraActive ? "block" : "hidden"}`}>
-            <video ref={videoRef} className="w-full max-h-64 object-cover" autoPlay playsInline muted />
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-48 h-48 relative">
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-white rounded-tl-md" />
-                <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-white rounded-tr-md" />
-                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-white rounded-bl-md" />
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-white rounded-br-md" />
-                <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary/80 animate-pulse" />
+          {/* Video always in DOM — never hidden so refs + events always work */}
+          <video ref={videoRef} autoPlay playsInline muted
+            className={`w-full rounded-xl object-cover bg-black ${cameraActive ? "max-h-64 block" : "h-0 invisible absolute"}`}
+          />
+          {/* Viewfinder overlay — only shown when active */}
+          {cameraActive && (
+            <div className="relative rounded-xl overflow-hidden -mt-1">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10" style={{top: 0}}>
+                <div className="w-48 h-48 relative">
+                  <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-white rounded-tl-md" />
+                  <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-white rounded-tr-md" />
+                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-white rounded-bl-md" />
+                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-white rounded-br-md" />
+                  <div className="absolute inset-x-4 top-1/2 h-0.5 bg-primary/80 animate-pulse" />
+                </div>
+              </div>
+              <div className="absolute top-2 right-2 flex gap-1 z-10">
+                <button onClick={flipCamera} className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70">
+                  <FlipHorizontal className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={stopCamera} className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70">
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
-            <div className="absolute top-2 right-2 flex gap-1">
-              <button onClick={flipCamera} className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70">
-                <FlipHorizontal className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={stopCamera} className="bg-black/50 rounded-full p-1.5 text-white hover:bg-black/70">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+          )}
 
           {!cameraActive && (
             <Button onClick={() => startCamera()} className="w-full gap-2" disabled={scanStatus === "success"}>
