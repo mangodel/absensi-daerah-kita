@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, CalendarDays, QrCode } from "lucide-react";
+import { Plus, CalendarDays, QrCode, Trash2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -15,6 +15,8 @@ import EventCalendar from "@/components/events/EventCalendar";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/lib/useUserRole";
+import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 export default function Events() {
   const [formOpen, setFormOpen] = useState(false);
@@ -28,10 +30,13 @@ export default function Events() {
   const [filterIbuIbu, setFilterIbuIbu] = useState("all");
   const [filterGender, setFilterGender] = useState("all");
   const [filterParticipant, setFilterParticipant] = useState("all");
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const navigate = useNavigate();
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
   const { filterEvents, canManageEvents } = useUserRole();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const queryClient = useQueryClient();
 
@@ -62,8 +67,15 @@ export default function Events() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Event.delete(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["events"] }); setDeleteEvent(null); },
+    mutationFn: (eventId) => base44.functions.invoke('deleteEvent', { eventId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      setDeleteEvent(null);
+      toast.success('Event berhasil dihapus');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Gagal menghapus event');
+    },
   });
 
   const handleSave = (data) => {
@@ -283,15 +295,26 @@ export default function Events() {
       <AlertDialog open={!!deleteEvent} onOpenChange={() => setDeleteEvent(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Kegiatan?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus "{deleteEvent?.name}"? Tindakan ini tidak dapat dibatalkan.
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-destructive" />
+              Hapus Kegiatan?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Apakah Anda yakin ingin menghapus kegiatan <strong>"{deleteEvent?.name}"</strong> dengan status {deleteEvent?.status || 'Aktif'}?</p>
+              <p className="text-xs text-muted-foreground">Tindakan ini tidak dapat dibatalkan dan akan dicatat dalam log audit.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteMutation.mutate(deleteEvent.id)}>
-              Hapus
+            <AlertDialogAction 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90" 
+              onClick={() => {
+                setDeleteLoading(true);
+                deleteMutation.mutate(deleteEvent.id);
+              }}
+              disabled={deleteLoading || !isSuperAdmin}
+            >
+              {deleteLoading ? '...' : 'Hapus'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { RECURRING_PATTERNS } from "@/lib/recurringUtils";
+import { useAuth } from "@/lib/AuthContext";
 
 const levelColors = {
   "Daerah": "bg-primary/10 text-primary border-primary/20",
@@ -59,6 +60,8 @@ function getEventCardColor(event) {
 
 export default function EventList({ events, sessions = [], onEdit, onDelete, onSelectForAttendance }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
 
   if (events.length === 0) {
     return (
@@ -169,9 +172,11 @@ export default function EventList({ events, sessions = [], onEdit, onDelete, onS
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(event)}>
                 <Pencil className="w-3.5 h-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(event)}>
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
+              {isSuperAdmin && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(event)} title="Super Admin hanya dapat menghapus event">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              )}
             </div>
           </div>
         </div>

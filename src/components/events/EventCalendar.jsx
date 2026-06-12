@@ -6,6 +6,7 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addM
 import { id } from "date-fns/locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 
 const LEVEL_COLORS = {
   "Daerah": "bg-primary text-white",
@@ -21,6 +22,8 @@ const LEVEL_DOT = {
 
 export default function EventCalendar({ events, sessions = [], onEdit, onDelete, onAdd }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [dayPopupOpen, setDayPopupOpen] = useState(false);
@@ -188,9 +191,11 @@ export default function EventCalendar({ events, sessions = [], onEdit, onDelete,
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setDayPopupOpen(false); onEdit(e); }}>
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => { setDayPopupOpen(false); onDelete(e); }}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                      {isSuperAdmin && (
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => { setDayPopupOpen(false); onDelete(e); }} title="Super Admin hanya dapat menghapus event">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                   );
