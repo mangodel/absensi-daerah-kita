@@ -31,6 +31,7 @@ export default function Events() {
   const [filterGender, setFilterGender] = useState("all");
   const [filterParticipant, setFilterParticipant] = useState("all");
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [syncingToGoogle, setSyncingToGoogle] = useState(false);
   const navigate = useNavigate();
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
@@ -100,6 +101,37 @@ export default function Events() {
     navigate(`/attendance?event_id=${event.id}`);
   };
 
+  const handleSyncAllToGoogleCalendar = async () => {
+    if (events.length === 0) {
+      toast.error('Tidak ada kegiatan untuk disinkronisasi');
+      return;
+    }
+
+    setSyncingToGoogle(true);
+    let synced = 0;
+    let failed = 0;
+
+    for (const event of events) {
+      try {
+        await base44.functions.invoke('syncEventToGoogleCalendar', { eventId: event.id });
+        synced++;
+      } catch (error) {
+        console.error(`Gagal sinkronisasi ${event.name}:`, error);
+        failed++;
+      }
+      // Rate limiting
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    setSyncingToGoogle(false);
+    if (synced > 0) {
+      toast.success(`✅ ${synced} kegiatan berhasil disinkronisasi ke Google Calendar`);
+    }
+    if (failed > 0) {
+      toast.error(`❌ ${failed} kegiatan gagal disinkronisasi`);
+    }
+  };
+
   const kelompokOptions = filterDesa !== "all" ? (config.desa_kelompok_map || {})[filterDesa] || [] : [];
 
   const now = new Date();
@@ -158,11 +190,18 @@ export default function Events() {
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">{events.length} {pt.events_subtitle || "kegiatan terdaftar"}</p>
         </div>
-        {canManageEvents && (
-          <Button onClick={() => { setEditEvent(null); setPrefilledDate(null); setFormOpen(true); }}>
-            <Plus className="w-4 h-4 mr-2" /> Tambah Kegiatan
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {isSuperAdmin && (
+            <Button variant="outline" onClick={handleSyncAllToGoogleCalendar} disabled={syncingToGoogle || events.length === 0} className="text-xs h-9">
+              {syncingToGoogle ? '🔄 Sinkronisasi...' : '📅 Sinkronisasi ke Google Calendar'}
+            </Button>
+          )}
+          {canManageEvents && (
+            <Button onClick={() => { setEditEvent(null); setPrefilledDate(null); setFormOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" /> Tambah Kegiatan
+            </Button>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="calendar">
