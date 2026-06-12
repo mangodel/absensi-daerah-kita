@@ -97,38 +97,58 @@ export default function MemberCardDialog({ member, open, onClose }) {
            background: bgImageUrl ? undefined : bgGradient,
            aspectRatio: "1.586"
          }}>
-          <div className="px-5 py-4 flex flex-col justify-between h-full">
-            {/* Header */}
+          <div className="px-5 pt-5 pb-4 flex flex-col justify-between h-full">
+            {/* Header - Logo & Org */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 {cardLogo && (
-                  <img src={cardLogo} alt="Logo" className="h-10 object-contain" />
+                  <img src={cardLogo} alt="Logo" className="h-9 object-contain" />
                 )}
+              </div>
+              <div className="text-white mb-3">
+                <p className="text-[9px] uppercase tracking-wider opacity-80 font-semibold">Kartu Anggota</p>
               </div>
             </div>
 
             {/* Main Content */}
-            <div className="space-y-3 flex-1 flex flex-col justify-between">
-              <div className="space-y-2">
-                {showMemberId && (
-                  <p className="text-white font-mono font-bold text-[16px] tracking-wide">{member.member_id}</p>
-                )}
-                <p className="text-white font-bold text-[18px] leading-tight">{member.full_name}</p>
-                {showDesaKelompok && (
-                  <div className="space-y-1 pt-1">
-                    <p className="text-white/80 text-[13px]"><span className="text-white/60 text-[10px]">DESA</span><br/>{member.desa}</p>
-                    <p className="text-white/80 text-[13px]"><span className="text-white/60 text-[10px]">KELOMPOK</span><br/>{member.kelompok}</p>
-                  </div>
-                )}
+            <div className="space-y-3 flex-1">
+              {/* Member ID Section */}
+              {showMemberId && (
+                <div>
+                  <p className="text-white/70 text-[8px] uppercase tracking-wider font-semibold mb-0.5">ID Member</p>
+                  <p className="text-white font-mono font-bold text-[14px] tracking-wide">{member.member_id}</p>
+                </div>
+              )}
+
+              {/* Name Section */}
+              <div>
+                <p className="text-white/70 text-[8px] uppercase tracking-wider font-semibold mb-0.5">Nama Lengkap</p>
+                <p className="text-white font-bold text-[15px] leading-snug">{member.full_name}</p>
               </div>
 
-              {/* QR Code */}
-              {showQR && member.member_id && (
-                <div className="bg-white rounded-lg p-2 w-fit self-center">
-                  <QRCodeDisplay value={member.member_id} size={100} />
+              {/* Desa & Kelompok */}
+              {showDesaKelompok && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-white/70 text-[7px] uppercase tracking-wider font-semibold mb-0.5">Desa</p>
+                    <p className="text-white text-[11px] font-semibold truncate">{member.desa}</p>
+                  </div>
+                  <div>
+                    <p className="text-white/70 text-[7px] uppercase tracking-wider font-semibold mb-0.5">Kelompok</p>
+                    <p className="text-white text-[11px] font-semibold truncate">{member.kelompok}</p>
+                  </div>
                 </div>
               )}
             </div>
+
+            {/* QR Code - Bottom Center */}
+            {showQR && member.member_id && (
+              <div className="flex justify-center mt-2">
+                <div className="bg-white rounded-lg p-1.5">
+                  <QRCodeDisplay value={member.member_id} size={90} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
