@@ -4,6 +4,8 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, CalendarDays } from "lucide-react";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EVENT_LEVEL_LIST } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -82,7 +84,20 @@ export default function Events() {
 
   const kelompokOptions = filterDesa !== "all" ? (config.desa_kelompok_map || {})[filterDesa] || [] : [];
 
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
   const filtered = events.filter(e => {
+    if (!e.date) return false;
+    const eventDate = new Date(e.date);
+    // Hanya tampilkan upcoming events di bulan ini
+    const isUpcomingThisMonth =
+      eventDate.getFullYear() === currentYear &&
+      eventDate.getMonth() + 1 === currentMonth &&
+      eventDate >= new Date(now.toISOString().split("T")[0]); // >= hari ini
+    if (!isUpcomingThisMonth) return false;
+
     const matchLevel = filterLevel === "all" || e.level === filterLevel;
     const matchDesa = filterDesa === "all" || e.desa === filterDesa || (filterDesa !== "all" && e.level === "Daerah");
     const matchKelompok = filterKelompok === "all" || e.kelompok === filterKelompok;
@@ -92,18 +107,19 @@ export default function Events() {
       else if (filterMubaligh === "mubaligh") matchMubaligh = e.participant_dapukan.some(d => d === "Muballigh" || d.toLowerCase().includes("muballigh"));
       else if (filterMubaligh === "mubalighot") matchMubaligh = e.participant_dapukan.some(d => d === "Muballighot" || d.toLowerCase().includes("muballighot"));
     }
-    // Filter ibu-ibu
     let matchIbuIbu = true;
-    if (filterIbuIbu === "ibu_ibu") {
-      matchIbuIbu = e.participant_filter === "ibu_ibu";
-    }
-    // Filter gender
+    if (filterIbuIbu === "ibu_ibu") matchIbuIbu = e.participant_filter === "ibu_ibu";
     let matchGender = true;
-    if (filterGender !== "all") {
-      const expectedGender = filterGender === "perempuan" ? "Perempuan" : "Laki-laki";
-      matchGender = e.participant_filter === "ibu_ibu" || !e.participant_filter;
-    }
+    if (filterGender !== "all") matchGender = e.participant_filter === "ibu_ibu" || !e.participant_filter;
+
     return matchLevel && matchDesa && matchKelompok && matchMubaligh && matchIbuIbu && matchGender;
+  }).sort((a, b) => {
+    // Sort by desa → kelompok → date
+    const desaCompare = (a.desa || "").localeCompare(b.desa || "");
+    if (desaCompare !== 0) return desaCompare;
+    const kelompokCompare = (a.kelompok || "").localeCompare(b.kelompok || "");
+    if (kelompokCompare !== 0) return kelompokCompare;
+    return new Date(a.date) - new Date(b.date);
   });
 
   // Group by level for display
@@ -208,7 +224,7 @@ export default function Events() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="bg-card rounded-2xl border border-border p-12 text-center">
-              <p className="text-muted-foreground">Belum ada kegiatan. Tambahkan kegiatan baru.</p>
+              <p className="text-muted-foreground">Tidak ada kegiatan mendatang bulan {format(now, "MMMM yyyy", { locale: id })}.</p>
             </div>
           ) : (
             <div className="space-y-6">
