@@ -11,7 +11,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserRoleManager from "@/components/settings/UserRoleManager";
 import GoogleSheetSync from "@/components/settings/GoogleSheetSync";
-import SurveyManager from "@/components/settings/SurveyManager";
 import MemberCardDesignManager from "@/components/settings/MemberCardDesignManager";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
@@ -240,7 +239,6 @@ export default function Settings() {
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="general" className="flex items-center gap-1.5"><SettingsIcon className="w-3.5 h-3.5" /> Umum</TabsTrigger>
           <TabsTrigger value="card" className="flex items-center gap-1.5"><Image className="w-3.5 h-3.5" /> Kartu Member</TabsTrigger>
-          <TabsTrigger value="surveys" className="flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5" /> Survei</TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Akses Pengguna</TabsTrigger>
           <TabsTrigger value="gsheet" className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Google Sheet</TabsTrigger>
         </TabsList>
@@ -483,11 +481,6 @@ export default function Settings() {
         {/* ---- TAB KARTU MEMBER ---- */}
         <TabsContent value="card" className="mt-4">
           <MemberCardDesignManager />
-        </TabsContent>
-
-        {/* ---- TAB SURVEI ---- */}
-        <TabsContent value="surveys" className="mt-4">
-          <SurveyManager />
         </TabsContent>
 
         {/* ---- TAB AKSES PENGGUNA ---- */}
