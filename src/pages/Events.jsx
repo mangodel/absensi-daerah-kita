@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, CalendarDays } from "lucide-react";
+import { Plus, CalendarDays, QrCode } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -40,6 +40,11 @@ export default function Events() {
     queryFn: () => base44.entities.Event.list("-date"),
   });
   const events = filterEvents(allEvents);
+
+  const { data: sessions = [] } = useQuery({
+    queryKey: ["event-sessions"],
+    queryFn: () => base44.entities.EventSession.list(),
+  });
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Event.create(data),
@@ -162,6 +167,7 @@ export default function Events() {
           ) : (
             <EventCalendar
               events={events}
+              sessions={sessions}
               onEdit={e => { setEditEvent(e); setPrefilledDate(null); setFormOpen(true); }}
               onDelete={setDeleteEvent}
               onAdd={handleAddOnDate}
@@ -241,7 +247,7 @@ export default function Events() {
                   <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 flex items-center gap-2">
                     <span className="inline-block w-2 h-2 rounded-full bg-primary" /> Tingkat Daerah
                   </h2>
-                  <EventList events={byLevel.Daerah} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
+                  <EventList events={byLevel.Daerah} sessions={sessions} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
                 </section>
               )}
               {byLevel.Desa.length > 0 && (
@@ -249,7 +255,7 @@ export default function Events() {
                   <h2 className="text-xs font-bold uppercase tracking-widest text-accent mb-3 flex items-center gap-2">
                     <span className="inline-block w-2 h-2 rounded-full bg-accent" /> Tingkat Desa
                   </h2>
-                  <EventList events={byLevel.Desa} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
+                  <EventList events={byLevel.Desa} sessions={sessions} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
                 </section>
               )}
               {byLevel.Kelompok.length > 0 && (
@@ -257,7 +263,7 @@ export default function Events() {
                   <h2 className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 flex items-center gap-2">
                     <span className="inline-block w-2 h-2 rounded-full bg-orange-500" /> Tingkat Kelompok
                   </h2>
-                  <EventList events={byLevel.Kelompok} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
+                  <EventList events={byLevel.Kelompok} sessions={sessions} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
                 </section>
               )}
             </div>

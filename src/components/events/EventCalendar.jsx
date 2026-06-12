@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, QrCode } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, parseISO } from "date-fns";
 import { id } from "date-fns/locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 const LEVEL_COLORS = {
   "Daerah": "bg-primary text-white",
@@ -18,7 +19,8 @@ const LEVEL_DOT = {
   "Kelompok": "bg-orange-500",
 };
 
-export default function EventCalendar({ events, onEdit, onDelete, onAdd }) {
+export default function EventCalendar({ events, sessions = [], onEdit, onDelete, onAdd }) {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [dayPopupOpen, setDayPopupOpen] = useState(false);
@@ -156,17 +158,33 @@ export default function EventCalendar({ events, onEdit, onDelete, onAdd }) {
               </div>
             ) : (
               <>
-                {selectedDayEvents.map(e => (
+                {selectedDayEvents.map(e => {
+                  const linkedSession = sessions.find(s => s.linked_event_id === e.id);
+                  return (
                   <div key={e.id} className="flex items-start justify-between gap-2 p-3 bg-secondary/40 rounded-xl">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge className={`text-[10px] ${LEVEL_COLORS[e.level]}`}>{e.level}</Badge>
                         <span className="font-medium text-sm">{e.name}</span>
+                        {linkedSession && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-primary/10 text-primary border-primary/30 flex items-center gap-1 cursor-pointer"
+                            onClick={() => { setDayPopupOpen(false); navigate("/event-attendance"); }}
+                          >
+                            <QrCode className="w-2.5 h-2.5" /> QR {linkedSession.status}
+                          </Badge>
+                        )}
                       </div>
                       {e.location && <p className="text-xs text-muted-foreground mt-0.5">📍 {e.location}</p>}
                       {e.desa && <p className="text-xs text-muted-foreground">{e.desa}{e.kelompok ? ` / ${e.kelompok}` : ""}</p>}
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      {linkedSession && (
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-primary" title="Buka QR Event" onClick={() => { setDayPopupOpen(false); navigate("/event-attendance"); }}>
+                          <QrCode className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setDayPopupOpen(false); onEdit(e); }}>
                         <Pencil className="w-3.5 h-3.5" />
                       </Button>
@@ -175,7 +193,8 @@ export default function EventCalendar({ events, onEdit, onDelete, onAdd }) {
                       </Button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 <Button size="sm" variant="outline" className="w-full" onClick={() => { setDayPopupOpen(false); onAdd(selectedDate); }}>
                   <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Kegiatan di Tanggal Ini
                 </Button>
