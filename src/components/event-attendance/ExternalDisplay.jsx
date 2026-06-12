@@ -23,8 +23,14 @@ export default function ExternalDisplay({ eventId, eventName }) {
     return () => clearInterval(t);
   }, []);
 
-  const logoUrl = config.event_logo || config.logo_url || "";
-  const bannerBg = config.event_banner_color || "";
+  const { data: formConfig } = useQuery({
+    queryKey: ["event-form-config", eventId],
+    queryFn: () => eventId ? base44.entities.EventFormConfig.filter({ event_id: eventId }).then(r => r[0]) : null,
+    enabled: !!eventId,
+  });
+
+  const logoUrl = formConfig?.display_logo_url || config.event_logo || config.logo_url || "";
+  const bannerBg = formConfig?.display_background_color || config.event_banner_color || "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)";
 
   const { data: participants = [] } = useQuery({
     queryKey: ["event-participants", eventId],
@@ -289,11 +295,14 @@ export default function ExternalDisplay({ eventId, eventName }) {
                 </motion.div>
 
                 <p className="text-emerald-400 text-sm font-semibold uppercase tracking-widest mb-2">
-                  ✓ Check-in Berhasil
+                  {formConfig?.success_message ? "✓ " + formConfig.success_message : "✓ Check-in Berhasil"}
                 </p>
                 <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
                   {popupData.name}
                 </h2>
+                {formConfig?.success_subtext && (
+                  <p className="text-slate-300 text-sm mb-4">{formConfig.success_subtext}</p>
+                )}
 
                 <div className="flex items-center justify-center gap-3 flex-wrap">
                   {popupData.desa && (

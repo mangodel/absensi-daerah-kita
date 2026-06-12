@@ -16,7 +16,11 @@
     },
     "success_message": {
       "type": "string",
-      "description": "Pesan setelah berhasil mendaftar"
+      "description": "Pesan setelah berhasil mendaftar (untuk tampilan TV, popup daftar)"
+    },
+    "success_subtext": {
+      "type": "string",
+      "description": "Sub-teks setelah success (ditampilkan di TV popup)"
     },
     "send_qr_email": {
       "type": "boolean",
@@ -49,6 +53,22 @@
       "type": "boolean",
       "default": false,
       "description": "Aktifkan validasi lokasi saat check-in"
+    },
+    "display_background_image": {
+      "type": "string",
+      "description": "URL gambar background untuk TV display (eksterna)"
+    },
+    "display_background_color": {
+      "type": "string",
+      "description": "Warna background gradient untuk TV display (hex atau gradient string)"
+    },
+    "display_logo_url": {
+      "type": "string",
+      "description": "URL logo untuk ditampilkan di header TV display"
+    },
+    "display_success_bg_color": {
+      "type": "string",
+      "description": "Warna background popup check-in success (TV display)"
     }
   },
   "required": [

@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, X } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import QRCodeDisplay from "@/components/event-attendance/QRCodeDisplay";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useRef } from "react";
@@ -26,12 +26,36 @@ export default function MemberCardDialog({ member, open, onClose }) {
     a.click();
   };
 
+  const handlePrint = () => {
+    if (!cardRef.current) return;
+    const printWindow = window.open("", "", "width=800,height=600");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Kartu Member - ${member.full_name}</title>
+          <style>
+            @page { margin: 0; }
+            body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+            .container { max-width: 600px; margin: 0 auto; }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          ${cardRef.current.outerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-sm p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-sm">Kartu Member Digital</h3>
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={handlePrint}>
+              <Printer className="w-3.5 h-3.5 mr-1" /> Cetak
+            </Button>
             <Button size="sm" variant="outline" onClick={handleDownload}>
               <Download className="w-3.5 h-3.5 mr-1" /> Unduh
             </Button>
