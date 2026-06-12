@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CalendarCheck, CalendarDays, Bell, FileBarChart, Settings, FolderOpen, LogOut, ScanLine, UserCircle, Megaphone } from "lucide-react";
+import { LayoutDashboard, Users, CalendarCheck, CalendarDays, Bell, FileBarChart, Settings, FolderOpen, LogOut, ScanLine, UserCircle, Megaphone, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/lib/useUserRole";
 import { useQuery } from "@tanstack/react-query";
@@ -34,6 +34,7 @@ export default function MobileNav() {
     { label: "Jamaah", icon: Users, path: "/members" },
     { label: "Kegiatan", icon: CalendarDays, path: "/events" },
     { label: "Absensi", icon: CalendarCheck, path: "/attendance" },
+    { label: "Struktur", icon: GitBranch, path: "/structure" },
     { label: "Laporan", icon: FileBarChart, path: "/reports" },
     { label: "Dokumen", icon: FolderOpen, path: "/documents" },
     { label: "Absensi Event", icon: ScanLine, path: "/event-attendance" },
