@@ -42,42 +42,41 @@ export default function QRPhotoScanner({ onScan, processing = false, disabled = 
   const [isProcessing, setIsProcessing] = useState(false);
 
   const triggerCamera = useCallback(() => {
-   setStatus(null);
-   setErrorMsg("");
+    setStatus(null);
+    setErrorMsg("");
 
-   // Create a completely fresh input element each time to avoid Safari caching
-   const input = document.createElement("input");
-   input.setAttribute("type", "file");
-   input.setAttribute("accept", "image/*");
-   // Force camera capture on all devices - must be set before click
-   input.setAttribute("capture", "environment");
+    // Create a completely fresh input element each time to avoid Safari caching
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.capture = "environment"; // Direct property assignment for maximum compatibility
 
-   input.onchange = async (e) => {
-     const file = e.target.files?.[0];
-     if (!file) return;
-     setIsProcessing(true);
-     try {
-       const value = await decodeQRFromFile(file);
-       if (value) {
-         setStatus("success");
-         onScan(value);
-         setTimeout(() => setStatus(null), 2000);
-       } else {
-         setStatus("error");
-         setErrorMsg("QR Code tidak terdeteksi. Pastikan gambar jelas, pencahayaan cukup, dan QR terlihat penuh.");
-       }
-     } catch {
-       setStatus("error");
-       setErrorMsg("Gagal memproses foto. Coba lagi.");
-     } finally {
-       setIsProcessing(false);
-       input.remove();
-     }
-   };
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setIsProcessing(true);
+      try {
+        const value = await decodeQRFromFile(file);
+        if (value) {
+          setStatus("success");
+          onScan(value);
+          setTimeout(() => setStatus(null), 2000);
+        } else {
+          setStatus("error");
+          setErrorMsg("QR Code tidak terdeteksi. Pastikan gambar jelas, pencahayaan cukup, dan QR terlihat penuh.");
+        }
+      } catch {
+        setStatus("error");
+        setErrorMsg("Gagal memproses foto. Coba lagi.");
+      } finally {
+        setIsProcessing(false);
+        input.remove();
+      }
+    };
 
-   // Must append and click immediately for capture to work
-   document.body.appendChild(input);
-   input.click();
+    // Append and trigger click immediately
+    document.body.appendChild(input);
+    input.click();
   }, [onScan]);
 
   const busy = isProcessing || processing;
