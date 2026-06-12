@@ -61,8 +61,17 @@ const emptyMember = {
   full_name: "", email: "", gender: "", marital_status: "", desa: "", kelompok: "", sub_kelompok: "",
   family_group: "", birth_year: "", birthplace: "", visa_status: "", muballigh_status: "",
   employment: "", dapukan: "Jamaah", dapukan_level: "Kelompok", status: "Aktif",
-  phone: "", address: "", suburb: "", state: "", postcode: "", notes: ""
+  phone: "", address: "", suburb: "", state: "", postcode: "", notes: "", member_id: ""
 };
+
+function generateMemberId(allMembers) {
+  const maxNum = allMembers.reduce((max, m) => {
+    if (!m.member_id) return max;
+    const num = parseInt(m.member_id.replace("AUNZ", ""), 10);
+    return !isNaN(num) && num > max ? num : max;
+  }, 0);
+  return `AUNZ${String(maxNum + 1).padStart(6, "0")}`;
+}
 
 export default function MemberFormDialog({ open, onOpenChange, member, onSave, allMembers = [] }) {
   const isMobile = useIsMobile();
@@ -78,10 +87,11 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
       if (member) {
         setForm({ ...emptyMember, ...member, birth_year: member.birth_year ? String(member.birth_year) : "" });
       } else {
-        setForm(emptyMember);
+        // Auto-generate member_id for new members
+        setForm({ ...emptyMember, member_id: generateMemberId(allMembers) });
       }
     }
-  }, [member, open]);
+  }, [member, open, allMembers.length]);
 
   const kelompokOptions = form.desa ? desaKelompokMap[form.desa] || [] : [];
   // Anggota di kelompok yang sama (untuk pilihan KK)
@@ -125,6 +135,17 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
           <DialogTitle>{isEdit ? "Edit Data Jamaah" : "Tambah Jamaah Baru"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* ID Member */}
+          {form.member_id && (
+            <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+              <div>
+                <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider">ID Member</p>
+                <p className="font-mono font-bold text-primary text-lg tracking-wider">{form.member_id}</p>
+              </div>
+              <p className="text-xs text-muted-foreground ml-auto">ID ini permanen dan unik untuk anggota ini.</p>
+            </div>
+          )}
 
           {/* Data Pribadi */}
           <div className="text-xs font-semibold text-primary uppercase tracking-wider pt-1">Data Pribadi</div>

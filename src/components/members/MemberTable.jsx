@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, CreditCard } from "lucide-react";
+import MemberCardDialog from "@/components/members/MemberCardDialog";
 
 export default function MemberTable({ members, onEdit, onDelete }) {
   const currentYear = new Date().getFullYear();
+  const [cardMember, setCardMember] = useState(null);
 
   // Sort: dewasa (18+) first, then generus (<18), within each group sort by name
   const sorted = [...members].sort((a, b) => {
@@ -25,19 +28,22 @@ export default function MemberTable({ members, onEdit, onDelete }) {
   }
 
   return (
+    <>
+    <MemberCardDialog member={cardMember} open={!!cardMember} onClose={() => setCardMember(null)} />
     <div className="bg-card rounded-2xl border border-border overflow-hidden">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary/50">
               <TableHead className="font-semibold text-xs w-12">No.</TableHead>
+              <TableHead className="font-semibold text-xs">ID Member</TableHead>
               <TableHead className="font-semibold text-xs">Nama</TableHead>
               <TableHead className="font-semibold text-xs">Email</TableHead>
-              <TableHead className="font-semibold text-xs">Alamat</TableHead>
+              <TableHead className="font-semibold text-xs hidden lg:table-cell">Alamat</TableHead>
               <TableHead className="font-semibold text-xs">Desa</TableHead>
               <TableHead className="font-semibold text-xs">Kelompok</TableHead>
-              <TableHead className="font-semibold text-xs">Dapukan</TableHead>
-              <TableHead className="font-semibold text-xs">Telepon</TableHead>
+              <TableHead className="font-semibold text-xs hidden md:table-cell">Dapukan</TableHead>
+              <TableHead className="font-semibold text-xs hidden md:table-cell">Telepon</TableHead>
               <TableHead className="font-semibold text-xs">Status</TableHead>
               <TableHead className="font-semibold text-xs text-right">Aksi</TableHead>
             </TableRow>
@@ -46,6 +52,13 @@ export default function MemberTable({ members, onEdit, onDelete }) {
             {sorted.map((member, idx) => (
               <TableRow key={member.id} className="hover:bg-secondary/30 transition-colors">
                 <TableCell className="text-xs text-muted-foreground font-medium text-center">{idx + 1}</TableCell>
+                <TableCell>
+                  {member.member_id ? (
+                    <span className="font-mono text-xs font-semibold text-primary">{member.member_id}</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground/50 italic">—</span>
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">
                   <div>{member.full_name}</div>
                   {member.birth_year && (
@@ -55,7 +68,7 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                 <TableCell className="text-xs text-muted-foreground">
                   {member.email ? <a href={`mailto:${member.email}`} className="text-primary hover:underline">{member.email}</a> : <span>-</span>}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground max-w-xs">
+                <TableCell className="text-xs text-muted-foreground max-w-xs hidden lg:table-cell">
                   {member.address || member.suburb || member.state || member.postcode
                     ? `${member.address || ""} ${member.suburb || ""} ${member.state || ""} ${member.postcode || ""}`.trim()
                     : <span className="text-muted-foreground">-</span>
@@ -63,14 +76,14 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.desa}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.kelompok}</TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   {member.dapukan && member.dapukan !== "Jamaah Biasa" && member.dapukan !== "Jamaah" ? (
                     <Badge variant="secondary" className="text-xs">{member.dapukan}</Badge>
                   ) : (
                     <span className="text-xs text-muted-foreground">Jamaah</span>
                   )}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
+                <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
                   {member.phone
                     ? <a href={`tel:${member.phone}`} className="text-primary hover:underline">{member.phone}</a>
                     : <span className="text-muted-foreground">-</span>
@@ -86,6 +99,11 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    {member.member_id && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" title="Kartu Member" onClick={() => setCardMember(member)}>
+                        <CreditCard className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(member)}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
@@ -100,5 +118,6 @@ export default function MemberTable({ members, onEdit, onDelete }) {
         </Table>
       </div>
     </div>
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Upload, Search, SlidersHorizontal, X } from "lucide-react";
+import { Plus, Upload, Search, SlidersHorizontal, X, IdCard, Loader2 } from "lucide-react";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, DAPUKAN_LIST, DAPUKAN_4S } from "@/lib/constants";
 import MemberFormDialog from "@/components/members/MemberFormDialog";
@@ -42,6 +42,7 @@ export default function Members() {
   const [viewMode, setViewMode] = useState("table"); // "table" | "family"
 
   const queryClient = useQueryClient();
+  const [assigningIds, setAssigningIds] = useState(false);
 
   const { data: allMembers = [], isLoading } = useQuery({
     queryKey: ["members"],
@@ -90,6 +91,24 @@ export default function Members() {
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["members"] }); setDeleteMember(null); },
   });
+
+  const handleAssignMissingIds = async () => {
+    const noId = allMembers.filter(m => !m.member_id);
+    if (noId.length === 0) return;
+    setAssigningIds(true);
+    // Find max existing number
+    let maxNum = allMembers.reduce((max, m) => {
+      if (!m.member_id) return max;
+      const num = parseInt(m.member_id.replace("AUNZ", ""), 10);
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+    for (const m of noId) {
+      maxNum++;
+      await base44.entities.Member.update(m.id, { member_id: `AUNZ${String(maxNum).padStart(6, "0")}` });
+    }
+    queryClient.invalidateQueries({ queryKey: ["members"] });
+    setAssigningIds(false);
+  };
 
   const handleSave = (data) => {
     if (editMember) {
@@ -147,6 +166,12 @@ export default function Members() {
           </div>
           {canManageMembers && (
             <>
+              {allMembers.some(m => !m.member_id) && (
+                <Button variant="outline" onClick={handleAssignMissingIds} disabled={assigningIds} className="text-primary border-primary/30 hover:bg-primary/10">
+                  {assigningIds ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <IdCard className="w-4 h-4 mr-2" />}
+                  Assign ID ({allMembers.filter(m => !m.member_id).length})
+                </Button>
+              )}
               <Button variant="outline" onClick={() => setCsvOpen(true)}>
                 <Upload className="w-4 h-4 mr-2" />Upload CSV
               </Button>
