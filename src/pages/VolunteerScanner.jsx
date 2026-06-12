@@ -294,13 +294,11 @@ function ScannerPanel({ event, operator, onBack }) {
               ))}
             </div>
 
-            {/* Camera Mode */}
-            {mode === "camera" && (
-              <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
-                <p className="text-center text-sm font-medium">Arahkan kamera ke QR Code peserta</p>
-                <CameraScanner onScan={handleCameraScan} active={mode === "camera"} />
-              </div>
-            )}
+            {/* Camera Mode — always rendered, shown/hidden via active prop */}
+            <div className={`bg-card border border-border rounded-2xl p-4 space-y-3 ${mode !== "camera" ? "hidden" : ""}`}>
+              <p className="text-center text-sm font-medium">Arahkan kamera ke QR Code peserta</p>
+              <CameraScanner onScan={handleCameraScan} active={mode === "camera"} />
+            </div>
 
             {/* Manual ID */}
             {mode === "manual" && (

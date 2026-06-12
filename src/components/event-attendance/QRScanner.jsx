@@ -210,14 +210,12 @@ export default function QRScanner({ eventId, eventName, formConfig }) {
         </form>
       )}
 
-      {/* Camera Mode */}
-      {mode === "camera" && (
-        <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-          <h3 className="font-semibold text-center">Scan QR dengan Kamera</h3>
-          <p className="text-xs text-center text-muted-foreground">Arahkan kamera ke QR Code peserta</p>
-          <CameraScanner onScan={handleCameraScan} active={mode === "camera"} />
-        </div>
-      )}
+      {/* Camera Mode — always rendered so video element stays in DOM */}
+      <div className={`bg-card border border-border rounded-xl p-4 space-y-3 ${mode !== "camera" ? "hidden" : ""}`}>
+        <h3 className="font-semibold text-center">Scan QR dengan Kamera</h3>
+        <p className="text-xs text-center text-muted-foreground">Arahkan kamera ke QR Code peserta</p>
+        <CameraScanner onScan={handleCameraScan} active={mode === "camera"} />
+      </div>
 
       {/* Search Mode */}
       {mode === "search" && (
