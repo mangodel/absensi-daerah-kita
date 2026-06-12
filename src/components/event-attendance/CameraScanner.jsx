@@ -1,144 +1,115 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Html5Qrcode } from "html5-qrcode";
-import { Camera, CameraOff } from "lucide-react";
+import { useRef, useState } from "react";
+import { Camera, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import jsQR from "jsqr";
 
-const DIV_ID = "qr-camera-reader";
+// Decode QR from an image element using jsQR
+async function decodeQRFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) resolve(code.data.trim().toUpperCase());
+        else reject(new Error("QR Code tidak ditemukan dalam gambar."));
+      };
+      img.onerror = () => reject(new Error("Gagal memuat gambar."));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Gagal membaca file."));
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function CameraScanner({ onScan, active }) {
-  const [started, setStarted] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const scannerRef = useRef(null);
+  const [lastScanned, setLastScanned] = useState(null);
+  const inputRef = useRef(null);
   const cooldown = useRef(false);
-  const lastVal = useRef("");
 
-  useEffect(() => {
-    if (!active) stopScanner();
-    return () => { stopScanner(); };
-  }, [active]);
+  const handleCapture = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const stopScanner = async () => {
-    if (scannerRef.current) {
-      try {
-        const s = scannerRef.current;
-        scannerRef.current = null;
-        const state = s.getState();
-        if (state === 2) await s.stop();
-        s.clear();
-      } catch (_) {}
-    }
-    setStarted(false);
-    setLoading(false);
-  };
-
-  const startScanner = useCallback(async () => {
     setError(null);
     setLoading(true);
 
-    // Request camera permission explicitly first (required for iOS Safari)
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      stream.getTracks().forEach(t => t.stop()); // just to get permission, stop immediately
-    } catch (err) {
-      setLoading(false);
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        setError("Akses kamera ditolak. Buka Pengaturan → Safari/Browser → Kamera → Izinkan, lalu refresh halaman.");
-      } else if (err.name === "NotFoundError") {
-        setError("Kamera tidak ditemukan di perangkat ini.");
-      } else {
-        setError("Tidak dapat mengakses kamera. Pastikan halaman dibuka via HTTPS.");
+      const value = await decodeQRFromFile(file);
+      if (!cooldown.current) {
+        cooldown.current = true;
+        setLastScanned(value);
+        onScan(value);
+        setTimeout(() => {
+          cooldown.current = false;
+          setLastScanned(null);
+        }, 3000);
       }
-      return;
-    }
-
-    // Small delay for DOM to be ready
-    await new Promise(r => setTimeout(r, 200));
-
-    const el = document.getElementById(DIV_ID);
-    if (!el) { setLoading(false); setError("Elemen kamera tidak ditemukan."); return; }
-
-    try {
-      const scanner = new Html5Qrcode(DIV_ID, { verbose: false });
-      scannerRef.current = scanner;
-
-      await scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (text) => {
-          const val = text.trim().toUpperCase();
-          if (cooldown.current || val === lastVal.current) return;
-          cooldown.current = true;
-          lastVal.current = val;
-          onScan(val);
-          setTimeout(() => {
-            cooldown.current = false;
-            lastVal.current = "";
-          }, 2500);
-        },
-        () => {}
-      );
-
-      setStarted(true);
-      setError(null);
     } catch (err) {
-      scannerRef.current = null;
-      const msg = (err?.message || "").toLowerCase();
-      if (msg.includes("permission") || msg.includes("denied")) {
-        setError("Akses kamera ditolak. Periksa izin kamera di pengaturan browser.");
-      } else if (msg.includes("notfound") || msg.includes("not found")) {
-        setError("Kamera tidak ditemukan.");
-      } else {
-        setError("Gagal memulai kamera. Coba refresh halaman dan izinkan akses kamera.");
-      }
+      setError(err.message || "QR Code tidak terbaca.");
     } finally {
       setLoading(false);
+      // Reset input so same file can be captured again
+      if (inputRef.current) inputRef.current.value = "";
     }
-  }, [onScan]);
+  };
+
+  if (!active) return null;
 
   return (
     <div className="space-y-3">
-      {/* Camera viewport - always in DOM so Html5Qrcode can find it */}
-      <div
-        id={DIV_ID}
-        className={started ? "rounded-xl overflow-hidden border border-border w-full max-w-sm mx-auto" : "hidden"}
+      {/* Hidden file input for camera capture */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleCapture}
       />
 
-      {!started && (
-        <div className="bg-secondary/40 rounded-xl p-8 flex flex-col items-center gap-3">
-          <Camera className="w-10 h-10 text-muted-foreground opacity-50" />
-          <p className="text-sm text-muted-foreground text-center">
-            Tekan tombol di bawah, lalu izinkan akses kamera saat diminta.
-          </p>
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive text-center max-w-xs">
-              {error}
-            </div>
-          )}
-        </div>
-      )}
+      <div className="bg-secondary/40 rounded-xl p-6 flex flex-col items-center gap-3 text-center">
+        <Camera className="w-12 h-12 text-primary opacity-70" />
+        <p className="text-sm text-muted-foreground">
+          Tekan tombol di bawah, arahkan kamera ke QR Code peserta, lalu foto.
+        </p>
+
+        {lastScanned && (
+          <div className="bg-accent/10 border border-accent/30 rounded-lg px-3 py-2 text-sm text-accent font-medium">
+            ✓ Scanned: {lastScanned}
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 text-xs text-destructive max-w-xs">
+            {error}
+          </div>
+        )}
+      </div>
 
       <Button
         type="button"
-        variant={started ? "outline" : "default"}
         className="w-full"
         disabled={loading}
-        onClick={started ? stopScanner : startScanner}
+        onClick={() => {
+          setError(null);
+          inputRef.current?.click();
+        }}
       >
         {loading ? (
-          <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" /> Membuka Kamera...</>
-        ) : started ? (
-          <><CameraOff className="w-4 h-4 mr-2" /> Stop Kamera</>
+          <><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" /> Memproses...</>
         ) : (
-          <><Camera className="w-4 h-4 mr-2" /> Aktifkan Kamera</>
+          <><Camera className="w-4 h-4 mr-2" /> Buka Kamera / Scan QR</>
         )}
       </Button>
-
-      {started && (
-        <p className="text-xs text-center text-muted-foreground">
-          Arahkan kamera ke QR Code peserta.
-        </p>
-      )}
     </div>
   );
 }
