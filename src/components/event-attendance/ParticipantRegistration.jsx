@@ -179,7 +179,7 @@ export default function ParticipantRegistration({ eventId }) {
                       <td className="px-4 py-3 font-medium text-sm">{p.full_name}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">{p.organization || "-"}</td>
                       <td className="px-4 py-3 text-center">
-                        {p.is_database_member ? (
+                        {members.some(m => m.member_id === p.participant_id) ? (
                           <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
                             Jamaah
                           </span>
