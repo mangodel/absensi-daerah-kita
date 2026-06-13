@@ -1,22 +1,32 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { QrCode, Users, BarChart3, Settings, Link2 } from "lucide-react";
+import { QrCode, Users, BarChart3, Settings, Link2, Trash2, History } from "lucide-react";
 import EventSessionManager from "@/components/event-attendance/EventSessionManager";
 import ParticipantRegistration from "@/components/event-attendance/ParticipantRegistration";
 import QRScanner from "@/components/event-attendance/QRScanner";
 import CheckinDashboard from "@/components/event-attendance/CheckinDashboard";
 import FormConfigEditor from "@/components/event-attendance/FormConfigEditor";
-import { useQuery } from "@tanstack/react-query";
+import DeletedEventsHistory from "@/components/event-attendance/DeletedEventsHistory";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function EventAttendance() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const [activeEventId, setActiveEventId] = useState(null);
   const [tab, setTab] = useState("scanner");
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
+
+  const { data: user } = useQuery({
+    queryKey: ["user"],
+    queryFn: () => base44.auth.me(),
+  });
 
   const { data: events = [] } = useQuery({
     queryKey: ["event-sessions"],
@@ -31,6 +41,32 @@ export default function EventAttendance() {
   const { data: formConfigs = [] } = useQuery({
     queryKey: ["event-form-config-all"],
     queryFn: () => base44.entities.EventFormConfig.list(),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (eventId) => {
+      const event = events.find(e => e.id === eventId);
+      const linkedEventName = mainEvents.find(e => e.id === event?.linked_event_id)?.name || event?.event_name || "Unknown";
+      
+      // Create audit log
+      await base44.entities.AuditLog.create({
+        action_type: "DELETE_EVENT",
+        target_id: eventId,
+        target_name: linkedEventName,
+        performed_by: user?.email || "Unknown",
+        performed_by_name: user?.full_name || "Unknown User",
+        performed_at: new Date().toISOString(),
+      });
+
+      // Delete the event
+      await base44.entities.EventSession.delete(eventId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["event-sessions"] });
+      qc.invalidateQueries({ queryKey: ["audit-logs-delete-event"] });
+      setActiveEventId(null);
+      toast({ description: "Event QR berhasil dihapus." });
+    },
   });
 
   const today = new Date();
@@ -98,7 +134,7 @@ export default function EventAttendance() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="scanner" className="text-xs sm:text-sm">
             <QrCode className="w-4 h-4 mr-1 sm:mr-1.5" /><span className="hidden sm:inline">QR </span>Scan
           </TabsTrigger>
@@ -113,6 +149,9 @@ export default function EventAttendance() {
           </TabsTrigger>
           <TabsTrigger value="settings" className="text-xs sm:text-sm">
             <Settings className="w-4 h-4 mr-1 sm:mr-1.5" />Event
+          </TabsTrigger>
+          <TabsTrigger value="deleted" className="text-xs sm:text-sm">
+            <History className="w-4 h-4 mr-1 sm:mr-1.5" /><span className="hidden sm:inline">Dihapus</span><span className="sm:hidden">Log</span>
           </TabsTrigger>
         </TabsList>
 
@@ -131,7 +170,29 @@ export default function EventAttendance() {
         <TabsContent value="settings" className="mt-4">
           <EventSessionManager />
         </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+        <TabsContent value="deleted" className="mt-4">
+          <DeletedEventsHistory />
+        </TabsContent>
+        </Tabs>
+
+        {/* Delete QR Event Button - shown only if active event is QR event */}
+        {activeEvent && activeEvent.linked_event_id && (
+        <div className="fixed bottom-20 md:bottom-4 right-4 md:right-auto left-4 md:left-auto">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              if (confirm(`Hapus event QR "${activeEvent.event_name}"? Aksi ini tidak bisa dibatalkan.`)) {
+                deleteMut.mutate(activeEventId);
+              }
+            }}
+            disabled={deleteMut.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Hapus Event QR
+          </Button>
+        </div>
+        )}
+        </div>
+        );
+        }
