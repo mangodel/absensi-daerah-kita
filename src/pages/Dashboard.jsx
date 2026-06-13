@@ -396,6 +396,15 @@ export default function Dashboard() {
 
       {(isSuperAdmin || isAdminDesa) && <DesaOverview members={members} />}
 
+      {/* Struktur Organisasi Daerah + Desa — untuk admin desa & kelompok */}
+      {(isAdminDesa || isAdminKelompok) && (
+        <OrganizationDisplay
+          level={isAdminKelompok ? "Kelompok" : "Desa"}
+          desa={userDesa}
+          kelompok={userKelompok}
+        />
+      )}
+
       {(isAdminDesa || isAdminKelompok) && <MonthlyAttendanceSummary />}
 
 
