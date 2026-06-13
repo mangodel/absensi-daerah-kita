@@ -349,22 +349,31 @@ export default function Dashboard() {
           <h3 className="font-semibold text-sm text-foreground mb-3">
             {isAdminKelompok ? "Kegiatan Minggu Depan" : "Kegiatan Mendatang"}
           </h3>
-          <div className="space-y-2">
-            {upcomingEvents.map(e => (
-              <div key={e.id} className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl">
-                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
-                  <CalendarCheck className="w-4 h-4" />
+          <div className="space-y-4">
+            {['Daerah', 'Desa', 'Kelompok'].map(level => {
+              const levelEvents = upcomingEvents.filter(e => e.level === level).slice(0, 7);
+              if (levelEvents.length === 0) return null;
+              return (
+                <div key={level} className="space-y-2">
+                  {level !== 'Daerah' && <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{level}</p>}
+                  {levelEvents.map(e => (
+                    <div key={e.id} className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl">
+                      <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
+                        <CalendarCheck className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{e.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(e.date), "dd MMM yyyy", { locale: id })}
+                          {e.location ? ` · ${e.location}` : ""}
+                        </p>
+                      </div>
+                      {e.desa && <Badge className="text-[10px] shrink-0 ml-auto">{e.desa}</Badge>}
+                    </div>
+                  ))}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{e.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(e.date), "dd MMM yyyy", { locale: id })}
-                    {e.location ? ` · ${e.location}` : ""}
-                  </p>
-                </div>
-                <Badge variant="outline" className="text-[10px] shrink-0 ml-auto">{e.level}</Badge>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

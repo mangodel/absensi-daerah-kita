@@ -171,11 +171,11 @@ export default function Events() {
     return new Date(a.date) - new Date(b.date);
   });
 
-  // Group by level for display
+  // Group by level for display and limit to 3-7 items per level
   const byLevel = {
-    Daerah: filtered.filter(e => e.level === "Daerah"),
-    Desa: filtered.filter(e => e.level === "Desa"),
-    Kelompok: filtered.filter(e => e.level === "Kelompok"),
+    Daerah: filtered.filter(e => e.level === "Daerah").slice(0, 7),
+    Desa: filtered.filter(e => e.level === "Desa").slice(0, 7),
+    Kelompok: filtered.filter(e => e.level === "Kelompok").slice(0, 7),
   };
 
   return (
@@ -293,7 +293,7 @@ export default function Events() {
               {byLevel.Daerah.length > 0 && (
                 <section>
                   <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-3 flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full bg-primary" /> Tingkat Daerah
+                    <span className="inline-block w-2 h-2 rounded-full bg-primary" /> Tingkat Daerah {filtered.filter(e => e.level === "Daerah").length > 7 && `(${filtered.filter(e => e.level === "Daerah").length})`}
                   </h2>
                   <EventList events={byLevel.Daerah} sessions={sessions} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
                 </section>
@@ -301,7 +301,7 @@ export default function Events() {
               {byLevel.Desa.length > 0 && (
                 <section>
                   <h2 className="text-xs font-bold uppercase tracking-widest text-accent mb-3 flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full bg-accent" /> Tingkat Desa
+                    <span className="inline-block w-2 h-2 rounded-full bg-accent" /> Tingkat Desa {filtered.filter(e => e.level === "Desa").length > 7 && `(${filtered.filter(e => e.level === "Desa").length})`}
                   </h2>
                   <EventList events={byLevel.Desa} sessions={sessions} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
                 </section>
@@ -309,7 +309,7 @@ export default function Events() {
               {byLevel.Kelompok.length > 0 && (
                 <section>
                   <h2 className="text-xs font-bold uppercase tracking-widest text-orange-500 mb-3 flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 rounded-full bg-orange-500" /> Tingkat Kelompok
+                    <span className="inline-block w-2 h-2 rounded-full bg-orange-500" /> Tingkat Kelompok {filtered.filter(e => e.level === "Kelompok").length > 7 && `(${filtered.filter(e => e.level === "Kelompok").length})`}
                   </h2>
                   <EventList events={byLevel.Kelompok} sessions={sessions} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
                 </section>
