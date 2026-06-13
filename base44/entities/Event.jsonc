@@ -87,11 +87,18 @@
         "usia_nikah",
         "ibu_ibu"
       ],
-      "description": "Filter peserta berbasis kriteria khusus"
+      "description": "Filter peserta berbasis kriteria khusus (atau JSON array untuk multi-select)"
     },
     "participant_filter_legacy": {
       "type": "string",
       "description": "Filter peserta legacy (all/muballigh/dapukan/smp/sma/muda_mudi)"
+    },
+    "participant_member_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Daftar ID member spesifik yang diundang (override filter jika terisi)"
     },
     "recurring_group": {
       "type": "string",

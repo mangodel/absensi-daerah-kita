@@ -11,6 +11,7 @@ import { EVENT_LEVEL_LIST, DAPUKAN_LIST, DAPUKAN_4S } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { Users, X, CheckSquare, RefreshCw, Upload, FileText, Loader2 } from "lucide-react";
 import { RECURRING_PATTERNS, RECURRING_DURATIONS, generateRecurringDates, dateToISO } from "@/lib/recurringUtils";
+import EventParticipantManager from "./EventParticipantManager";
 
 const empty = {
   name: "", level: "Kelompok", desa: "", kelompok: "",
@@ -19,6 +20,7 @@ const empty = {
   document_url: "", document_name: "",
   participant_dapukan: [],
   participant_filter: "",
+  participant_member_ids: [],
   recurring_pattern: "",
   recurring_duration: 3,
 };
@@ -104,7 +106,7 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
       if (pf.startsWith("[")) { try { presets = JSON.parse(pf); } catch {} }
       else if (pf) presets = [pf];
       setSelectedPresets(presets);
-      setForm({ ...empty, ...event, participant_dapukan: event.participant_dapukan || [], participant_filter: pf, recurring_pattern: "", recurring_duration: 3 });
+      setForm({ ...empty, ...event, participant_dapukan: event.participant_dapukan || [], participant_filter: pf, participant_member_ids: event.participant_member_ids || [], recurring_pattern: "", recurring_duration: 3 });
     } else if (prefilledDate) {
       const iso = `${prefilledDate.getFullYear()}-${String(prefilledDate.getMonth()+1).padStart(2,"0")}-${String(prefilledDate.getDate()).padStart(2,"0")}`;
       setForm({ ...empty, date: iso });
@@ -420,6 +422,18 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
               )}
             </div>
           </div>
+
+          {/* Daftar member spesifik (opsional, override filter) */}
+          <EventParticipantManager
+            members={members}
+            selectedIds={form.participant_member_ids || []}
+            onChange={ids => setForm(f => ({ ...f, participant_member_ids: ids }))}
+            eventDesa={form.desa}
+            eventKelompok={form.kelompok}
+            eventLevel={form.level}
+            desaList={desaList}
+            desaKelompokMap={desaKelompokMap}
+          />
 
           <div className="flex justify-end gap-3 pt-1">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>

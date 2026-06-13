@@ -133,6 +133,10 @@ export default function Attendance() {
       if (selectedEvent.desa && m.desa !== selectedEvent.desa) return false;
       if (selectedEvent.kelompok && m.kelompok !== selectedEvent.kelompok) return false;
     }
+    // If specific member IDs are set, use them as the definitive filter
+    const specificIds = selectedEvent.participant_member_ids;
+    if (specificIds && specificIds.length > 0) return specificIds.includes(m.id);
+
     // Filter by participant_filter (preset, supports single or JSON multi-select)
     const pf = selectedEvent.participant_filter;
     if (pf) {
