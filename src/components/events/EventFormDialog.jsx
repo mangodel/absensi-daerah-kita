@@ -25,37 +25,38 @@ const empty = {
 
 const currentYear = new Date().getFullYear();
 
-function applyParticipantFilter(pool, filter) {
+// Apply a single preset filter key to a member pool
+function applySinglePreset(pool, filter) {
   if (!filter) return pool;
   if (filter === "4s") return pool.filter(m => DAPUKAN_4S.includes(m.dapukan));
   if (filter === "mubaligh_both") return pool.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot");
   if (filter === "mubaligh_only") return pool.filter(m => m.muballigh_status === "Muballigh");
   if (filter === "mubalighot_only") return pool.filter(m => m.muballigh_status === "Muballighot");
-  if (filter === "generus_smp") return pool.filter(m => {
-    const age = currentYear - (m.birth_year || currentYear);
-    return age >= 12 && age <= 14;
-  });
-  if (filter === "generus_sma") return pool.filter(m => {
-    const age = currentYear - (m.birth_year || currentYear);
-    return age >= 15 && age <= 17;
-  });
-  if (filter === "dewasa") return pool.filter(m => {
-    const age = currentYear - (m.birth_year || currentYear);
-    return !m.birth_year || age >= 18;
-  });
-  if (filter === "usia_nikah") return pool.filter(m => {
-    const age = currentYear - (m.birth_year || currentYear);
-    return age >= 18 && (m.marital_status === "Belum Menikah" || !m.marital_status);
-  });
-  // Ibu-ibu: perempuan yang sudah menikah atau pernah menikah
+  if (filter === "generus_smp") return pool.filter(m => { const age = currentYear - (m.birth_year || currentYear); return age >= 12 && age <= 14; });
+  if (filter === "generus_sma") return pool.filter(m => { const age = currentYear - (m.birth_year || currentYear); return age >= 15 && age <= 17; });
+  if (filter === "dewasa") return pool.filter(m => { const age = currentYear - (m.birth_year || currentYear); return !m.birth_year || age >= 18; });
+  if (filter === "usia_nikah") return pool.filter(m => { const age = currentYear - (m.birth_year || currentYear); return age >= 18 && (m.marital_status === "Belum Menikah" || !m.marital_status); });
   if (filter === "ibu_ibu") {
     const statusNikah = ["menikah", "cerai", "janda/duda", "janda", "duda"];
-    return pool.filter(m =>
-      (m.gender === "Perempuan" || (m.gender || "").toLowerCase() === "perempuan") &&
-      statusNikah.includes((m.marital_status || "").toLowerCase().trim())
-    );
+    return pool.filter(m => (m.gender === "Perempuan" || (m.gender || "").toLowerCase() === "perempuan") && statusNikah.includes((m.marital_status || "").toLowerCase().trim()));
   }
   return pool;
+}
+
+// Apply multiple preset filters (union = OR logic)
+function applyParticipantFilter(pool, filter) {
+  if (!filter) return pool;
+  // Support JSON array of multiple preset keys (new multi-select format)
+  if (filter.startsWith("[")) {
+    try {
+      const keys = JSON.parse(filter);
+      if (!keys || keys.length === 0) return pool;
+      const sets = keys.map(k => applySinglePreset(pool, k));
+      const ids = new Set(sets.flatMap(s => s.map(m => m.id)));
+      return pool.filter(m => ids.has(m.id));
+    } catch { /* fall through */ }
+  }
+  return applySinglePreset(pool, filter);
 }
 
 function getEligibleCount(members, dapukanList, participantFilter, desa, kelompok, level) {
@@ -86,6 +87,7 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
 
   const [form, setForm] = useState(empty);
   const [uploading, setUploading] = useState(false);
+  const [selectedPresets, setSelectedPresets] = useState([]); // multi-select preset keys
   const isEdit = !!event;
 
   const { data: members = [] } = useQuery({
@@ -96,23 +98,41 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
 
   useEffect(() => {
     if (event) {
-      setForm({ ...empty, ...event, participant_dapukan: event.participant_dapukan || [], participant_filter: event.participant_filter || "", recurring_pattern: "", recurring_duration: 3 });
+      const pf = event.participant_filter || "";
+      // Parse existing presets back to array for UI state
+      let presets = [];
+      if (pf.startsWith("[")) { try { presets = JSON.parse(pf); } catch {} }
+      else if (pf) presets = [pf];
+      setSelectedPresets(presets);
+      setForm({ ...empty, ...event, participant_dapukan: event.participant_dapukan || [], participant_filter: pf, recurring_pattern: "", recurring_duration: 3 });
     } else if (prefilledDate) {
       const iso = `${prefilledDate.getFullYear()}-${String(prefilledDate.getMonth()+1).padStart(2,"0")}-${String(prefilledDate.getDate()).padStart(2,"0")}`;
       setForm({ ...empty, date: iso });
+      setSelectedPresets([]);
     } else {
       setForm(empty);
+      setSelectedPresets([]);
     }
   }, [event, prefilledDate, open]);
 
   const kelompokOptions = form.desa ? desaKelompokMap[form.desa] || [] : [];
   const eligibleCount = getEligibleCount(members, form.participant_dapukan, form.participant_filter, form.desa, form.kelompok, form.level);
+  // eligibleCount uses form.participant_filter (serialized) — already correct
 
   const toggleDapukan = (d) => {
     setForm(prev => {
       const cur = prev.participant_dapukan || [];
       if (cur.includes(d)) return { ...prev, participant_dapukan: cur.filter(x => x !== d) };
       return { ...prev, participant_dapukan: [...cur, d] };
+    });
+  };
+
+  const togglePreset = (key) => {
+    setSelectedPresets(prev => {
+      const next = prev.includes(key) ? prev.filter(x => x !== key) : [...prev, key];
+      const pf = next.length === 0 ? "" : next.length === 1 ? next[0] : JSON.stringify(next);
+      setForm(f => ({ ...f, participant_filter: pf, participant_dapukan: next.length > 0 ? [] : f.participant_dapukan }));
+      return next;
     });
   };
 
@@ -171,7 +191,7 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
   // All dapukan options except "Jamaah" / "Jamaah Biasa"
   const dapukanOptions = DAPUKAN_LIST.filter(d => d !== "Jamaah Biasa" && d !== "Jamaah");
   const selectedDapukan = form.participant_dapukan || [];
-  const allSelected = selectedDapukan.length === 0 && !form.participant_filter;
+  const allSelected = selectedPresets.length === 0 && selectedDapukan.length === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -339,30 +359,33 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
 
             {/* Reset */}
             <button type="button"
-              onClick={() => setForm(f => ({ ...f, participant_dapukan: [], participant_filter: "" }))}
+              onClick={() => { setSelectedPresets([]); setForm(f => ({ ...f, participant_dapukan: [], participant_filter: "" })); }}
               className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${allSelected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary"}`}>
               Semua Jamaah
             </button>
 
-            {/* Preset filter khusus */}
+            {/* Preset filter khusus — MULTI SELECT */}
             <div>
-              <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Filter Cepat</p>
+              <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">Filter Cepat (pilih beberapa)</p>
               <div className="flex flex-wrap gap-1.5">
                 {PRESET_FILTERS.map(pf => {
-                  const active = form.participant_filter === pf.value;
+                  const active = selectedPresets.includes(pf.value);
                   return (
                     <button key={pf.value} type="button"
-                      onClick={() => setForm(f => ({ ...f, participant_filter: active ? "" : pf.value, participant_dapukan: [] }))}
+                      onClick={() => togglePreset(pf.value)}
                       className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${active ? "bg-accent text-accent-foreground border-accent" : "border-border bg-card hover:bg-secondary"}`}>
                       {pf.label}
                     </button>
                   );
                 })}
               </div>
+              {selectedPresets.length > 1 && (
+                <p className="text-[10px] text-accent mt-1.5">✓ {selectedPresets.length} filter aktif — peserta gabungan (OR)</p>
+              )}
             </div>
 
             {/* Per-dapukan manual (only if no preset active) */}
-            {!form.participant_filter && (
+            {selectedPresets.length === 0 && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Pilih Dapukan Manual</p>
@@ -383,14 +406,16 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
               </div>
             )}
 
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
               <Badge variant="outline" className="text-[10px] bg-primary/5 border-primary/20 text-primary">
-                {eligibleCount} anggota eligible
+                {eligibleCount} jamaah eligible
               </Badge>
-              {form.participant_filter && (
-                <span className="text-accent font-medium">{PRESET_FILTERS.find(p => p.value === form.participant_filter)?.label}</span>
-              )}
-              {!form.participant_filter && selectedDapukan.length > 0 && (
+              {selectedPresets.map(p => (
+                <Badge key={p} className="text-[10px] bg-accent/10 text-accent border-accent/20">
+                  {PRESET_FILTERS.find(f => f.value === p)?.label || p}
+                </Badge>
+              ))}
+              {selectedPresets.length === 0 && selectedDapukan.length > 0 && (
                 <span>{selectedDapukan.length} dapukan dipilih</span>
               )}
             </div>

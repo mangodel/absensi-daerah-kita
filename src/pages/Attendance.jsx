@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectGroup, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MONTHS, VISA_STATUS_LIST, DAPUKAN_LIST } from "@/lib/constants";
+import { MONTHS, VISA_STATUS_LIST, DAPUKAN_LIST, DAPUKAN_4S } from "@/lib/constants";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
 import { CalendarCheck, Save, Loader2, CalendarDays, QrCode } from "lucide-react";
@@ -133,16 +133,33 @@ export default function Attendance() {
       if (selectedEvent.desa && m.desa !== selectedEvent.desa) return false;
       if (selectedEvent.kelompok && m.kelompok !== selectedEvent.kelompok) return false;
     }
-    // Filter by participant_filter (preset)
+    // Filter by participant_filter (preset, supports single or JSON multi-select)
     const pf = selectedEvent.participant_filter;
     if (pf) {
       const age = thisYear - (m.birth_year || thisYear);
-      if (pf === "mubaligh_both") return m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot";
-      if (pf === "mubaligh_only") return m.muballigh_status === "Muballigh";
-      if (pf === "mubalighot_only") return m.muballigh_status === "Muballighot";
-      if (pf === "generus_smp") return age >= 12 && age <= 14;
-      if (pf === "generus_sma") return age >= 15 && age <= 17;
-      if (pf === "usia_nikah") return age >= 18 && (m.marital_status === "Belum Menikah" || !m.marital_status);
+      const matchPreset = (key) => {
+        if (key === "4s") return DAPUKAN_4S.includes(m.dapukan);
+        if (key === "mubaligh_both") return m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot";
+        if (key === "mubaligh_only") return m.muballigh_status === "Muballigh";
+        if (key === "mubalighot_only") return m.muballigh_status === "Muballighot";
+        if (key === "generus_smp") return age >= 12 && age <= 14;
+        if (key === "generus_sma") return age >= 15 && age <= 17;
+        if (key === "dewasa") return age >= 18;
+        if (key === "usia_nikah") return age >= 18 && (m.marital_status === "Belum Menikah" || !m.marital_status);
+        if (key === "ibu_ibu") {
+          const s = (m.marital_status || "").toLowerCase().trim();
+          return (m.gender === "Perempuan") && ["menikah","cerai","janda/duda","janda","duda"].includes(s);
+        }
+        return true;
+      };
+      if (pf.startsWith("[")) {
+        try {
+          const keys = JSON.parse(pf);
+          if (keys.length > 0) return keys.some(k => matchPreset(k));
+        } catch {}
+      } else {
+        return matchPreset(pf);
+      }
     }
     // Filter by participant_dapukan if set
     const pDap = selectedEvent.participant_dapukan;
@@ -358,9 +375,15 @@ export default function Attendance() {
                   <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-primary/5 border border-primary/15 rounded-xl">
                     <span className="text-xs text-primary font-medium">Peserta terdaftar:</span>
                     {selectedEvent.participant_filter ? (
-                      <Badge className="text-[10px] bg-accent/10 text-accent border-accent/20">
-                        {{ mubaligh_both: "Semua Mubaligh & Mubalighot", mubaligh_only: "Mubaligh Saja", mubalighot_only: "Mubalighot Saja", generus_smp: "Generus SMP", generus_sma: "Generus SMA", usia_nikah: "Usia Nikah (Lajang 18+)" }[selectedEvent.participant_filter] || selectedEvent.participant_filter}
-                      </Badge>
+                      (() => {
+                        const pf = selectedEvent.participant_filter;
+                        const PRESET_LABELS = { "4s": "4S", mubaligh_both: "Semua Mubaligh & Mubalighot", mubaligh_only: "Mubaligh Saja", mubalighot_only: "Mubalighot Saja", generus_smp: "Generus SMP", generus_sma: "Generus SMA", dewasa: "Dewasa 18+", usia_nikah: "Usia Nikah (Lajang 18+)", ibu_ibu: "Ibu-ibu" };
+                        let keys = [];
+                        if (pf.startsWith("[")) { try { keys = JSON.parse(pf); } catch {} } else keys = [pf];
+                        return keys.map(k => (
+                          <Badge key={k} className="text-[10px] bg-accent/10 text-accent border-accent/20">{PRESET_LABELS[k] || k}</Badge>
+                        ));
+                      })()
                     ) : (
                       selectedEvent.participant_dapukan.map(d => (
                         <Badge key={d} className="text-[10px] bg-primary/10 text-primary border-primary/20">{d}</Badge>
