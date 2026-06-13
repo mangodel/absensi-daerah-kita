@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, CalendarDays, Link2, QrCode, Trash2 } from "lucide-react";
+import { Plus, Pencil, CalendarDays, Link2, QrCode, Trash2, RefreshCw } from "lucide-react";
 import EventQRCode from "@/components/event-attendance/EventQRCode";
 import { format, addDays, isWithinInterval, startOfWeek, endOfWeek } from "date-fns";
 import { id } from "date-fns/locale";
@@ -187,6 +187,28 @@ export default function EventSessionManager({ onSelectEvent }) {
               <Button variant="ghost" size="icon" onClick={() => handleOpen(ev)}>
                 <Pencil className="w-4 h-4" />
               </Button>
+              {ev.linked_event_id && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Sinkron ID Member"
+                  onClick={async () => {
+                    try {
+                      const res = await base44.functions.invoke('fixImportedParticipants', {
+                        event_id: ev.id,
+                      });
+                      if (res.data.success) {
+                        toast.success(`${res.data.updated} peserta diupdate`);
+                        qc.invalidateQueries({ queryKey: ["event-participants", ev.id] });
+                      }
+                    } catch (err) {
+                      toast.error('Gagal sinkron');
+                    }
+                  }}
+                >
+                  <RefreshCw className="w-4 h-4 text-primary" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
