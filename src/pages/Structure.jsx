@@ -336,32 +336,16 @@ export default function Structure() {
         </>
       )}
 
-      {/* Stat Cards Pengurus Daerah — tampilkan untuk admin kelompok yang tidak melihat DaerahSection */}
+      {/* Pengurus Daerah — tampilkan untuk admin kelompok (read-only, tanpa tombol edit) */}
       {isAdminKelompok && (
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Shield className="w-4 h-4 text-primary" /> Pengurus Daerah
-          </h2>
-          {daerahKategori.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {daerahKategori.flatMap(kat => kat.members).map(m => (
-                <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-primary/5 border-primary/20">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{m.full_name}</p>
-                    <p className="text-[10px] text-muted-foreground">{getDapukanLabel(m) || m.dapukan}</p>
-                  </div>
-                  {m.phone && (
-                    <a href={`tel:${m.phone}`} className="text-[10px] text-primary shrink-0 flex items-center gap-1 hover:underline">
-                      <Phone className="w-3 h-3" />{m.phone}
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">Belum ada pengurus daerah yang terdaftar.</p>
-          )}
-        </div>
+        <DaerahSection
+          daerahKategori={daerahKategori}
+          daerahMembers={daerahLeaders}
+          timConfigs={timConfigs.filter(t => t.level === "Daerah")}
+          isSuperAdmin={false}
+          editProps={{ isSuperAdmin: false }}
+          onManageTeam={() => {}}
+        />
       )}
 
       {/* Desa Level Tabs */}
@@ -391,26 +375,11 @@ export default function Structure() {
                   <Shield className="w-4 h-4 text-accent" /> Pengurus {desa}
                 </h3>
                 {desaKategori.length > 0 ? (
-                  isAdminKelompok ? (
-                    // Admin kelompok: tampilkan stat cards ringkasan
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {desaKategori.flatMap(kat => kat.members).map(m => (
-                        <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-accent/5 border-accent/20">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">{m.full_name}</p>
-                            <p className="text-[10px] text-muted-foreground">{getDapukanLabel(m) || m.dapukan}</p>
-                          </div>
-                          {m.phone && (
-                            <a href={`tel:${m.phone}`} className="text-[10px] text-accent shrink-0 flex items-center gap-1 hover:underline">
-                              <Phone className="w-3 h-3" />{m.phone}
-                            </a>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <KategoriSection kategoriList={desaKategori} {...editProps} level="Desa" />
-                  )
+                  <KategoriSection
+                    kategoriList={desaKategori}
+                    {...(isAdminKelompok ? { isSuperAdmin: false } : editProps)}
+                    level="Desa"
+                  />
                 ) : (
                   <p className="text-xs text-muted-foreground">Belum ada pengurus desa.</p>
                 )}
