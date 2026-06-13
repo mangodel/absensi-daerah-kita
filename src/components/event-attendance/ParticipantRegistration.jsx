@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Download, QrCode, CheckCircle, XCircle, Pencil, Users } from "lucide-react";
+import { Plus, Search, Download, QrCode, CheckCircle, XCircle, Pencil, Users, Trash2 } from "lucide-react";
 import QRCodeDisplay from "@/components/event-attendance/QRCodeDisplay";
 import MemberImport from "@/components/event-attendance/MemberImport";
+import ParticipantBulkManager from "@/components/event-attendance/ParticipantBulkManager";
 import { useToast } from "@/components/ui/use-toast";
 
 function generateParticipantId(existing) {
@@ -46,6 +47,11 @@ export default function ParticipantRegistration({ eventId }) {
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => base44.entities.EventParticipant.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["event-participants", eventId] }); setOpen(false); },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id) => base44.entities.EventParticipant.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["event-participants", eventId] }); toast({ description: "Peserta dihapus." }); },
   });
 
   const handleOpen = (p = null) => {
@@ -105,6 +111,7 @@ export default function ParticipantRegistration({ eventId }) {
 
         {/* ===== LIST TAB ===== */}
         <TabsContent value="list" className="space-y-3 mt-3">
+          <ParticipantBulkManager eventId={eventId} />
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
             <div className="flex gap-2 flex-1">
               <div className="relative flex-1">
@@ -115,9 +122,11 @@ export default function ParticipantRegistration({ eventId }) {
                 <Download className="w-4 h-4 mr-1" /> CSV
               </Button>
             </div>
-            <Button size="sm" onClick={() => handleOpen()}>
-              <Plus className="w-4 h-4 mr-1" /> Tambah Manual
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => handleOpen()}>
+                <Plus className="w-4 h-4 mr-1" /> Manual
+              </Button>
+            </div>
           </div>
 
           <div className="text-xs text-muted-foreground px-1">{participants.length} peserta terdaftar · {participants.filter(p => p.attendance_status === "Present").length} hadir</div>
@@ -157,9 +166,21 @@ export default function ParticipantRegistration({ eventId }) {
                           <QrCode className="w-4 h-4" />
                         </Button>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 flex gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpen(p)}>
                           <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => {
+                            if (confirm(`Hapus ${p.full_name} dari peserta?`)) {
+                              deleteMut.mutate(p.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </td>
                     </tr>
