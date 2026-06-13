@@ -259,7 +259,7 @@ export default function Attendance() {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <CalendarCheck className="w-6 h-6 text-primary" /> {pt.attendance || "Absensi"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{pt.attendance_subtitle || "Kelola kehadiran anggota per kegiatan"}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{pt.attendance_subtitle || "Kelola kehadiran jamaah per kegiatan"}</p>
         </div>
       </div>
 
@@ -366,7 +366,7 @@ export default function Attendance() {
                         <Badge key={d} className="text-[10px] bg-primary/10 text-primary border-primary/20">{d}</Badge>
                       ))
                     )}
-                    <span className="text-xs text-muted-foreground ml-1">({filteredMembers.length} anggota)</span>
+                    <span className="text-xs text-muted-foreground ml-1">({filteredMembers.length} jamaah)</span>
                   </div>
                 )}
               </div>

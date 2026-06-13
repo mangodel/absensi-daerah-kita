@@ -1,10 +1,10 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Monitor, MapPin } from "lucide-react";
+import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Monitor, MapPin, ClipboardList, Save, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import CameraScanner from "./CameraScanner";
@@ -17,7 +17,9 @@ export default function QRScanner({ eventId, eventName, formConfig }) {
   const [result, setResult] = useState(null);
   const [scannerStation, setScannerStation] = useState("Pintu Utama");
   const [volunteerName, setVolunteerName] = useState("");
-  const [mode, setMode] = useState("manual"); // "manual" | "camera" | "search"
+  const [mode, setMode] = useState("manual"); // "manual" | "camera" | "search" | "absen"
+  const [absenData, setAbsenData] = useState({}); // participantId -> status
+  const [savingAbsen, setSavingAbsen] = useState(false);
 
   const { data: participants = [] } = useQuery({
     queryKey: ["event-participants", eventId],
@@ -148,6 +150,9 @@ export default function QRScanner({ eventId, eventName, formConfig }) {
         <Button variant={mode === "search" ? "default" : "outline"} size="sm" onClick={() => { setMode("search"); setResult(null); }}>
           <Search className="w-4 h-4 mr-1" /> Cari Nama
         </Button>
+        <Button variant={mode === "absen" ? "default" : "outline"} size="sm" onClick={() => { setMode("absen"); setResult(null); }}>
+          <ClipboardList className="w-4 h-4 mr-1" /> Absen Manual
+        </Button>
         <Button variant="outline" size="sm" className="ml-auto" onClick={openDisplay}>
           <Monitor className="w-4 h-4 mr-1" /> Tampilan TV
         </Button>
@@ -252,6 +257,93 @@ export default function QRScanner({ eventId, eventName, formConfig }) {
           {search.length > 1 && filteredSearch.length === 0 && (
             <p className="text-center text-muted-foreground text-sm py-4">Peserta tidak ditemukan.</p>
           )}
+        </div>
+      )}
+
+      {/* Absen Manual Mode */}
+      {mode === "absen" && (
+        <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-primary" />
+              Absen Manual ({participants.length} peserta)
+            </h3>
+            <Button
+              size="sm"
+              disabled={Object.keys(absenData).length === 0 || savingAbsen}
+              onClick={async () => {
+                setSavingAbsen(true);
+                const entries = Object.entries(absenData);
+                const now = new Date();
+                for (const [pid, status] of entries) {
+                  const p = participants.find(x => x.id === pid);
+                  if (!p) continue;
+                  const alreadyCheckin = checkins.some(c => c.participant_db_id === pid);
+                  if (status === "Hadir" && !alreadyCheckin) {
+                    await base44.entities.EventCheckin.create({
+                      participant_id: p.participant_id,
+                      participant_db_id: p.id,
+                      participant_name: p.full_name,
+                      event_id: eventId,
+                      checkin_time: now.toISOString(),
+                      checkin_date: now.toISOString().split("T")[0],
+                      checkin_method: "Manual",
+                      scanner_station: scannerStation,
+                      volunteer_name: volunteerName,
+                    });
+                    await base44.entities.EventParticipant.update(p.id, { attendance_status: "Present" });
+                  } else if (status !== "Hadir") {
+                    await base44.entities.EventParticipant.update(p.id, { attendance_status: "Absent" });
+                  }
+                }
+                qc.invalidateQueries({ queryKey: ["event-checkins", eventId] });
+                qc.invalidateQueries({ queryKey: ["event-participants", eventId] });
+                setAbsenData({});
+                setSavingAbsen(false);
+              }}
+              className="gap-1"
+            >
+              {savingAbsen ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              Simpan ({Object.keys(absenData).length})
+            </Button>
+          </div>
+          <div className="space-y-1.5 max-h-96 overflow-y-auto">
+            {participants.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Belum ada peserta terdaftar.</p>
+            ) : (
+              participants.map((p, idx) => {
+                const alreadyCheckin = checkins.some(c => c.participant_db_id === p.id);
+                const currentStatus = absenData[p.id] || (alreadyCheckin ? "Hadir" : null);
+                const statusOptions = ["Hadir", "Alpa", "Izin"];
+                return (
+                  <div key={p.id} className="flex items-center gap-3 p-2.5 bg-secondary/20 rounded-lg">
+                    <span className="text-xs text-muted-foreground w-5 shrink-0">{idx + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{p.full_name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{p.participant_id}</p>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      {statusOptions.map(s => (
+                        <button
+                          key={s}
+                          onClick={() => setAbsenData(prev => ({ ...prev, [p.id]: s }))}
+                          className={`px-2 py-1 rounded text-xs font-medium border transition-colors ${
+                            currentStatus === s
+                              ? s === "Hadir" ? "bg-accent text-white border-accent"
+                              : s === "Alpa" ? "bg-destructive text-white border-destructive"
+                              : "bg-amber-500 text-white border-amber-500"
+                              : "bg-card border-border text-muted-foreground hover:border-primary/50"
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home, Megaphone, Plus, ArrowRightLeft, AlertCircle } from "lucide-react";
+import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home, Megaphone, Plus, ArrowRightLeft, AlertCircle, Plane } from "lucide-react";
 import StatCard from "@/components/dashboard/StatCard";
 import GenerusBreakdown from "@/components/dashboard/GenerusBreakdown";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
@@ -274,6 +274,15 @@ export default function Dashboard() {
          <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="primary" />
        </div>
 
+       {isSuperAdmin && (
+         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+           <StatCard title="Citizen AU/NZ" value={members.filter(m => m.visa_status === "Citizen" && m.status === "Aktif").length} icon={UserCheck} color="accent" />
+           <StatCard title="Permanent Resident" value={members.filter(m => m.visa_status === "PR" && m.status === "Aktif").length} icon={Users} color="primary" />
+           <StatCard title="WHV" value={members.filter(m => m.visa_status === "WHV" && m.status === "Aktif").length} icon={UserX} color="warning" />
+           <StatCard title="Student Visa" value={members.filter(m => m.visa_status === "Student" && m.status === "Aktif").length} icon={UserX} color="primary" />
+         </div>
+       )}
+
 
 
        <GenerusBreakdown members={members} />
@@ -310,7 +319,7 @@ export default function Dashboard() {
         <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
           <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
             <Users className="w-4 h-4 text-primary" />
-            {isAdminKelompok ? `Daftar Anggota — ${userKelompok}` : `Daftar Anggota per Kelompok — ${userDesa}`}
+            {isAdminKelompok ? `Daftar Jamaah — ${userKelompok}` : `Daftar Jamaah per Kelompok — ${userDesa}`}
           </h3>
           {isAdminKelompok && (
             <KelompokAttendanceDetail
@@ -401,7 +410,7 @@ export default function Dashboard() {
                   <ArrowRightLeft className="w-5 h-5 text-primary" />
                   <h3 className="font-semibold text-foreground">Pindah Kelompok</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">Kelola pemindahan anggota antar kelompok</p>
+                <p className="text-sm text-muted-foreground">Kelola pemindahan jamaah antar kelompok</p>
               </div>
             </div>
           </div>
