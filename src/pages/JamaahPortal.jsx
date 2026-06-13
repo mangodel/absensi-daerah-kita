@@ -25,6 +25,7 @@ import MemberCardPortal from "@/components/portal/MemberCardPortal";
 import EventQRScanner from "@/components/portal/EventQRScanner";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { toast } from "sonner";
+import { getDapukanTitle } from "@/lib/constants";
 import { Link } from "react-router-dom";
 
 const COUNTRY_CODES = [
@@ -55,7 +56,7 @@ const READONLY_FIELDS = [
   { key: "email", label: "Email" },
   { key: "desa", label: "Desa" },
   { key: "kelompok", label: "Kelompok" },
-  { key: "dapukan", label: "Dapukan" },
+  { key: "dapukan", label: "Jabatan", format: (val, member) => getDapukanTitle(val, member?.dapukan_level) },
   { key: "visa_status", label: "Status Visa" },
   { key: "employment", label: "Pekerjaan" },
 ];
@@ -342,8 +343,9 @@ export default function JamaahPortal() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {READONLY_FIELDS.map(f => {
-                    const val = f.key === "email" ? (myMember?.email || jamaahUser?.email) : myMember[f.key];
-                    if (!val) return null;
+                    const raw = f.key === "email" ? (myMember?.email || jamaahUser?.email) : myMember[f.key];
+                    if (!raw) return null;
+                    const val = f.format ? f.format(raw, myMember) : raw;
                     return (
                       <div key={f.key} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                         <span className="text-xs text-muted-foreground">{f.label}</span>
@@ -586,8 +588,9 @@ export default function JamaahPortal() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {READONLY_FIELDS.map(f => {
-                      const val = f.key === "email" ? (myMember?.email || jamaahUser?.email) : myMember[f.key];
-                      if (!val) return null;
+                      const raw = f.key === "email" ? (myMember?.email || jamaahUser?.email) : myMember[f.key];
+                      if (!raw) return null;
+                      const val = f.format ? f.format(raw, myMember) : raw;
                       return (
                         <div key={f.key} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
                           <span className="text-xs text-muted-foreground">{f.label}</span>

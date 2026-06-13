@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, CreditCard } from "lucide-react";
 import MemberCardDialog from "@/components/members/MemberCardDialog";
+import { getDapukanTitle } from "@/lib/constants";
 
 export default function MemberTable({ members, onEdit, onDelete }) {
   const currentYear = new Date().getFullYear();
@@ -77,11 +78,11 @@ export default function MemberTable({ members, onEdit, onDelete }) {
                 <TableCell className="text-sm text-muted-foreground">{member.desa}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{member.kelompok}</TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {member.dapukan && member.dapukan !== "Jamaah" ? (
-                    <Badge variant="secondary" className="text-xs">{member.dapukan}</Badge>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Jamaah</span>
-                  )}
+                 {member.dapukan && member.dapukan !== "Jamaah" ? (
+                   <Badge variant="secondary" className="text-xs">{getDapukanTitle(member.dapukan, member.dapukan_level)}</Badge>
+                 ) : (
+                   <span className="text-xs text-muted-foreground">Jamaah</span>
+                 )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
                   {member.phone

@@ -52,6 +52,32 @@ export const DAPUKAN_4S = [
   "Muballigh 4S", "Muballigh Daerah", "Muballigh Desa", "Muballigh Kelompok",
 ];
 
+/**
+ * Mengembalikan judul dapukan yang lengkap sesuai level.
+ * Contoh: getDapukanTitle("Ki", "Daerah") => "Ki Daerah"
+ *         getDapukanTitle("Wakil", "Desa") => "Wakil Ki Desa"
+ *         getDapukanTitle("Penerobos", "Kelompok") => "Penerobos Kelompok"
+ *         getDapukanTitle("Jamaah", "Kelompok") => "Jamaah"
+ */
+export function getDapukanTitle(dapukan, level) {
+  if (!dapukan) return "-";
+  const d = dapukan.trim();
+  const l = level || "";
+
+  // Dapukan yang perlu suffix level
+  const SUFFIX_LEVEL = {
+    "Ki": `Ki ${l}`,
+    "Wakil": `Wakil Ki ${l}`,
+    "KU": `KU ${l}`,
+    "PKU": `PKU ${l}`,
+    "Penerobos": `Penerobos ${l}`,
+    "Aghnia": `Aghnia ${l}`,
+  };
+
+  if (SUFFIX_LEVEL[d] && l) return SUFFIX_LEVEL[d];
+  return d;
+}
+
 export const EVENT_LEVEL_LIST = ["Daerah", "Desa", "Kelompok"];
 
 export const MONTHS = [

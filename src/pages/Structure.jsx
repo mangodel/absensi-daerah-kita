@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { useUserRole } from "@/lib/useUserRole";
 import { Building2, Users, Shield, Phone, Home, Filter, ChevronUp, ChevronDown } from "lucide-react";
+import { getDapukanTitle } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -96,24 +97,8 @@ function isPengurus(m) {
 // Helper: dapatkan label dapukan beserta tingkatannya
 function getDapukanLabel(member) {
   const d = member.dapukan || "";
-  const level = member.dapukan_level || "";
   if (!d || d === "Jamaah" || d === "Jamaah Biasa") return null;
-
-  // Mubaligh sudah mengandung level di nama dapukannya
-  if (d === "Muballigh 4S") return "Mubaligh 4S";
-  if (d === "Muballigh Daerah") return "Mubaligh Daerah";
-  if (d === "Muballigh Desa") return "Mubaligh Desa";
-  if (d === "Muballigh Kelompok") return "Mubaligh Kelompok";
-
-  // Wakil Ki: tampilkan "Wakil Ki Level"
-  if (d === "Wakil") {
-    if (level) return `Wakil Ki ${level}`;
-    return "Wakil Ki";
-  }
-
-  // Dapukan lain: tambahkan level jika ada
-  if (level) return `${d} ${level}`;
-  return d;
+  return getDapukanTitle(d, member.dapukan_level);
 }
 
 // Keimaman section: Ki kiri, Wakil numbered + sortable
