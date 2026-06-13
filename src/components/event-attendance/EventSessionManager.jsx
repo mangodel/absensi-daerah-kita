@@ -69,6 +69,23 @@ export default function EventSessionManager({ onSelectEvent }) {
     }).sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
   };
 
+  // Filter main events: only from today onwards, max 5-7, sorted by date
+  const getUpcomingLinkedEvents = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return mainEvents.filter(e => {
+      if (!e.date) return false;
+      const eventDate = new Date(e.date);
+      eventDate.setHours(0, 0, 0, 0);
+      
+      // Only show from today onwards
+      return eventDate >= today;
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 7); // Show max 7 events
+  };
+
   const createMut = useMutation({
     mutationFn: d => base44.entities.EventSession.create(d),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["event-sessions"] }); setOpen(false); },
@@ -189,10 +206,10 @@ export default function EventSessionManager({ onSelectEvent }) {
           )}
         </TabsContent>
 
-        {/* From main Events schedule */}
+        {/* From main Events schedule - filtered */}
         <TabsContent value="linked" className="space-y-3 mt-3">
           <p className="text-xs text-muted-foreground">Pilih kegiatan dari jadwal untuk langsung membuat sesi absensi.</p>
-          {mainEvents.map(ev => {
+          {getUpcomingLinkedEvents().map(ev => {
             const linked = sessions.find(s => s.linked_event_id === ev.id);
             return (
               <div key={ev.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
@@ -228,8 +245,8 @@ export default function EventSessionManager({ onSelectEvent }) {
               </div>
             );
           })}
-          {mainEvents.length === 0 && (
-            <p className="text-center text-muted-foreground text-sm py-8">Belum ada jadwal kegiatan. Tambahkan di menu Kegiatan.</p>
+          {getUpcomingLinkedEvents().length === 0 && (
+            <p className="text-center text-muted-foreground text-sm py-8">Tidak ada kegiatan mendatang. Tambahkan di menu Kegiatan.</p>
           )}
         </TabsContent>
       </Tabs>
