@@ -14,9 +14,13 @@ const STATUS_COLORS = {
 
 export default function AttendanceChart({ attendances, members, year, filterDesa, filterKelompok }) {
   const [chartType, setChartType] = useState("bar");
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
 
   const monthlyData = useMemo(() => {
-    return MONTHS.map((month, idx) => {
+    // Only show months up to current month for the selected year
+    const maxMonth = year === currentYear ? currentMonth : 12;
+    return MONTHS.slice(0, maxMonth).map((month, idx) => {
       const monthAtts = attendances.filter(a => {
         const matchMonth = a.month === idx + 1 && a.year === year;
         const matchDesa = !filterDesa || filterDesa === "all" || a.desa === filterDesa;
@@ -102,7 +106,7 @@ export default function AttendanceChart({ attendances, members, year, filterDesa
         {monthlyData.map(d => (
           <div key={d.month} className="text-center">
             <p className="text-[9px] text-muted-foreground">{d.month}</p>
-            <p className={`text-[10px] font-bold ${d.rate >= 75 ? "text-accent" : d.rate >= 50 ? "text-yellow-600" : d.total > 0 ? "text-destructive" : "text-muted-foreground"}`}>
+            <p className={`text-[10px] font-bold ${d.total > 0 ? (d.rate >= 75 ? "text-accent" : d.rate >= 50 ? "text-yellow-600" : "text-destructive") : "text-muted-foreground"}`}>
               {d.total > 0 ? `${d.rate}%` : "-"}
             </p>
           </div>

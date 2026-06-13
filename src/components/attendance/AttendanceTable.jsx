@@ -182,14 +182,19 @@ export default function AttendanceTable({ members, attendanceData, onStatusChang
     );
   }
 
-  // Sort: dewasa (22+) first, then generus
+  // Sort: Laki-laki dewasa → Perempuan dewasa → Laki-laki generus → Perempuan generus
   const sorted = [...members].sort((a, b) => {
     const ageA = a.birth_year ? currentYear - a.birth_year : 999;
     const ageB = b.birth_year ? currentYear - b.birth_year : 999;
     const isDewasaA = ageA >= 18;
     const isDewasaB = ageB >= 18;
+    const genderOrderA = a.gender === "Laki-laki" ? 0 : 1;
+    const genderOrderB = b.gender === "Laki-laki" ? 0 : 1;
+    // Dewasa before generus
     if (isDewasaA && !isDewasaB) return -1;
     if (!isDewasaA && isDewasaB) return 1;
+    // Within same age group: Laki-laki first
+    if (genderOrderA !== genderOrderB) return genderOrderA - genderOrderB;
     return 0;
   });
 

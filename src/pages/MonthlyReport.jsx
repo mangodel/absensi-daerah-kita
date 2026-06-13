@@ -407,7 +407,20 @@ export default function MonthlyReport() {
                     </thead>
                     <tbody>
                       {kelompokStats.map(({ kelompok }) => {
-                        const kMembers = members.filter(m => m.desa === desa && m.kelompok === kelompok && m.status === "Aktif");
+                        const thisYear = new Date().getFullYear();
+                        const kMembers = members
+                          .filter(m => m.desa === desa && m.kelompok === kelompok && m.status === "Aktif")
+                          .sort((a, b) => {
+                            const ageA = a.birth_year ? thisYear - a.birth_year : 999;
+                            const ageB = b.birth_year ? thisYear - b.birth_year : 999;
+                            const isDewasaA = ageA >= 18;
+                            const isDewasaB = ageB >= 18;
+                            const gA = a.gender === "Laki-laki" ? 0 : 1;
+                            const gB = b.gender === "Laki-laki" ? 0 : 1;
+                            if (isDewasaA && !isDewasaB) return -1;
+                            if (!isDewasaA && isDewasaB) return 1;
+                            return gA - gB;
+                          });
                         return kMembers.map(member => {
                           const memberAtts = allMonthAttendances.filter(a => a.member_id === member.id);
                           const hadir = memberAtts.filter(a => a.status === "Hadir").length;
