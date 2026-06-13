@@ -14,7 +14,7 @@ import { format, addDays, isWithinInterval, startOfWeek, endOfWeek } from "date-
 import { id } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
 
-const empty = { event_name: "", event_date: "", venue: "", description: "", status: "Draft", linked_event_id: "" };
+const empty = { event_name: "", event_date: "", event_time: "", venue: "", description: "", status: "Draft", linked_event_id: "" };
 
 const statusColor = {
   Draft: "bg-secondary text-muted-foreground",
@@ -304,12 +304,18 @@ export default function EventSessionManager({ onSelectEvent }) {
               <Label className="text-xs text-muted-foreground">Nama Event *</Label>
               <Input value={form.event_name} onChange={e => set("event_name", e.target.value)} placeholder="cth: Seminar Tahunan 2025" />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Tanggal *</Label>
-              <Input type="date" value={form.event_date} onChange={e => set("event_date", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Venue/Lokasi</Label>
+            <div className="grid grid-cols-2 gap-2">
+               <div className="space-y-1.5">
+                 <Label className="text-xs text-muted-foreground">Tanggal *</Label>
+                 <Input type="date" value={form.event_date} onChange={e => set("event_date", e.target.value)} />
+               </div>
+               <div className="space-y-1.5">
+                 <Label className="text-xs text-muted-foreground">Waktu</Label>
+                 <Input type="time" value={form.event_time || ""} onChange={e => set("event_time", e.target.value)} />
+               </div>
+             </div>
+             <div className="space-y-1.5">
+               <Label className="text-xs text-muted-foreground">Venue/Lokasi</Label>
               <Input value={form.venue} onChange={e => set("venue", e.target.value)} placeholder="Nama tempat..." />
             </div>
             <div className="space-y-1.5">

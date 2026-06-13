@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Printer, Smartphone, Loader2 } from "lucide-react";
+import { Download, Printer, Smartphone, Loader2, Apple } from "lucide-react";
 import MemberCardDialog from "@/components/members/MemberCardDialog";
 import html2canvas from "html2canvas";
 import { base44 } from "@/api/base44Client";
@@ -69,10 +69,9 @@ export default function MemberCardPortal({ member }) {
     pdf.save(`KartuMember-${member.member_id}.pdf`);
   };
 
-  const handleGenerateWallet = async () => {
+  const handleGenerateWallet = async (walletType) => {
     setGeneratingWallet(true);
     try {
-      // Generate member card as PNG first, then open in Google Wallet intent
       if (!cardRef.current) {
         toast.error('Kartu tidak ditemukan');
         return;
@@ -88,29 +87,27 @@ export default function MemberCardPortal({ member }) {
       ctx.drawImage(canvas, 0, 0, pngWidth, pngHeight);
       
       const pngDataUrl = resizedCanvas.toDataURL("image/png");
-      
-      // Try to open Google Wallet for Android
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isAndroid = userAgent.includes('android');
-      const isIOS = userAgent.includes('iphone') || userAgent.includes('ipad');
-      
-      if (isAndroid) {
-        // For Android, try Google Wallet deep link
-        const googleWalletUrl = `https://pay.google.com/gp/w/u/0/save/generic`;
-        window.open(googleWalletUrl, '_blank');
-        toast.success('Buka Google Wallet untuk menambahkan kartu member');
-      } else if (isIOS) {
-        // For iOS, try Apple Wallet deep link
-        const appleWalletUrl = `https://wallet.apple.com`;
-        window.open(appleWalletUrl, '_blank');
-        toast.success('Buka Apple Wallet untuk menambahkan kartu member');
-      } else {
-        // For desktop, show PNG download option
+
+      // Call backend to generate wallet pass
+      const res = await base44.functions.invoke('generateWalletPass', {
+        member_id: member.member_id,
+        member_name: member.full_name,
+        member_card_image: pngDataUrl,
+        wallet_type: walletType,
+      });
+
+      if (res.data?.passUrl) {
+        window.open(res.data.passUrl, '_blank');
+        toast.success(`Dibuka di ${walletType === 'apple' ? 'Apple Wallet' : 'Google Wallet'}`);
+      } else if (res.data?.downloadUrl) {
+        // Fallback: download option
         const a = document.createElement("a");
-        a.href = pngDataUrl;
-        a.download = `KartuMember-${member.member_id}.png`;
+        a.href = res.data.downloadUrl;
+        a.download = `KartuMember-${member.member_id}.pkpass`;
         a.click();
-        toast.success('Kartu member diunduh. Anda dapat menambahkannya ke wallet secara manual.');
+        toast.success('Wallet pass diunduh');
+      } else {
+        toast.error('Gagal membuat wallet pass');
       }
     } catch (error) {
       console.error('Wallet error:', error);
@@ -206,9 +203,13 @@ export default function MemberCardPortal({ member }) {
             <Button onClick={() => setShowPreview(true)} variant="outline" className="flex-1 gap-2 text-sm">
               <Printer className="w-4 h-4" /> Cetak
             </Button>
-            <Button onClick={handleGenerateWallet} disabled={generatingWallet} className="flex-1 gap-2 text-sm">
+            <Button onClick={() => handleGenerateWallet('google')} disabled={generatingWallet} className="flex-1 gap-2 text-sm">
               {generatingWallet ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
-              {generatingWallet ? "Membuat..." : "Wallet"}
+              {generatingWallet ? "Membuat..." : "Google"}
+            </Button>
+            <Button onClick={() => handleGenerateWallet('apple')} disabled={generatingWallet} variant="outline" className="flex-1 gap-2 text-sm">
+              {generatingWallet ? <Loader2 className="w-4 h-4 animate-spin" /> : <Apple className="w-4 h-4" />}
+              Apple
             </Button>
           </div>
 
