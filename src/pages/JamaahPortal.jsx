@@ -22,6 +22,7 @@ import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2,
 import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
 import BroadcastInbox from "@/components/portal/BroadcastInbox";
 import MemberCardPortal from "@/components/portal/MemberCardPortal";
+import EventQRScanner from "@/components/portal/EventQRScanner";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -656,50 +657,42 @@ export default function JamaahPortal() {
           </Tabs>
 
           {/* Navigasi ke halaman terpisah */}
-         <div className="grid grid-cols-2 gap-3 mt-6">
-           <Link to="/jamaah/survey">
-            <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20 hover:border-primary/50">
-              <CardContent className="p-5 flex flex-col items-center gap-3 text-center">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <ClipboardList className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">Survei</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Isi survei dari admin</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/jamaah/absensi">
-            <Card className="cursor-pointer hover:shadow-md transition-shadow border-accent/20 hover:border-accent/50">
-              <CardContent className="p-5 flex flex-col items-center gap-3 text-center">
-                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
-                  <QrCode className="w-6 h-6 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">Absensi QR</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Scan QR untuk hadir</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/jamaah/events" className="col-span-2">
-            <Card className="cursor-pointer hover:shadow-md transition-shadow border-orange-200 hover:border-orange-400 bg-orange-50/50">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-6 h-6 text-orange-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">Kalender Kegiatan</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Lihat jadwal kegiatan daerah, desa & kelompok. Scan QR event untuk absensi.</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
+          <div className="space-y-3 mt-6">
+           {/* Quick Event QR Scanner */}
+           {myMember && <EventQRScanner member={myMember} />}
+
+           {/* Navigation Cards */}
+           <div className="grid grid-cols-2 gap-3">
+             <Link to="/jamaah/survey">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20 hover:border-primary/50">
+                <CardContent className="p-5 flex flex-col items-center gap-3 text-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <ClipboardList className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Survei</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Isi survei dari admin</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+            <Link to="/jamaah/absensi">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow border-orange-200 hover:border-orange-400">
+                <CardContent className="p-5 flex flex-col items-center gap-3 text-center">
+                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                    <CalendarDays className="w-6 h-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Kalender</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Lihat jadwal kegiatan</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+           </div>
+          </div>
 
 
       </div>
