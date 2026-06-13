@@ -34,6 +34,19 @@
     "reason": {
       "type": "string",
       "description": "Alasan pindah"
+    },
+    "recorded_by": {
+      "type": "string",
+      "description": "Email admin yang mencatat perpindahan"
+    },
+    "recorded_by_name": {
+      "type": "string",
+      "description": "Nama admin yang mencatat perpindahan"
+    },
+    "source": {
+      "type": "string",
+      "default": "transfer_page",
+      "description": "Sumber pencatatan: transfer_page = dari halaman pindah kelompok"
     }
   },
   "required": [

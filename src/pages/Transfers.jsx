@@ -43,10 +43,13 @@ export default function Transfers() {
     queryFn: () => base44.entities.Member.list(),
   });
 
-  const { data: transfers = [] } = useQuery({
+  const { data: allTransfers = [] } = useQuery({
     queryKey: ["transfers"],
     queryFn: () => base44.entities.TransferHistory.list("-created_date"),
   });
+
+  // Only show records explicitly created from the transfer page (or legacy records without source)
+  const transfers = allTransfers.filter(t => !t.source || t.source === "transfer_page");
 
   // --- Transfer dialog: filter members ---
   const filterKelompokOptions = filterDesa !== "all" ? (config.desa_kelompok_map || {})[filterDesa] || [] : [];
@@ -131,6 +134,7 @@ export default function Transfers() {
   const handleTransfer = async () => {
     if (!selectedIds.length || !toDesa || !toKelompok) return;
     setSaving(true);
+    const me = await base44.auth.me();
     const selectedMembers = members.filter(m => selectedIds.includes(m.id));
     await Promise.all(selectedMembers.map(async (m) => {
       await base44.entities.TransferHistory.create({
@@ -142,6 +146,9 @@ export default function Transfers() {
         to_kelompok: toKelompok,
         transfer_date: new Date().toISOString().split("T")[0],
         reason,
+        recorded_by: me?.email || "",
+        recorded_by_name: me?.full_name || "",
+        source: "transfer_page",
       });
       await base44.entities.Member.update(m.id, { desa: toDesa, kelompok: toKelompok });
     }));
@@ -187,7 +194,7 @@ export default function Transfers() {
           <p className="text-sm text-muted-foreground mt-0.5">{pt.transfers_subtitle || "Tracking perpindahan anggota lintas desa/kelompok"}</p>
         </div>
         <Button onClick={() => { resetDialog(); setDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Pindahkan Anggota
+          <Plus className="w-4 h-4 mr-2" /> Pindahkan Jamaah
         </Button>
       </div>
 
@@ -222,6 +229,7 @@ export default function Transfers() {
                       <TableHead className="font-semibold text-xs">Ke</TableHead>
                       <TableHead className="font-semibold text-xs">Tanggal</TableHead>
                       <TableHead className="font-semibold text-xs">Alasan</TableHead>
+                      <TableHead className="font-semibold text-xs">Dicatat oleh</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -246,7 +254,8 @@ export default function Transfers() {
                         <TableCell className="text-xs text-muted-foreground">
                           {t.transfer_date ? format(new Date(t.transfer_date), "dd MMM yyyy") : "-"}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{t.reason || "-"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{t.reason || "-"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{t.recorded_by_name || t.recorded_by || "-"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -295,6 +304,7 @@ export default function Transfers() {
                       <TableHead className="font-semibold text-xs">Ke</TableHead>
                       <TableHead className="font-semibold text-xs">Tanggal</TableHead>
                       <TableHead className="font-semibold text-xs">Alasan</TableHead>
+                      <TableHead className="font-semibold text-xs">Dicatat oleh</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -319,7 +329,8 @@ export default function Transfers() {
                         <TableCell className="text-xs text-muted-foreground">
                           {t.transfer_date ? format(new Date(t.transfer_date), "dd MMM yyyy") : "-"}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{t.reason || "-"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">{t.reason || "-"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{t.recorded_by_name || t.recorded_by || "-"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -335,7 +346,7 @@ export default function Transfers() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" /> Pindahkan Anggota
+              <Users className="w-5 h-5 text-primary" /> Pindahkan Jamaah
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
