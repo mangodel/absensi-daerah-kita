@@ -303,32 +303,42 @@ export default function Attendance() {
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-primary" /> Pilih Kegiatan
             </h3>
-            <Select value={selectedEventId} onValueChange={v => { setSelectedEventId(v); setAttendanceData({}); }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih kegiatan bulan ini..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">— Pilih Kegiatan —</SelectItem>
-                {["Daerah", "Desa", "Kelompok"].map(level => {
-                  const grp = groupedEvents[level];
-                  if (!grp || grp.length === 0) return null;
-                  return (
-                    <SelectGroup key={level}>
-                      <SelectLabel className={`text-xs font-bold px-2 py-1 ${levelColors[level]}`}>
-                        ▸ {level}
-                      </SelectLabel>
-                      {grp.map(e => (
-                        <SelectItem key={e.id} value={e.id} className="pl-4">
-                          {e.name} — {e.date ? format(new Date(e.date), "dd MMM yyyy", { locale: id }) : ""}
-                          {e.desa ? ` (${e.desa}` : ""}
-                          {e.kelompok ? ` / ${e.kelompok})` : (e.desa ? ")" : "")}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2 flex-wrap">
+              <Select value={selectedEventId} onValueChange={v => { setSelectedEventId(v); setAttendanceData({}); }}>
+                <SelectTrigger className="flex-1 min-w-72">
+                  <SelectValue placeholder="Pilih kegiatan..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Pilih Kegiatan —</SelectItem>
+                  {["Daerah", "Desa", "Kelompok"].map(level => {
+                    const grp = groupedEvents[level];
+                    if (!grp || grp.length === 0) return null;
+                    return (
+                      <SelectGroup key={level}>
+                        <SelectLabel className={`text-xs font-bold px-2 py-1.5 uppercase tracking-wider rounded-md mx-1 mb-1 ${levelColors[level]}`}>
+                          {level} ({grp.length})
+                        </SelectLabel>
+                        {grp.map(e => {
+                          const displayLabel = `${e.name}`;
+                          const displayDate = e.date ? format(new Date(e.date), "dd MMM", { locale: id }) : "";
+                          const displayLocation = [];
+                          if (e.desa) displayLocation.push(e.desa);
+                          if (e.kelompok) displayLocation.push(e.kelompok);
+                          const locationStr = displayLocation.length > 0 ? ` (${displayLocation.join(" / ")})` : "";
+                          return (
+                            <SelectItem key={e.id} value={e.id} className="pl-6">
+                              <span className="font-medium">{displayLabel}</span>
+                              {displayDate && <span className="text-muted-foreground ml-2">· {displayDate}</span>}
+                              {locationStr && <span className="text-muted-foreground ml-1">{locationStr}</span>}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
 
             {selectedEvent && (
               <div className="space-y-2">

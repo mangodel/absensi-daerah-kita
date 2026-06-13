@@ -103,6 +103,22 @@ export default function ParticipantRegistration({ eventId }) {
 
   return (
     <div className="space-y-4">
+      {/* Stat Card: Registered Participants at Top */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-4 text-center">
+          <p className="text-3xl font-bold text-primary">{participants.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Peserta Terdaftar</p>
+        </div>
+        <div className="bg-gradient-to-br from-accent/5 to-accent/10 border border-accent/20 rounded-2xl p-4 text-center">
+          <p className="text-3xl font-bold text-accent">{participants.filter(p => p.attendance_status === "Present").length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Hadir</p>
+        </div>
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-2xl p-4 text-center col-span-2 sm:col-span-1">
+          <p className="text-3xl font-bold text-orange-600">{participants.filter(p => p.attendance_status === "Absent").length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Belum Hadir</p>
+        </div>
+      </div>
+
       <Tabs defaultValue="list">
         <TabsList className="grid grid-cols-2 w-full">
           <TabsTrigger value="list"><QrCode className="w-4 h-4 mr-1" /> Daftar Peserta</TabsTrigger>
