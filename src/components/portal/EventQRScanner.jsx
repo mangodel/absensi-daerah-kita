@@ -20,8 +20,6 @@ const LEVEL_COLORS = {
 export default function EventQRScanner({ member }) {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
-  const [scannedResult, setScannedResult] = useState(null);
-  const [confirmEvent, setConfirmEvent] = useState(null);
 
   // Fetch all events
   const { data: allEvents = [] } = useQuery({
@@ -56,14 +54,12 @@ export default function EventQRScanner({ member }) {
         year: new Date(event.date || today).getFullYear(),
         event_id: event.id,
         event_name: event.name,
-        event_level: event.level,
+        event_level: event.level || "Daerah",
       });
     },
     onSuccess: (_, event) => {
       queryClient.invalidateQueries({ queryKey: ["my-attendances"] });
-      toast.success(`Absensi "${event.name}" berhasil dicatat!`);
-      setConfirmEvent(null);
-      setScannedResult(null);
+      toast.success(`✓ Hadir: ${event.name}`);
       setIsOpen(false);
     },
     onError: (err) => {
@@ -77,7 +73,8 @@ export default function EventQRScanner({ member }) {
       const eventId = qrValue.replace("EVENT:", "");
       const event = allEvents.find(e => e.id === eventId);
       if (event) {
-        setScannedResult(event);
+        // Auto-record attendance langsung
+        checkinMutation.mutate(event);
       } else {
         toast.error("Event tidak ditemukan");
       }
@@ -89,10 +86,7 @@ export default function EventQRScanner({ member }) {
     }
   };
 
-  const handleConfirmCheckin = () => {
-    if (!scannedResult) return;
-    checkinMutation.mutate(scannedResult);
-  };
+
 
   return (
     <>
@@ -122,80 +116,30 @@ export default function EventQRScanner({ member }) {
             </DialogTitle>
           </DialogHeader>
 
-          {!scannedResult ? (
-            <div className="space-y-3">
-              <div className="bg-muted/50 rounded-xl overflow-hidden border border-border">
-                <ContinuousCameraScanner 
-                  onQRDetected={handleQRDetected}
-                  autoStop={true}
-                  minHeight={280}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Arahkan kamera ke QR Code event untuk absensi otomatis
-              </p>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsOpen(false)} 
-                className="w-full"
-              >
-                Batal
-              </Button>
+          <div className="space-y-3">
+            <div className="bg-muted/50 rounded-xl overflow-hidden border border-border">
+              <ContinuousCameraScanner 
+                onScan={handleQRDetected}
+              />
             </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Event Preview */}
-              <div className="bg-accent/10 rounded-xl p-4 text-center space-y-2 border border-accent/20">
-                <p className="font-semibold text-sm">{scannedResult.name}</p>
-                {scannedResult.date && (
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(scannedResult.date), "dd MMMM yyyy", { locale: id })}
-                  </p>
-                )}
-                {scannedResult.location && (
-                  <p className="text-xs text-muted-foreground">📍 {scannedResult.location}</p>
-                )}
-                <Badge variant="outline" className={`text-xs ${LEVEL_COLORS[scannedResult.level] || ""}`}>
-                  {scannedResult.level}
-                </Badge>
+            <p className="text-xs text-muted-foreground text-center">
+              Arahkan kamera ke QR Code event — Absensi akan tercatat otomatis
+            </p>
+            {checkinMutation.isPending && (
+              <div className="flex items-center justify-center gap-2 text-sm text-accent">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Mencatat absensi...
               </div>
-
-              {/* Confirmation Message */}
-              <p className="text-xs text-muted-foreground text-center">
-                Konfirmasi absensi Anda untuk event ini?
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setScannedResult(null);
-                  }} 
-                  className="flex-1"
-                >
-                  Batal
-                </Button>
-                <Button 
-                  onClick={handleConfirmCheckin} 
-                  disabled={checkinMutation.isPending} 
-                  className="flex-1 bg-accent hover:bg-accent/90"
-                >
-                  {checkinMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Mencatat...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Konfirmasi Hadir
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
+            <Button 
+              variant="outline" 
+              onClick={() => setIsOpen(false)} 
+              className="w-full"
+              disabled={checkinMutation.isPending}
+            >
+              Tutup
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
