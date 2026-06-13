@@ -4,7 +4,8 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CalendarDays, QrCode, CheckCircle, Loader2, Camera, X, MapPin } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, CalendarDays, QrCode, CheckCircle, Loader2, X, MapPin, Clock, BookOpen, Mic, StickyNote, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, isSameMonth, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isToday, isSameDay } from "date-fns";
 import { id } from "date-fns/locale";
@@ -225,6 +226,19 @@ export default function JamaahEvents() {
     </div>
   );
 
+  // Grouped upcoming events for Daftar tab
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const upcomingEvents = visibleEvents
+    .filter(ev => ev.date && new Date(ev.date) >= now)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  const byLevel = {
+    Daerah: upcomingEvents.filter(e => e.level === "Daerah"),
+    Desa: upcomingEvents.filter(e => e.level === "Desa"),
+    Kelompok: upcomingEvents.filter(e => e.level === "Kelompok"),
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border sticky top-0 z-30 px-4 py-3">
@@ -256,101 +270,162 @@ export default function JamaahEvents() {
           </div>
         )}
 
-        {/* Calendar navigation */}
-        <div className="flex items-center justify-between mb-3">
-          <Button variant="ghost" size="sm" onClick={prevMonth}>‹</Button>
-          <h2 className="text-sm font-semibold capitalize">
-            {format(currentMonth, "MMMM yyyy", { locale: id })}
-          </h2>
-          <Button variant="ghost" size="sm" onClick={nextMonth}>›</Button>
-        </div>
+        <Tabs defaultValue="daftar">
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="daftar" className="flex-1">Daftar</TabsTrigger>
+            <TabsTrigger value="kalender" className="flex-1">Kalender</TabsTrigger>
+          </TabsList>
 
-        {/* Calendar grid */}
-        <div className="bg-card rounded-xl border border-border overflow-hidden mb-4">
-          <div className="grid grid-cols-7 border-b border-border">
-            {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(d => (
-              <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-2">{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7">
-            {Array.from({ length: firstDayOffset }).map((_, i) => (
-              <div key={`empty-${i}`} className="aspect-square" />
-            ))}
-            {daysInMonth.map(day => {
-              const dayEvents = getEventsForDay(day);
-              const isSelected = selectedDay && isSameDay(day, selectedDay);
-              return (
-                <button
-                  key={day.toISOString()}
-                  onClick={() => setSelectedDay(isSameDay(day, selectedDay) ? null : day)}
-                  className={`aspect-square flex flex-col items-center justify-center gap-0.5 text-xs transition-colors
-                    ${isToday(day) ? "font-bold text-primary" : "text-foreground"}
-                    ${isSelected ? "bg-primary/10 rounded-lg" : "hover:bg-secondary/50"}
-                  `}
-                >
-                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs
-                    ${isToday(day) ? "bg-primary text-white font-bold" : ""}
-                    ${isSelected && !isToday(day) ? "bg-primary/20 text-primary" : ""}
-                  `}>{format(day, "d")}</span>
-                  {dayEvents.length > 0 && (
-                  <div className="flex gap-0.5">
-                    {dayEvents.slice(0, 3).map((ev, i) => (
-                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${LEVEL_DOT[ev.level] || "bg-gray-400"}`} />
-                    ))}
-                  </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-4 mb-4">
-          {[["Daerah", "bg-indigo-500"], ["Desa", "bg-emerald-500"], ["Kelompok", "bg-amber-500"]].map(([label, dot]) => (
-            <div key={label} className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${dot}`} />
-              <span className="text-[11px] text-muted-foreground">{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Selected day events */}
-        {selectedDay && (
-          <div className="mb-4">
-            <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-              {format(selectedDay, "EEEE, dd MMMM yyyy", { locale: id })}
-            </h3>
-            {selectedDayEvents.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-4">Tidak ada kegiatan</p>
+          {/* ===== TAB DAFTAR ===== */}
+          <TabsContent value="daftar" className="space-y-5">
+            {isLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            ) : upcomingEvents.length === 0 ? (
+              <div className="bg-card rounded-2xl border border-border p-10 text-center">
+                <CalendarDays className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-30" />
+                <p className="text-sm text-muted-foreground">Tidak ada kegiatan mendatang</p>
+              </div>
             ) : (
-              <div className="space-y-2">
-                {selectedDayEvents.map(ev => <EventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)}
+              <>
+                {byLevel.Daerah.length > 0 && (
+                  <section>
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-3 flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full bg-indigo-500" /> Tingkat Daerah
+                    </h2>
+                    <div className="space-y-3">
+                      {byLevel.Daerah.map(ev => (
+                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {byLevel.Desa.length > 0 && (
+                  <section>
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-3 flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" /> Tingkat Desa
+                    </h2>
+                    <div className="space-y-3">
+                      {byLevel.Desa.map(ev => (
+                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {byLevel.Kelompok.length > 0 && (
+                  <section>
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-amber-600 mb-3 flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full bg-amber-500" /> Tingkat Kelompok
+                    </h2>
+                    <div className="space-y-3">
+                      {byLevel.Kelompok.map(ev => (
+                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </>
+            )}
+          </TabsContent>
+
+          {/* ===== TAB KALENDER ===== */}
+          <TabsContent value="kalender">
+            {/* Calendar navigation */}
+            <div className="flex items-center justify-between mb-3">
+              <Button variant="ghost" size="sm" onClick={prevMonth}>‹</Button>
+              <h2 className="text-sm font-semibold capitalize">
+                {format(currentMonth, "MMMM yyyy", { locale: id })}
+              </h2>
+              <Button variant="ghost" size="sm" onClick={nextMonth}>›</Button>
+            </div>
+
+            {/* Calendar grid */}
+            <div className="bg-card rounded-xl border border-border overflow-hidden mb-4">
+              <div className="grid grid-cols-7 border-b border-border">
+                {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(d => (
+                  <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-2">{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7">
+                {Array.from({ length: firstDayOffset }).map((_, i) => (
+                  <div key={`empty-${i}`} className="aspect-square" />
+                ))}
+                {daysInMonth.map(day => {
+                  const dayEvents = getEventsForDay(day);
+                  const isSelected = selectedDay && isSameDay(day, selectedDay);
+                  return (
+                    <button
+                      key={day.toISOString()}
+                      onClick={() => setSelectedDay(isSameDay(day, selectedDay) ? null : day)}
+                      className={`aspect-square flex flex-col items-center justify-center gap-0.5 text-xs transition-colors
+                        ${isToday(day) ? "font-bold text-primary" : "text-foreground"}
+                        ${isSelected ? "bg-primary/10 rounded-lg" : "hover:bg-secondary/50"}
+                      `}
+                    >
+                      <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs
+                        ${isToday(day) ? "bg-primary text-white font-bold" : ""}
+                        ${isSelected && !isToday(day) ? "bg-primary/20 text-primary" : ""}
+                      `}>{format(day, "d")}</span>
+                      {dayEvents.length > 0 && (
+                        <div className="flex gap-0.5">
+                          {dayEvents.slice(0, 3).map((ev, i) => (
+                            <div key={i} className={`w-1.5 h-1.5 rounded-full ${LEVEL_DOT[ev.level] || "bg-gray-400"}`} />
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-4 mb-4">
+              {[["Daerah", "bg-indigo-500"], ["Desa", "bg-emerald-500"], ["Kelompok", "bg-amber-500"]].map(([label, dot]) => (
+                <div key={label} className="flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${dot}`} />
+                  <span className="text-[11px] text-muted-foreground">{label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Selected day events */}
+            {selectedDay && (
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                  {format(selectedDay, "EEEE, dd MMMM yyyy", { locale: id })}
+                </h3>
+                {selectedDayEvents.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">Tidak ada kegiatan</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedDayEvents.map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {/* Upcoming events this month */}
-        <div>
-          <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
-            Semua Kegiatan — {format(currentMonth, "MMMM yyyy", { locale: id })}
-          </h3>
-          {isLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-          ) : (
-            <div className="space-y-2">
-              {visibleEvents
-                .filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth))
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
-                .map(ev => <EventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)
-              }
-              {visibleEvents.filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth)).length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-6">Tidak ada kegiatan bulan ini</p>
+            {/* All events this month */}
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                Semua Kegiatan — {format(currentMonth, "MMMM yyyy", { locale: id })}
+              </h3>
+              {isLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+              ) : (
+                <div className="space-y-2">
+                  {visibleEvents
+                    .filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth))
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)
+                  }
+                  {visibleEvents.filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth)).length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-6">Tidak ada kegiatan bulan ini</p>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Checkin success modal */}
@@ -403,29 +478,48 @@ export default function JamaahEvents() {
   );
 }
 
-function EventCard({ event, myMember, myAttendances, onCheckin, isPending }) {
+function DetailEventCard({ event, myMember, myAttendances, onCheckin, isPending }) {
+  const [expanded, setExpanded] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
-  const isToday = event.date === today;
+  const isEventToday = event.date === today;
   const alreadyCheckedIn = myAttendances?.some(a => a.event_id === event.id && a.date === event.date);
+  const hasDetails = event.materi || event.pemateri || event.notes || event.description || event.document_url;
 
   return (
-    <div className={`border rounded-xl p-3 flex items-start gap-3 ${isToday ? "ring-2 ring-offset-1 ring-indigo-400" : ""} ${LEVEL_CARD_BORDER[event.level] || "border-border bg-card"}`}>
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${LEVEL_ICON_BG[event.level]}`}>
-        <CalendarDays className={`w-5 h-5 ${LEVEL_ICON_COLOR[event.level]}`} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-sm leading-tight">{event.name}</p>
-          <Badge variant="outline" className={`text-[10px] shrink-0 ${LEVEL_COLORS[event.level]}`}>{event.level}</Badge>
+    <div className={`border rounded-2xl overflow-hidden transition-shadow hover:shadow-md ${isEventToday ? "ring-2 ring-offset-1 ring-indigo-400" : ""} ${LEVEL_CARD_BORDER[event.level] || "border-border bg-card"}`}>
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${LEVEL_ICON_BG[event.level]}`}>
+            <CalendarDays className={`w-5 h-5 ${LEVEL_ICON_COLOR[event.level]}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-semibold text-sm leading-tight">{event.name}</p>
+              <Badge variant="outline" className={`text-[10px] shrink-0 ${LEVEL_COLORS[event.level]}`}>{event.level}</Badge>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <CalendarDays className="w-3 h-3" />
+                {event.date && format(new Date(event.date), "EEEE, dd MMM yyyy", { locale: id })}
+              </span>
+              {event.time && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> {event.time}
+                </span>
+              )}
+              {event.location && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> {event.location}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {event.date && format(new Date(event.date), "dd MMM yyyy", { locale: id })}
-          {event.location && ` · ${event.location}`}
-        </p>
-        {event.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{event.description}</p>}
-        <div className="mt-2 flex items-center gap-2 flex-wrap">
+
+        {/* Actions */}
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
           <EventReminderButton event={event} />
-          {isToday && myMember && (
+          {isEventToday && myMember && (
             alreadyCheckedIn ? (
               <div className="flex items-center gap-1.5 text-accent">
                 <CheckCircle className="w-3.5 h-3.5" />
@@ -437,8 +531,50 @@ function EventCard({ event, myMember, myAttendances, onCheckin, isPending }) {
               </Button>
             )
           )}
+          {hasDetails && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="ml-auto flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              {expanded ? <><ChevronUp className="w-3.5 h-3.5" /> Sembunyikan</> : <><ChevronDown className="w-3.5 h-3.5" /> Detail</>}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Expandable detail section */}
+      {expanded && hasDetails && (
+        <div className="border-t border-border/50 px-4 py-3 bg-white/60 dark:bg-slate-900/40 space-y-2">
+          {event.description && (
+            <p className="text-xs text-muted-foreground">{event.description}</p>
+          )}
+          {event.materi && (
+            <div className="flex items-start gap-2 text-xs">
+              <BookOpen className="w-3.5 h-3.5 text-primary/70 shrink-0 mt-0.5" />
+              <div><span className="font-semibold text-foreground">Materi: </span>{event.materi}</div>
+            </div>
+          )}
+          {event.pemateri && (
+            <div className="flex items-start gap-2 text-xs">
+              <Mic className="w-3.5 h-3.5 text-accent/80 shrink-0 mt-0.5" />
+              <div><span className="font-semibold text-foreground">Pemateri: </span>{event.pemateri}</div>
+            </div>
+          )}
+          {event.notes && (
+            <div className="flex items-start gap-2 text-xs">
+              <StickyNote className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />
+              <div><span className="font-semibold text-foreground">Catatan: </span>{event.notes}</div>
+            </div>
+          )}
+          {event.document_url && (
+            <a href={event.document_url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-primary hover:underline">
+              <FileText className="w-3.5 h-3.5" />
+              {event.document_name || "Lihat Dokumen"}
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }
