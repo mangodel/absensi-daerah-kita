@@ -85,18 +85,17 @@ export default function MemberImport({ eventId, participants, onImported }) {
       return num > max ? num : max;
     }, 0);
 
-    const records = toImport.map((m, i) => {
-      const num = maxNum + i + 1;
-      const pid = `AUNZ${String(num).padStart(6, "0")}`;
+    const records = toImport.map((m) => {
       return {
         full_name: m.full_name,
         phone: m.phone || "",
         organization: `${m.desa || ""} / ${m.kelompok || ""}`,
         event_id: eventId,
-        participant_id: pid,
-        qr_code_value: pid,
+        participant_id: m.member_id, // Use actual member_id from database
+        qr_code_value: m.member_id,
         registration_date: new Date().toISOString(),
         attendance_status: "Absent",
+        is_database_member: true, // Mark as database member
         notes: m.id, // store member db id for reference
       };
     });
