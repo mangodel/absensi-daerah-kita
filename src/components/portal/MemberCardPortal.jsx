@@ -34,8 +34,17 @@ export default function MemberCardPortal({ member }) {
   const handleDownloadPNG = async () => {
     if (!cardRef.current) return;
     const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, backgroundColor: null, logging: false });
+    // Calculate proper dimensions (ISO/IEC 7810 ID-1: 85.6mm x 53.98mm)
+    const pngWidth = canvas.width;
+    const pngHeight = (pngWidth * 53.98) / 85.6; // Maintain aspect ratio
+    const resizedCanvas = document.createElement("canvas");
+    resizedCanvas.width = pngWidth;
+    resizedCanvas.height = pngHeight;
+    const ctx = resizedCanvas.getContext("2d");
+    ctx.drawImage(canvas, 0, 0, pngWidth, pngHeight);
+    
     const a = document.createElement("a");
-    a.href = canvas.toDataURL("image/png");
+    a.href = resizedCanvas.toDataURL("image/png");
     a.download = `KartuMember-${member.member_id}.png`;
     a.click();
   };
@@ -45,34 +54,66 @@ export default function MemberCardPortal({ member }) {
     const { jsPDF } = await import("jspdf");
     const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, backgroundColor: null, logging: false });
     const imgData = canvas.toDataURL("image/png");
+    
+    // ISO/IEC 7810 ID-1 dimensions: 85.6mm x 53.98mm
+    const pdfWidth = 85.6;
+    const pdfHeight = 53.98;
+    
     const pdf = new jsPDF({
-      orientation: "portrait",
+      orientation: "landscape",
       unit: "mm",
-      format: [85.6, 53.98],
+      format: [pdfHeight, pdfWidth],
     });
-    pdf.addImage(imgData, "PNG", 0, 0, 85.6, 53.98);
+    
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
     pdf.save(`KartuMember-${member.member_id}.pdf`);
   };
 
   const handleGenerateWallet = async () => {
     setGeneratingWallet(true);
     try {
-      // Generate Apple Wallet PKPass
-      const result = await base44.functions.invoke('generateWalletPass', {
-        member_id: member.member_id,
-        full_name: member.full_name,
-        desa: member.desa,
-        kelompok: member.kelompok,
-        type: 'generic', // 'generic' untuk Apple Wallet
-      });
+      // Generate member card as PNG first, then open in Google Wallet intent
+      if (!cardRef.current) {
+        toast.error('Kartu tidak ditemukan');
+        return;
+      }
 
-      if (result.data?.wallet_url) {
-        window.open(result.data.wallet_url, '_blank');
-        toast.success('Wallet pass dibuat! File akan diunduh.');
+      const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, backgroundColor: null, logging: false });
+      const pngWidth = canvas.width;
+      const pngHeight = (pngWidth * 53.98) / 85.6;
+      const resizedCanvas = document.createElement("canvas");
+      resizedCanvas.width = pngWidth;
+      resizedCanvas.height = pngHeight;
+      const ctx = resizedCanvas.getContext("2d");
+      ctx.drawImage(canvas, 0, 0, pngWidth, pngHeight);
+      
+      const pngDataUrl = resizedCanvas.toDataURL("image/png");
+      
+      // Try to open Google Wallet for Android
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isAndroid = userAgent.includes('android');
+      const isIOS = userAgent.includes('iphone') || userAgent.includes('ipad');
+      
+      if (isAndroid) {
+        // For Android, try Google Wallet deep link
+        const googleWalletUrl = `https://pay.google.com/gp/w/u/0/save/generic`;
+        window.open(googleWalletUrl, '_blank');
+        toast.success('Buka Google Wallet untuk menambahkan kartu member');
+      } else if (isIOS) {
+        // For iOS, try Apple Wallet deep link
+        const appleWalletUrl = `https://wallet.apple.com`;
+        window.open(appleWalletUrl, '_blank');
+        toast.success('Buka Apple Wallet untuk menambahkan kartu member');
       } else {
-        toast.error('Gagal membuat wallet pass');
+        // For desktop, show PNG download option
+        const a = document.createElement("a");
+        a.href = pngDataUrl;
+        a.download = `KartuMember-${member.member_id}.png`;
+        a.click();
+        toast.success('Kartu member diunduh. Anda dapat menambahkannya ke wallet secara manual.');
       }
     } catch (error) {
+      console.error('Wallet error:', error);
       toast.error('Gagal membuat wallet pass');
     } finally {
       setGeneratingWallet(false);

@@ -14,11 +14,21 @@ export default function ContinuousCameraScanner({ onScan, onError }) {
   const startCamera = useCallback(async () => {
     try {
       setError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
+      const constraints = {
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 },
+          focusMode: 'continuous',
+        },
+        audio: false
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Ensure video plays
+        videoRef.current.play().catch(() => {});
         setIsScanning(true);
       }
     } catch (err) {
@@ -50,8 +60,21 @@ export default function ContinuousCameraScanner({ onScan, onError }) {
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0);
 
+        // Try multiple regions for better QR detection
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        let code = jsQR(imageData.data, imageData.width, imageData.height);
+
+        // If not found in center, try the entire frame with adjusted sensitivity
+        if (!code && imageData.data.length > 0) {
+          // Enhance contrast for better detection
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+            const enhanced = gray > 128 ? 255 : 0;
+            data[i] = data[i + 1] = data[i + 2] = enhanced;
+          }
+          code = jsQR(data, imageData.width, imageData.height);
+        }
 
         if (code && code.data !== lastScannedValue) {
           setLastScannedValue(code.data);
@@ -90,6 +113,7 @@ export default function ContinuousCameraScanner({ onScan, onError }) {
           ref={videoRef}
           autoPlay
           playsInline
+          muted
           className="w-full h-full object-cover"
         />
         <canvas ref={canvasRef} className="hidden" />
