@@ -183,10 +183,31 @@ export default function Dashboard() {
   const urgentReminders = reminders.filter(r =>
     r.status === "Aktif" && r.due_date && (isPast(new Date(r.due_date)) || isToday(new Date(r.due_date)))
   );
-  const upcomingEvents = events
-    .filter(e => e.date && !isPast(new Date(e.date + "T23:59:59")))
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .slice(0, 3);
+
+  // For Kelompok Admin: Show 3-5 upcoming events within 1-2 weeks window, at top of dashboard
+  const upcomingEvents = useMemo(() => {
+    if (!isAdminKelompok) {
+      return events
+        .filter(e => e.date && !isPast(new Date(e.date + "T23:59:59")))
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 3);
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const oneWeekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const twoWeeksLater = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+    
+    return filterEvents(events)
+      .filter(e => {
+        if (!e.date) return false;
+        const eventDate = new Date(e.date);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate >= oneWeekLater && eventDate <= twoWeeksLater;
+      })
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(0, 5);
+  }, [events, filterEvents, isAdminKelompok]);
 
   const scopeLabel = isAdminKelompok && userKelompok
     ? userKelompok
@@ -257,8 +278,35 @@ export default function Dashboard() {
 
        <GenerusBreakdown members={members} />
 
-      {/* Daftar anggota bernomor urut: Dewasa (18+) dulu lalu Generus — admin desa & kelompok */}
-      {(isAdminDesa || isAdminKelompok) && (
+       {/* For Kelompok Admin: Show upcoming events FIRST at the top */}
+       {isAdminKelompok && upcomingEvents.length > 0 && (
+        <div className="bg-card border border-accent/30 rounded-2xl p-5">
+          <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
+            <CalendarCheck className="w-4 h-4 text-accent" />
+            Kegiatan Minggu Depan
+          </h3>
+          <div className="space-y-2">
+            {upcomingEvents.map(e => (
+              <div key={e.id} className="flex items-center gap-3 p-3 bg-accent/5 rounded-xl border border-accent/10">
+                <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center text-accent shrink-0">
+                  <CalendarCheck className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{e.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(e.date), "dd MMM yyyy", { locale: id })}
+                    {e.location ? ` · ${e.location}` : ""}
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-[10px] shrink-0">{e.level}</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+       )}
+
+       {/* Daftar anggota bernomor urut: Dewasa (18+) dulu lalu Generus — admin desa & kelompok */}
+       {(isAdminDesa || isAdminKelompok) && (
         <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
           <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
             <Users className="w-4 h-4 text-primary" />
@@ -298,7 +346,9 @@ export default function Dashboard() {
 
       {upcomingEvents.length > 0 && (
         <div className="bg-card border border-border rounded-2xl p-5">
-          <h3 className="font-semibold text-sm text-foreground mb-3">Kegiatan Mendatang</h3>
+          <h3 className="font-semibold text-sm text-foreground mb-3">
+            {isAdminKelompok ? "Kegiatan Minggu Depan" : "Kegiatan Mendatang"}
+          </h3>
           <div className="space-y-2">
             {upcomingEvents.map(e => (
               <div key={e.id} className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl">

@@ -18,6 +18,8 @@ import QREventTab from "@/components/attendance/QREventTab";
 import PullToRefresh from "@/components/PullToRefresh";
 import { MobileSelect } from "@/components/ui/mobile-select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import ContinuousCameraScanner from "@/components/shared/ContinuousCameraScanner";
+import { toast } from "sonner";
 
 const levelColors = {
   "Daerah": "bg-primary/10 text-primary border-primary/20",
@@ -41,6 +43,7 @@ export default function Attendance() {
   const [saving, setSaving] = useState(false);
   const [viewYear, setViewYear] = useState(String(currentYear));
   const [viewMonth, setViewMonth] = useState(String(currentMonth));
+  const [showQrScanner, setShowQrScanner] = useState(false);
 
   const { config } = useAppConfig();
   const pt = config.page_titles || {};
@@ -228,6 +231,24 @@ export default function Attendance() {
     saveMutation.mutate(records);
   };
 
+  const handleQrScan = (qrValue) => {
+    if (!selectedEvent) {
+      toast.error("Pilih kegiatan terlebih dahulu");
+      return;
+    }
+
+    // Try to find member by member_id or participant_id
+    const member = filteredMembers.find(m => m.member_id === qrValue || m.id === qrValue);
+    if (!member) {
+      toast.error(`Member tidak ditemukan: ${qrValue}`);
+      return;
+    }
+
+    // Auto-record as "Hadir"
+    handleStatusChange(member.id, "Hadir");
+    toast.success(`✓ ${member.full_name} - Hadir`);
+  };
+
   const filledCount = Object.keys(attendanceData).length;
   const isSaving = saveMutation.isPending;
 
@@ -251,6 +272,32 @@ export default function Attendance() {
         </TabsList>
 
         <TabsContent value="input" className="space-y-4 mt-4">
+          {/* QR Scanner Panel */}
+          {selectedEventId !== "none" && selectedEvent && (
+            <div className="bg-accent/5 border border-accent/20 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <QrCode className="w-4 h-4 text-accent" />
+                  <h3 className="text-sm font-semibold text-foreground">Scan QR Code Jamaah</h3>
+                </div>
+                <Button
+                  size="sm"
+                  variant={showQrScanner ? "default" : "outline"}
+                  onClick={() => setShowQrScanner(!showQrScanner)}
+                  className="text-xs"
+                >
+                  {showQrScanner ? "Sembunyikan" : "Buka"} Scanner
+                </Button>
+              </div>
+              {showQrScanner && (
+                <ContinuousCameraScanner
+                  onScan={handleQrScan}
+                  onError={(err) => toast.error(err)}
+                />
+              )}
+            </div>
+          )}
+
           {/* Event Selector */}
           <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
