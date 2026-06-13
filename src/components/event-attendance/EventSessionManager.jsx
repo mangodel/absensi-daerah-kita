@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, CalendarDays, Link2, QrCode } from "lucide-react";
+import { Plus, Pencil, CalendarDays, Link2, QrCode, Trash2 } from "lucide-react";
 import EventQRCode from "@/components/event-attendance/EventQRCode";
-import { format } from "date-fns";
+import { format, addDays, isWithinInterval, startOfWeek, endOfWeek } from "date-fns";
 import { id } from "date-fns/locale";
+import { useToast } from "@/components/ui/use-toast";
 
 const empty = { event_name: "", event_date: "", venue: "", description: "", status: "Draft", linked_event_id: "" };
 
@@ -23,10 +24,16 @@ const statusColor = {
 
 export default function EventSessionManager({ onSelectEvent }) {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
   const [qrEvent, setQrEvent] = useState(null);
+
+  const { data: user } = useQuery({
+    queryKey: ["user"],
+    queryFn: () => base44.auth.me(),
+  });
 
   const { data: sessions = [] } = useQuery({
     queryKey: ["event-sessions"],
@@ -39,6 +46,29 @@ export default function EventSessionManager({ onSelectEvent }) {
     queryFn: () => base44.entities.Event.list("-date"),
   });
 
+  // Filter events: only this week + next week, exclude recurring
+  const getFilteredSessions = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+    const twoWeeksEnd = endOfWeek(addDays(today, 14), { weekStartsOn: 1 });
+
+    return sessions.filter(s => {
+      if (!s.event_date) return false;
+      const eventDate = new Date(s.event_date);
+      eventDate.setHours(0, 0, 0, 0);
+      
+      // Check if within this week + next week
+      const isUpcoming = isWithinInterval(eventDate, { start: weekStart, end: twoWeeksEnd });
+      
+      // Check if recurring (via linked_event_id)
+      const linkedEvent = mainEvents.find(e => e.id === s.linked_event_id);
+      const isRecurring = linkedEvent?.recurring_pattern && linkedEvent.recurring_pattern !== "";
+      
+      return isUpcoming && !isRecurring;
+    }).sort((a, b) => new Date(a.event_date) - new Date(b.event_date));
+  };
+
   const createMut = useMutation({
     mutationFn: d => base44.entities.EventSession.create(d),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["event-sessions"] }); setOpen(false); },
@@ -46,6 +76,30 @@ export default function EventSessionManager({ onSelectEvent }) {
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => base44.entities.EventSession.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["event-sessions"] }); setOpen(false); },
+  });
+  const deleteMut = useMutation({
+    mutationFn: async (eventId) => {
+      const event = sessions.find(e => e.id === eventId);
+      const linkedEventName = mainEvents.find(e => e.id === event?.linked_event_id)?.name || event?.event_name || "Unknown";
+      
+      // Create audit log
+      await base44.entities.AuditLog.create({
+        action_type: "DELETE_EVENT",
+        target_id: eventId,
+        target_name: linkedEventName,
+        performed_by: user?.email || "Unknown",
+        performed_by_name: user?.full_name || "Unknown User",
+        performed_at: new Date().toISOString(),
+      });
+
+      // Delete the event
+      await base44.entities.EventSession.delete(eventId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["event-sessions"] });
+      qc.invalidateQueries({ queryKey: ["audit-logs-delete-event"] });
+      toast({ description: "Event berhasil dihapus." });
+    },
   });
 
   const handleOpen = (ev = null) => {
@@ -90,10 +144,10 @@ export default function EventSessionManager({ onSelectEvent }) {
           <TabsTrigger value="linked" className="text-xs">Dari Jadwal Kegiatan</TabsTrigger>
         </TabsList>
 
-        {/* All sessions */}
+        {/* All sessions - filtered for this week + next week */}
         <TabsContent value="sessions" className="space-y-3 mt-3">
-          {sessions.map(ev => (
-            <div key={ev.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+          {getFilteredSessions().map(ev => (
+            <div key={ev.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
                 <CalendarDays className="w-5 h-5 text-primary" />
               </div>
@@ -116,10 +170,22 @@ export default function EventSessionManager({ onSelectEvent }) {
               <Button variant="ghost" size="icon" onClick={() => handleOpen(ev)}>
                 <Pencil className="w-4 h-4" />
               </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive"
+                onClick={() => {
+                  if (confirm(`Hapus "${ev.event_name}"? Aksi ini tidak bisa dibatalkan.`)) {
+                    deleteMut.mutate(ev.id);
+                  }
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           ))}
-          {sessions.length === 0 && (
-            <p className="text-center text-muted-foreground text-sm py-8">Belum ada event. Buat event baru atau pilih dari Jadwal Kegiatan.</p>
+          {getFilteredSessions().length === 0 && (
+            <p className="text-center text-muted-foreground text-sm py-8">Tidak ada event minggu ini & minggu depan. Buat event baru atau pilih dari Jadwal Kegiatan.</p>
           )}
         </TabsContent>
 
