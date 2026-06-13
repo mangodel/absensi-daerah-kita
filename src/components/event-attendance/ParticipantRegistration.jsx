@@ -32,6 +32,11 @@ export default function ParticipantRegistration({ eventId }) {
   const [search, setSearch] = useState("");
   const [qrView, setQrView] = useState(null);
 
+  const { data: members = [] } = useQuery({
+    queryKey: ["members"],
+    queryFn: () => base44.entities.Member.list(),
+  });
+
   const { data: participants = [] } = useQuery({
     queryKey: ["event-participants", eventId],
     queryFn: () => eventId
@@ -64,7 +69,12 @@ export default function ParticipantRegistration({ eventId }) {
     if (editing) {
       updateMut.mutate({ id: editing.id, data: form });
     } else {
-      const pid = generateParticipantId(participants);
+      // Check if participant exists in Member database
+      const matchedMember = members.find(m => 
+        m.full_name?.toLowerCase() === form.full_name.toLowerCase()
+      );
+      
+      const pid = matchedMember ? matchedMember.member_id : generateParticipantId(participants);
       createMut.mutate({
         ...form,
         event_id: eventId,
@@ -72,6 +82,7 @@ export default function ParticipantRegistration({ eventId }) {
         qr_code_value: pid,
         registration_date: new Date().toISOString(),
         attendance_status: "Absent",
+        is_database_member: !!matchedMember,
       });
     }
   };
@@ -155,6 +166,7 @@ export default function ParticipantRegistration({ eventId }) {
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">ID</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">Nama</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">Organisasi/Kelompok</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Tipe</th>
                     <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">Status</th>
                     <th className="px-4 py-2.5 text-center text-xs font-semibold text-muted-foreground">QR</th>
                     <th className="px-4 py-2.5"></th>
@@ -166,6 +178,17 @@ export default function ParticipantRegistration({ eventId }) {
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{p.participant_id}</td>
                       <td className="px-4 py-3 font-medium text-sm">{p.full_name}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">{p.organization || "-"}</td>
+                      <td className="px-4 py-3 text-center">
+                        {p.is_database_member ? (
+                          <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
+                            Jamaah
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs bg-secondary text-muted-foreground px-2 py-1 rounded-full font-medium">
+                            Eksternal
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-center">
                         {p.attendance_status === "Present" ? (
                           <span className="inline-flex items-center gap-1 text-xs text-accent font-medium">
@@ -202,7 +225,7 @@ export default function ParticipantRegistration({ eventId }) {
                     </tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground text-sm">Belum ada peserta terdaftar.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-sm">Belum ada peserta terdaftar.</td></tr>
                   )}
                 </tbody>
               </table>
