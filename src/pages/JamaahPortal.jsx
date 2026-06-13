@@ -677,19 +677,19 @@ export default function JamaahPortal() {
                 </CardContent>
               </Card>
             </Link>
-            <Link to="/jamaah/absensi">
-              <Card className="cursor-pointer hover:shadow-md transition-shadow border-orange-200 hover:border-orange-400">
-                <CardContent className="p-5 flex flex-col items-center gap-3 text-center">
-                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                    <CalendarDays className="w-6 h-6 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">Kalender</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Lihat jadwal kegiatan</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </CardContent>
-              </Card>
+            <Link to="/jamaah/events">
+             <Card className="cursor-pointer hover:shadow-md transition-shadow border-orange-200 hover:border-orange-400">
+               <CardContent className="p-5 flex flex-col items-center gap-3 text-center">
+                 <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                   <CalendarDays className="w-6 h-6 text-orange-600" />
+                 </div>
+                 <div>
+                   <p className="text-sm font-semibold">Kalender</p>
+                   <p className="text-[11px] text-muted-foreground mt-0.5">Lihat jadwal kegiatan</p>
+                 </div>
+                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
+               </CardContent>
+             </Card>
             </Link>
            </div>
           </div>
