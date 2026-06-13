@@ -328,6 +328,30 @@ export default function Structure() {
         </>
       )}
 
+      {/* Stat Cards Pengurus Daerah — tampilkan untuk admin kelompok yang tidak melihat DaerahSection */}
+      {isAdminKelompok && daerahKategori.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Shield className="w-4 h-4 text-primary" /> Pengurus Daerah
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {daerahKategori.flatMap(kat => kat.members).map(m => (
+              <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-primary/5 border-primary/20">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{m.full_name}</p>
+                  <p className="text-[10px] text-muted-foreground">{getDapukanLabel(m) || m.dapukan}</p>
+                </div>
+                {m.phone && (
+                  <a href={`tel:${m.phone}`} className="text-[10px] text-primary shrink-0 flex items-center gap-1 hover:underline">
+                    <Phone className="w-3 h-3" />{m.phone}
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Desa Level Tabs */}
       <Tabs defaultValue={scopedDesa[0] || ""}>
         <TabsList className="flex-wrap h-auto gap-1">
@@ -350,18 +374,35 @@ export default function Structure() {
           return (
             <TabsContent key={desa} value={desa} className="space-y-4 mt-4">
               {/* Desa Leaders */}
-              {!isAdminKelompok && (
-                <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-                  <h3 className="text-sm font-semibold flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-accent" /> Pengurus {desa}
-                  </h3>
-                  {desaKategori.length > 0 ? (
-                    <KategoriSection kategoriList={desaKategori} {...editProps} level="Desa" />
+              <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-accent" /> Pengurus {desa}
+                </h3>
+                {desaKategori.length > 0 ? (
+                  isAdminKelompok ? (
+                    // Admin kelompok: tampilkan stat cards ringkasan
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {desaKategori.flatMap(kat => kat.members).map(m => (
+                        <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-accent/5 border-accent/20">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{m.full_name}</p>
+                            <p className="text-[10px] text-muted-foreground">{getDapukanLabel(m) || m.dapukan}</p>
+                          </div>
+                          {m.phone && (
+                            <a href={`tel:${m.phone}`} className="text-[10px] text-accent shrink-0 flex items-center gap-1 hover:underline">
+                              <Phone className="w-3 h-3" />{m.phone}
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground">Belum ada pengurus desa.</p>
-                  )}
-                </div>
-              )}
+                    <KategoriSection kategoriList={desaKategori} {...editProps} level="Desa" />
+                  )
+                ) : (
+                  <p className="text-xs text-muted-foreground">Belum ada pengurus desa.</p>
+                )}
+              </div>
 
               {/* Desa Summary */}
               {!isAdminKelompok && (
