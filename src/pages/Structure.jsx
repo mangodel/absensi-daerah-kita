@@ -266,7 +266,15 @@ export default function Structure() {
     ? [userDesa]
     : Object.keys(desaKelompokMap);
 
-  const daerahLeaders = members.filter(m => m.dapukan_level === "Daerah" && isPengurus(m));
+  // Cari pengurus Daerah: prioritaskan dapukan_level === "Daerah", 
+  // fallback ke member yang punya dapukan pengurus tapi tidak ada desa/kelompok
+  const daerahLeaders = members.filter(m => {
+    if (!isPengurus(m)) return false;
+    if (m.dapukan_level === "Daerah") return true;
+    // Fallback: tidak punya desa & kelompok tapi punya dapukan pengurus
+    if (!m.dapukan_level && !m.desa && !m.kelompok) return true;
+    return false;
+  });
   const daerahKategori = getPengurusKategori(daerahLeaders);
 
   function applyMubalighFilter(memberList) {
@@ -329,26 +337,30 @@ export default function Structure() {
       )}
 
       {/* Stat Cards Pengurus Daerah — tampilkan untuk admin kelompok yang tidak melihat DaerahSection */}
-      {isAdminKelompok && daerahKategori.length > 0 && (
+      {isAdminKelompok && (
         <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Shield className="w-4 h-4 text-primary" /> Pengurus Daerah
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {daerahKategori.flatMap(kat => kat.members).map(m => (
-              <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-primary/5 border-primary/20">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{m.full_name}</p>
-                  <p className="text-[10px] text-muted-foreground">{getDapukanLabel(m) || m.dapukan}</p>
+          {daerahKategori.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {daerahKategori.flatMap(kat => kat.members).map(m => (
+                <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-primary/5 border-primary/20">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{m.full_name}</p>
+                    <p className="text-[10px] text-muted-foreground">{getDapukanLabel(m) || m.dapukan}</p>
+                  </div>
+                  {m.phone && (
+                    <a href={`tel:${m.phone}`} className="text-[10px] text-primary shrink-0 flex items-center gap-1 hover:underline">
+                      <Phone className="w-3 h-3" />{m.phone}
+                    </a>
+                  )}
                 </div>
-                {m.phone && (
-                  <a href={`tel:${m.phone}`} className="text-[10px] text-primary shrink-0 flex items-center gap-1 hover:underline">
-                    <Phone className="w-3 h-3" />{m.phone}
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Belum ada pengurus daerah yang terdaftar.</p>
+          )}
         </div>
       )}
 
