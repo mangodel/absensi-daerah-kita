@@ -22,7 +22,6 @@ import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2,
 import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
 import BroadcastInbox from "@/components/portal/BroadcastInbox";
 import MemberCardPortal from "@/components/portal/MemberCardPortal";
-import EventQRScanner from "@/components/portal/EventQRScanner";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { toast } from "sonner";
 import { getDapukanTitle } from "@/lib/constants";
@@ -661,9 +660,6 @@ export default function JamaahPortal() {
 
           {/* Navigasi ke halaman terpisah */}
           <div className="space-y-3 mt-6">
-           {/* Quick Event QR Scanner */}
-           {myMember && <EventQRScanner member={myMember} />}
-
            {/* Navigation Cards */}
            <div className="grid grid-cols-2 gap-3">
              <Link to="/jamaah/survey">
