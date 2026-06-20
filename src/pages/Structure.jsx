@@ -371,39 +371,55 @@ export default function Structure() {
               </div>
 
               {/* Desa Summary */}
-              {!isAdminKelompok && (
-                <div className="bg-primary/5 border border-primary/15 rounded-2xl p-4 flex flex-wrap gap-6 items-center">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{desaMembers.length}</div>
-                    <div className="text-xs text-muted-foreground">Total Jamaah</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-accent">{desaActive}</div>
-                    <div className="text-xs text-muted-foreground">Aktif</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-destructive">{desaMembers.length - desaActive}</div>
-                    <div className="text-xs text-muted-foreground">Tidak Aktif</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-foreground">{kelompoks.length}</div>
-                    <div className="text-xs text-muted-foreground">Kelompok</div>
-                  </div>
-                  {desaKKCount > 0 && (
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-foreground flex items-center gap-1 justify-center">
-                        <Home className="w-4 h-4 text-muted-foreground" />{desaKKCount}
+              {!isAdminKelompok && (() => {
+                const desaInactive = desaMembers.length - desaActive;
+                const citizen = desaMembers.filter(m => m.visa_status === "Citizen" && m.status === "Aktif").length;
+                const pr = desaMembers.filter(m => m.visa_status === "PR" && m.status === "Aktif").length;
+                const whv = desaMembers.filter(m => m.visa_status === "WHV" && m.status === "Aktif").length;
+                const student = desaMembers.filter(m => m.visa_status === "Student" && m.status === "Aktif").length;
+                return (
+                  <div className="bg-primary/5 border border-primary/15 rounded-2xl p-4 space-y-3">
+                    <div className="flex flex-wrap gap-4 items-center">
+                      <div className="text-center min-w-[56px]">
+                        <div className="text-2xl font-bold text-primary">{desaMembers.length}</div>
+                        <div className="text-[10px] text-muted-foreground">Total</div>
                       </div>
-                      <div className="text-xs text-muted-foreground">Kepala Keluarga</div>
+                      <div className="text-center min-w-[56px]">
+                        <div className="text-2xl font-bold text-accent">{desaActive}</div>
+                        <div className="text-[10px] text-muted-foreground">Aktif</div>
+                      </div>
+                      <div className="text-center min-w-[56px]">
+                        <div className="text-2xl font-bold text-destructive">{desaInactive}</div>
+                        <div className="text-[10px] text-muted-foreground">Tidak Aktif</div>
+                      </div>
+                      <div className="text-center min-w-[48px]">
+                        <div className="text-2xl font-bold text-foreground">{kelompoks.length}</div>
+                        <div className="text-[10px] text-muted-foreground">Kelompok</div>
+                      </div>
+                      {desaKKCount > 0 && (
+                        <div className="text-center min-w-[48px]">
+                          <div className="text-2xl font-bold text-foreground">{desaKKCount}</div>
+                          <div className="text-[10px] text-muted-foreground">KK</div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className="ml-auto flex flex-wrap gap-1 items-center">
-                    {kelompoks.map(k => (
-                      <Badge key={k} variant="outline" className="text-[10px] bg-background dark:bg-slate-800 dark:text-foreground">{k}</Badge>
-                    ))}
+                    {/* Visa stats bar */}
+                    {(citizen + pr + whv + student) > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1 border-t border-primary/10">
+                        {citizen > 0 && <span className="text-[11px] font-medium text-indigo-600">Citizen: {citizen}</span>}
+                        {pr > 0 && <span className="text-[11px] font-medium text-emerald-600">PR: {pr}</span>}
+                        {whv > 0 && <span className="text-[11px] font-medium text-amber-600">WHV: {whv}</span>}
+                        {student > 0 && <span className="text-[11px] font-medium text-purple-600">Student: {student}</span>}
+                        <div className="ml-auto flex flex-wrap gap-1">
+                          {kelompoks.map(k => (
+                            <Badge key={k} variant="outline" className="text-[10px] bg-background dark:bg-slate-800">{k}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Kelompok Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -417,73 +433,74 @@ export default function Structure() {
                   const subKelompoks = [...new Set(kelompokMembers.filter(m => m.sub_kelompok).map(m => m.sub_kelompok))];
                   const jamaahBiasa = applyMubalighFilter(kelompokMembers.filter(m => !isPengurus(m) && m.dapukan !== "Jamaah" && m.dapukan !== "Jamaah Biasa"));
 
+                  const kCitizen = kelompokMembers.filter(m => m.visa_status === "Citizen" && m.status === "Aktif").length;
+                  const kPR = kelompokMembers.filter(m => m.visa_status === "PR" && m.status === "Aktif").length;
+                  const kWHV = kelompokMembers.filter(m => m.visa_status === "WHV" && m.status === "Aktif").length;
+                  const kStudent = kelompokMembers.filter(m => m.visa_status === "Student" && m.status === "Aktif").length;
+                  const mubalighCount = kelompokMembers.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot").length;
                   return (
-                    <div key={kelompok} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow space-y-3">
+                    <div key={kelompok} className="bg-card rounded-2xl border border-border p-4 hover:shadow-md transition-shadow space-y-3">
+                      {/* Header */}
                       <div className="flex items-start justify-between">
                         <div>
                           <h4 className="font-semibold text-sm">{kelompok}</h4>
                           <p className="text-[10px] text-muted-foreground">{desa}</p>
                         </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Users className="w-3.5 h-3.5" />
-                            <span>{active}/{kelompokMembers.length}</span>
-                          </div>
-                          {kkCount > 0 && (
-                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <Home className="w-3 h-3" /><span>{kkCount} KK</span>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="flex items-center gap-1 text-accent font-medium"><Users className="w-3 h-3" />{active}</span>
+                          <span className="text-muted-foreground">/ {kelompokMembers.length}</span>
+                          {kkCount > 0 && <span className="flex items-center gap-0.5 text-muted-foreground text-[10px]"><Home className="w-3 h-3" />{kkCount}</span>}
                         </div>
                       </div>
 
+                      {/* Pengurus */}
                       {kelompokKategori.length > 0 && (
                         <KategoriSection kategoriList={kelompokKategori} {...editProps} level="Kelompok" />
                       )}
 
+                      {/* Sub Kelompok */}
                       {subKelompoks.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {subKelompoks.map(sk => (
-                                    <Badge key={sk} variant="outline" className="text-[9px] bg-secondary/50 dark:bg-secondary/40 dark:text-foreground">{sk}</Badge>
-                                  ))}
+                            <Badge key={sk} variant="outline" className="text-[9px] bg-secondary/50">{sk}</Badge>
+                          ))}
                         </div>
                       )}
 
+                      {/* Filter Mubaligh */}
                       {filterMubaligh !== "all" && jamaahBiasa.length > 0 && (
-                        <div className="border-t border-border pt-2">
-                          <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">
+                        <div className="border-t border-border pt-2 space-y-1">
+                          <p className="text-[10px] font-semibold text-muted-foreground">
                             {filterMubaligh === "mubaligh" ? "Mubaligh" : filterMubaligh === "mubalighot" ? "Mubalighot" : "Mubaligh & Mubalighot"}
                             <span className="ml-1 text-primary">({jamaahBiasa.length})</span>
                           </p>
-                          <div className="space-y-1">
-                            {jamaahBiasa.map(m => (
-                              <div key={m.id} className="text-xs flex items-center justify-between gap-2">
-                                    <span className="flex items-center gap-1.5 flex-wrap">
-                                      {m.full_name}
-                                      {m.dapukan && m.dapukan !== "Jamaah" && m.dapukan !== "Jamaah Biasa" && (
-                                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900 dark:text-violet-200 dark:border-violet-700">{m.dapukan}</Badge>
-                                      )}
-                                    </span>
-                                    {m.phone && <span className="text-muted-foreground text-[10px] shrink-0">{m.phone}</span>}
-                                  </div>
-                            ))}
-                          </div>
+                          {jamaahBiasa.map(m => (
+                            <div key={m.id} className="text-xs flex items-center justify-between gap-2">
+                              <span className="flex items-center gap-1.5">{m.full_name}
+                                {m.dapukan && m.dapukan !== "Jamaah" && m.dapukan !== "Jamaah Biasa" && (
+                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-violet-50 text-violet-700 border-violet-200">{m.dapukan}</Badge>
+                                )}
+                              </span>
+                              {m.phone && <span className="text-muted-foreground text-[10px] shrink-0">{m.phone}</span>}
+                            </div>
+                          ))}
                         </div>
                       )}
 
-                      <div className="flex gap-2 text-[10px] flex-wrap">
-                        {kelompokMembers.length > 0 ? (
-                          <>
-                            <Badge variant="outline" className="bg-accent/5 text-accent border-accent/20 dark:bg-accent/20 dark:text-accent dark:border-accent/40">{active} aktif</Badge>
-                            <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20 dark:bg-destructive/20 dark:text-destructive dark:border-destructive/40">{kelompokMembers.length - active} tidak aktif</Badge>
-                            {kelompokMembers.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot").length > 0 && (
-                              <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900 dark:text-violet-200 dark:border-violet-700">
-                                {kelompokMembers.filter(m => m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot").length} mubaligh
-                              </Badge>
-                            )}
-                          </>
+                      {/* Stats bar */}
+                      <div className="flex flex-wrap gap-1.5 text-[10px] pt-1 border-t border-border/50">
+                        {kelompokMembers.length === 0 ? (
+                          <span className="text-muted-foreground">Belum ada jamaah</span>
                         ) : (
-                          <span className="text-muted-foreground text-[10px]">Belum ada jamaah</span>
+                          <>
+                            <Badge variant="outline" className="bg-accent/5 text-accent border-accent/20">{active} aktif</Badge>
+                            {(kelompokMembers.length - active) > 0 && <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20">{kelompokMembers.length - active} tidak aktif</Badge>}
+                            {mubalighCount > 0 && <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200">{mubalighCount} mubaligh</Badge>}
+                            {kCitizen > 0 && <span className="text-indigo-600 font-medium">C:{kCitizen}</span>}
+                            {kPR > 0 && <span className="text-emerald-600 font-medium">PR:{kPR}</span>}
+                            {kWHV > 0 && <span className="text-amber-600 font-medium">W:{kWHV}</span>}
+                            {kStudent > 0 && <span className="text-purple-600 font-medium">St:{kStudent}</span>}
+                          </>
                         )}
                       </div>
                     </div>

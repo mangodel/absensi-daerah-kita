@@ -269,24 +269,23 @@ export default function Dashboard() {
         </Link>
       )}
 
+      {/* Stat Cards Utama */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
          <StatCard title="Total Jamaah" value={members.length} icon={Users} color="primary" />
          <StatCard title="Aktif" value={activeMembers} icon={UserCheck} color="accent" />
          <StatCard title="Tidak Aktif" value={inactiveMembers} icon={UserX} color="destructive" onClick={() => setInactiveOpen(true)} />
          <StatCard title="Total KK" value={totalKK} icon={Home} color="warning" />
-       </div>
-       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-         <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="primary" />
-       </div>
+      </div>
 
-       {isSuperAdmin && (
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-           <StatCard title="Citizen AU/NZ" value={members.filter(m => m.visa_status === "Citizen" && m.status === "Aktif").length} icon={UserCheck} color="accent" />
-           <StatCard title="Permanent Resident" value={members.filter(m => m.visa_status === "PR" && m.status === "Aktif").length} icon={Users} color="primary" />
-           <StatCard title="WHV" value={members.filter(m => m.visa_status === "WHV" && m.status === "Aktif").length} icon={UserX} color="warning" />
-           <StatCard title="Student Visa" value={members.filter(m => m.visa_status === "Student" && m.status === "Aktif").length} icon={UserX} color="primary" />
-         </div>
-       )}
+      {/* Kehadiran + Visa Stats dalam satu baris */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="primary" />
+        {isSuperAdmin && <>
+          <StatCard title="Citizen" value={members.filter(m => m.visa_status === "Citizen" && m.status === "Aktif").length} icon={Users} color="accent" />
+          <StatCard title="PR" value={members.filter(m => m.visa_status === "PR" && m.status === "Aktif").length} icon={Users} color="primary" />
+          <StatCard title="WHV / Student" value={members.filter(m => (m.visa_status === "WHV" || m.visa_status === "Student") && m.status === "Aktif").length} icon={Users} color="warning" />
+        </>}
+      </div>
 
 
 
