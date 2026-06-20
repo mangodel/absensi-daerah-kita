@@ -4,13 +4,21 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Calendar, Users, ArrowLeft, LogOut } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectGroup, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Calendar, Users, ArrowLeft, ClipboardList, Save, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import CameraScanner from "@/components/event-attendance/CameraScanner";
 import VolunteerLogin from "@/components/volunteer/VolunteerLogin";
+import AttendanceTable from "@/components/attendance/AttendanceTable";
 import { useAppConfig } from "@/lib/AppConfigContext";
+import { toast } from "sonner";
+
+const levelColors = {
+  "Daerah": "bg-primary/10 text-primary border-primary/20",
+  "Desa": "bg-accent/10 text-accent border-accent/20",
+  "Kelompok": "bg-orange-50 text-orange-600 border-orange-200",
+};
 
 const SESSION_KEY = "volunteer_operator";
 
@@ -108,6 +116,181 @@ function OperatorForm({ onSave }) {
   );
 }
 
+// ─── Tab Absensi Kegiatan ─────────────────────────────────────────────────────
+function AbsensiPanel({ operator }) {
+  const { config } = useAppConfig();
+  const qc = useQueryClient();
+  const [selectedEventId, setSelectedEventId] = useState("none");
+  const [attendanceData, setAttendanceData] = useState({});
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const { data: allEvents = [] } = useQuery({
+    queryKey: ["vol-events"],
+    queryFn: () => base44.entities.Event.list("-date"),
+  });
+
+  const { data: members = [] } = useQuery({
+    queryKey: ["members"],
+    queryFn: () => base44.entities.Member.list(),
+  });
+
+  // Filter events: from today, scoped to operator's kelompok/desa
+  const events = allEvents.filter(e => {
+    if (!e.date) return false;
+    const eDate = new Date(e.date);
+    eDate.setHours(0, 0, 0, 0);
+    if (eDate < today) return false;
+    if (operator?.kelompok) {
+      return e.level === "Daerah" ||
+        (e.level === "Desa" && e.desa === operator.desa) ||
+        (e.level === "Kelompok" && e.kelompok === operator.kelompok);
+    }
+    if (operator?.desa) {
+      return e.level === "Daerah" || (e.desa && e.desa === operator.desa);
+    }
+    return true;
+  });
+
+  const groupedEvents = {
+    "Daerah": events.filter(e => e.level === "Daerah"),
+    "Desa": events.filter(e => e.level === "Desa"),
+    "Kelompok": events.filter(e => e.level === "Kelompok"),
+  };
+
+  const selectedEvent = allEvents.find(e => e.id === selectedEventId);
+
+  // Members scoped to event + operator kelompok
+  const thisYear = new Date().getFullYear();
+  const scopedMembers = members.filter(m => {
+    if (m.status !== "Aktif") return false;
+    if (!selectedEvent) return false;
+    // Scope by operator
+    if (operator?.kelompok && m.kelompok !== operator.kelompok) return false;
+    else if (!operator?.kelompok && operator?.desa && m.desa !== operator.desa) return false;
+    // Scope by event level
+    if (selectedEvent.level === "Kelompok" && selectedEvent.kelompok && m.kelompok !== selectedEvent.kelompok) return false;
+    if (selectedEvent.level === "Desa" && selectedEvent.desa && m.desa !== selectedEvent.desa) return false;
+    return true;
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (records) => {
+      await base44.entities.Attendance.bulkCreate(records);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["attendances"] });
+      setAttendanceData({});
+      toast.success("Absensi berhasil disimpan!");
+    },
+    onError: () => toast.error("Gagal menyimpan absensi"),
+  });
+
+  const handleSave = () => {
+    if (!selectedEvent) return;
+    const date = selectedEvent.date;
+    const dateObj = new Date(date);
+    const records = Object.entries(attendanceData).map(([memberId, status]) => {
+      const member = members.find(m => m.id === memberId);
+      return {
+        member_id: memberId,
+        member_name: member?.full_name || "",
+        desa: member?.desa || "",
+        kelompok: member?.kelompok || "",
+        date,
+        status,
+        month: dateObj.getMonth() + 1,
+        year: dateObj.getFullYear(),
+        event_id: selectedEvent.id,
+        event_name: selectedEvent.name,
+        event_level: selectedEvent.level,
+      };
+    });
+    saveMutation.mutate(records);
+  };
+
+  const filledCount = Object.keys(attendanceData).length;
+
+  return (
+    <div className="space-y-4 p-4">
+      {/* Pilih Kegiatan */}
+      <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+        <h3 className="text-sm font-semibold">Pilih Kegiatan</h3>
+        <Select value={selectedEventId} onValueChange={v => { setSelectedEventId(v); setAttendanceData({}); }}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Pilih kegiatan..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">— Pilih Kegiatan —</SelectItem>
+            {["Daerah", "Desa", "Kelompok"].map(level => {
+              const grp = groupedEvents[level];
+              if (!grp || grp.length === 0) return null;
+              return (
+                <SelectGroup key={level}>
+                  <SelectLabel className={`text-xs font-bold px-2 py-1 uppercase tracking-wider rounded mx-1 mb-1 ${levelColors[level]}`}>
+                    {level} ({grp.length})
+                  </SelectLabel>
+                  {grp.map(e => (
+                    <SelectItem key={e.id} value={e.id} className="pl-6">
+                      <span className="font-medium">{e.name}</span>
+                      {e.date && <span className="text-muted-foreground ml-2">· {format(new Date(e.date), "dd MMM", { locale: id })}</span>}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              );
+            })}
+          </SelectContent>
+        </Select>
+
+        {selectedEvent && (
+          <div className="flex flex-wrap items-center gap-2 p-3 bg-secondary/50 rounded-xl">
+            <Badge variant="outline" className={`text-xs ${levelColors[selectedEvent.level]}`}>{selectedEvent.level}</Badge>
+            <span className="font-semibold text-sm">{selectedEvent.name}</span>
+            <span className="text-xs text-muted-foreground">
+              {selectedEvent.date ? format(new Date(selectedEvent.date), "EEEE, dd MMM yyyy", { locale: id }) : ""}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {selectedEvent && selectedEventId !== "none" && (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">{scopedMembers.length} jamaah · {filledCount} diisi</p>
+            <Button onClick={handleSave} disabled={saveMutation.isPending || filledCount === 0} size="sm">
+              {saveMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+              Simpan ({filledCount})
+            </Button>
+          </div>
+          {scopedMembers.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground text-sm">
+              <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              Tidak ada jamaah dalam scope kelompok ini untuk kegiatan ini.
+            </div>
+          ) : (
+            <AttendanceTable
+              members={scopedMembers}
+              attendanceData={attendanceData}
+              onStatusChange={(id, status) => setAttendanceData(prev => {
+                if (status === null) { const n = { ...prev }; delete n[id]; return n; }
+                return { ...prev, [id]: status };
+              })}
+            />
+          )}
+        </>
+      )}
+
+      {selectedEventId === "none" && (
+        <div className="text-center py-12 text-muted-foreground text-sm">
+          <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          Pilih kegiatan untuk mulai input absensi
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Step 3: Scanner Utama ────────────────────────────────────────────────────
 function ScannerPanel({ event, operator, onBack }) {
   const qc = useQueryClient();
@@ -115,7 +298,7 @@ function ScannerPanel({ event, operator, onBack }) {
   const [manualId, setManualId] = useState("");
   const [search, setSearch] = useState("");
   const [result, setResult] = useState(null);
-  const [activeTab, setActiveTab] = useState("scan"); // "scan" | "list"
+  const [activeTab, setActiveTab] = useState("scan"); // "scan" | "list" | "absensi"
 
   const { data: allParticipants = [] } = useQuery({
     queryKey: ["vol-participants", event.id],
@@ -228,15 +411,21 @@ function ScannerPanel({ event, operator, onBack }) {
       <div className="flex bg-secondary/50 mx-4 mt-4 rounded-xl p-1 gap-1">
         <button
           onClick={() => setActiveTab("scan")}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "scan" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
+          className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${activeTab === "scan" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
         >
-          <QrCode className="w-4 h-4 inline mr-1.5" />Scan Absensi
+          <QrCode className="w-4 h-4 inline mr-1" />Scan QR
+        </button>
+        <button
+          onClick={() => setActiveTab("absensi")}
+          className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${activeTab === "absensi" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
+        >
+          <ClipboardList className="w-4 h-4 inline mr-1" />Input Absensi
         </button>
         <button
           onClick={() => setActiveTab("list")}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "list" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
+          className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${activeTab === "list" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
         >
-          <Users className="w-4 h-4 inline mr-1.5" />Daftar Hadir ({hadirCount})
+          <Users className="w-4 h-4 inline mr-1" />Hadir ({hadirCount})
         </button>
       </div>
 
@@ -381,6 +570,11 @@ function ScannerPanel({ event, operator, onBack }) {
               </div>
             )}
           </>
+        )}
+
+        {/* ── TAB ABSENSI ── */}
+        {activeTab === "absensi" && (
+          <AbsensiPanel operator={operator} />
         )}
 
         {/* ── TAB LIST ── */}
