@@ -208,7 +208,7 @@ export default function Transfers() {
         {/* Pindah Kelompok Tab — informational note */}
         <TabsContent value="new" className="space-y-4">
           <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-sm text-primary">
-            Perpindahan kelompok hanya dapat dicatat melalui tombol <strong>"Pindahkan Anggota"</strong> di halaman ini. Perubahan data jamaah lainnya (seperti edit profil di Portal) tidak akan tercatat sebagai perpindahan kelompok.
+            Perpindahan kelompok hanya dapat dicatat melalui tombol <strong>"Pindah Jamaah"</strong> di halaman ini. Perubahan data jamaah lainnya (seperti edit profil di Portal) tidak akan tercatat sebagai perpindahan kelompok.
           </div>
           {transfers.length === 0 ? (
             <div className="bg-card rounded-2xl border border-border p-12 text-center">
