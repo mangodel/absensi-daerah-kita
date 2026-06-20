@@ -6,12 +6,13 @@ import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, Save, Loader2, Plus, Trash2, Upload, Image, Users, ShieldCheck, GripVertical, ClipboardList } from "lucide-react";
+import { Settings as SettingsIcon, Save, Loader2, Plus, Trash2, Upload, Image, Users, ShieldCheck, GripVertical, ClipboardList, UserCheck } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserRoleManager from "@/components/settings/UserRoleManager";
 import GoogleSheetSync from "@/components/settings/GoogleSheetSync";
 import MemberCardDesignManager from "@/components/settings/MemberCardDesignManager";
+import VolunteerLogViewer from "@/components/settings/VolunteerLogViewer";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const PAGE_TITLE_FIELDS = [
@@ -255,6 +256,7 @@ export default function Settings() {
           <TabsTrigger value="card" className="flex items-center gap-1.5"><Image className="w-3.5 h-3.5" /> Kartu Member</TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Akses Pengguna</TabsTrigger>
           <TabsTrigger value="gsheet" className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Google Sheet</TabsTrigger>
+          <TabsTrigger value="volunteer_log" className="flex items-center gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Log Volunteer</TabsTrigger>
         </TabsList>
 
         {/* ---- TAB UMUM ---- */}
@@ -525,6 +527,11 @@ export default function Settings() {
         {/* ---- TAB GOOGLE SHEET ---- */}
         <TabsContent value="gsheet" className="mt-4">
           <GoogleSheetSync />
+        </TabsContent>
+
+        {/* ---- TAB LOG VOLUNTEER ---- */}
+        <TabsContent value="volunteer_log" className="mt-4">
+          <VolunteerLogViewer />
         </TabsContent>
       </Tabs>
     </div>
