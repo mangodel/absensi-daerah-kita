@@ -191,10 +191,10 @@ export default function Transfers() {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <ArrowRightLeft className="w-6 h-6 text-primary" /> {pt.transfers || "Pindah Kelompok"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{pt.transfers_subtitle || "Tracking perpindahan anggota lintas desa/kelompok"}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{pt.transfers_subtitle || "Tracking perpindahan jamaah lintas desa/kelompok"}</p>
         </div>
         <Button onClick={() => { resetDialog(); setDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Pindahkan Jamaah
+          <Plus className="w-4 h-4 mr-2" /> Pindah Jamaah
         </Button>
       </div>
 
