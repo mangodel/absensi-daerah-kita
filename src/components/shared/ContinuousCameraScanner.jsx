@@ -3,101 +3,124 @@ import { Camera, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import jsQR from "jsqr";
 
-export default function ContinuousCameraScanner({ onScan, onError }) {
+export default function ContinuousCameraScanner({ onScan, onError, autoStart = false }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState(null);
-  const [lastScannedValue, setLastScannedValue] = useState(null);
-  const scanTimeoutRef = useRef(null);
+  const [detected, setDetected] = useState(false);
+  // Use refs for cooldown — avoids stale closures in requestAnimationFrame loop
+  const lastScannedRef = useRef(null);
+  const cooldownRef = useRef(false);
+  const animFrameRef = useRef(null);
+  const isScanningRef = useRef(false);
 
   const startCamera = useCallback(async () => {
     try {
       setError(null);
+      // Try high-res first, fall back to lower
       const constraints = {
         video: {
           facingMode: "environment",
-          width: { ideal: 1920, max: 1920 },
-          height: { ideal: 1080, max: 1080 },
-          focusMode: 'continuous',
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 },
+          focusMode: "continuous",
+          advanced: [{ torch: false }],
         },
-        audio: false
+        audio: false,
       };
-      
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        // Ensure video plays
-        videoRef.current.play().catch(() => {});
+        await videoRef.current.play().catch(() => {});
+        isScanningRef.current = true;
         setIsScanning(true);
       }
     } catch (err) {
-      const msg = err.name === "NotAllowedError" ? "Camera akses ditolak" : "Kamera tidak tersedia";
+      const msg = err.name === "NotAllowedError" ? "Akses kamera ditolak" : "Kamera tidak tersedia";
       setError(msg);
       onError?.(msg);
     }
   }, [onError]);
 
   const stopCamera = useCallback(() => {
+    isScanningRef.current = false;
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (videoRef.current?.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+      videoRef.current.srcObject = null;
     }
     setIsScanning(false);
-    setLastScannedValue(null);
+    setDetected(false);
   }, []);
 
-  // Continuous scanning loop
+  // Stable scan loop — uses only refs, never causes re-render in the hot path
   useEffect(() => {
-    if (!isScanning || !videoRef.current || !canvasRef.current) return;
-
+    if (!isScanning) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    if (!video || !canvas) return;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
     const scan = () => {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      if (!isScanningRef.current) return;
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0);
 
-        // Try multiple regions for better QR detection
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        let code = jsQR(imageData.data, imageData.width, imageData.height);
 
-        // If not found in center, try the entire frame with adjusted sensitivity
-        if (!code && imageData.data.length > 0) {
-          // Enhance contrast for better detection
-          const data = imageData.data;
-          for (let i = 0; i < data.length; i += 4) {
-            const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-            const enhanced = gray > 128 ? 255 : 0;
-            data[i] = data[i + 1] = data[i + 2] = enhanced;
+        // Pass 1: raw image
+        let code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        // Pass 2: high-contrast binarized image (better for printed/TV QR)
+        if (!code) {
+          const bin = new Uint8ClampedArray(imageData.data.length);
+          for (let i = 0; i < imageData.data.length; i += 4) {
+            const gray =
+              imageData.data[i] * 0.299 +
+              imageData.data[i + 1] * 0.587 +
+              imageData.data[i + 2] * 0.114;
+            const v = gray > 140 ? 255 : 0;
+            bin[i] = bin[i + 1] = bin[i + 2] = v;
+            bin[i + 3] = 255;
           }
-          code = jsQR(data, imageData.width, imageData.height);
+          code = jsQR(bin, canvas.width, canvas.height, {
+            inversionAttempts: "attemptBoth",
+          });
         }
 
-        if (code && code.data !== lastScannedValue) {
-          setLastScannedValue(code.data);
+        if (code?.data && !cooldownRef.current && code.data !== lastScannedRef.current) {
+          lastScannedRef.current = code.data;
+          cooldownRef.current = true;
+          setDetected(true);
           onScan?.(code.data);
-
-          // Prevent duplicate scans for 1.5 seconds
-          if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-          scanTimeoutRef.current = setTimeout(() => setLastScannedValue(null), 1500);
+          // 3-second hard cooldown — prevents duplicate records on TV display
+          setTimeout(() => {
+            cooldownRef.current = false;
+            lastScannedRef.current = null;
+            setDetected(false);
+          }, 3000);
         }
       }
-      requestAnimationFrame(scan);
+
+      animFrameRef.current = requestAnimationFrame(scan);
     };
 
-    const frameId = requestAnimationFrame(scan);
-    return () => cancelAnimationFrame(frameId);
-  }, [isScanning, lastScannedValue, onScan]);
+    animFrameRef.current = requestAnimationFrame(scan);
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, [isScanning, onScan]);
 
   useEffect(() => {
-    return () => {
-      stopCamera();
-      if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-    };
-  }, [stopCamera]);
+    if (autoStart) startCamera();
+    return () => stopCamera();
+  }, [autoStart]);
 
   return (
     <div className="space-y-3">
@@ -119,12 +142,8 @@ export default function ContinuousCameraScanner({ onScan, onError }) {
         <canvas ref={canvasRef} className="hidden" />
 
         {!isScanning && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <Button
-              onClick={startCamera}
-              variant="default"
-              className="gap-2"
-            >
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+            <Button onClick={startCamera} className="gap-2">
               <Camera className="w-4 h-4" />
               Buka Kamera
             </Button>
@@ -132,27 +151,24 @@ export default function ContinuousCameraScanner({ onScan, onError }) {
         )}
 
         {isScanning && (
-          <div className="absolute inset-0 border-2 border-primary pointer-events-none">
-            <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-primary" />
-            <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-primary" />
-            <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-primary" />
-            <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-primary" />
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Corner markers */}
+            <div className="absolute top-4 left-4 w-10 h-10 border-t-4 border-l-4 border-white rounded-tl-md" />
+            <div className="absolute top-4 right-4 w-10 h-10 border-t-4 border-r-4 border-white rounded-tr-md" />
+            <div className="absolute bottom-4 left-4 w-10 h-10 border-b-4 border-l-4 border-white rounded-bl-md" />
+            <div className="absolute bottom-4 right-4 w-10 h-10 border-b-4 border-r-4 border-white rounded-br-md" />
           </div>
         )}
 
-        {isScanning && lastScannedValue && (
-          <div className="absolute top-4 left-4 right-4 bg-green-500 text-white text-sm px-3 py-2 rounded-lg font-medium">
+        {detected && (
+          <div className="absolute top-3 inset-x-3 bg-green-500 text-white text-sm px-3 py-2 rounded-lg font-medium text-center animate-pulse">
             ✓ QR Terdeteksi
           </div>
         )}
       </div>
 
       {isScanning && (
-        <Button
-          onClick={stopCamera}
-          variant="outline"
-          className="w-full"
-        >
+        <Button onClick={stopCamera} variant="outline" className="w-full">
           Tutup Kamera
         </Button>
       )}

@@ -27,7 +27,7 @@ function pct(val, total) {
   return `${Math.round((val / total) * 100)}%`;
 }
 
-function MiniMonthlyReport({ attendances, members, isAdminDesa, isAdminKelompok, userDesa, userKelompok, desaKelompokMap }) {
+function MiniMonthlyReport({ attendances, members, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok, desaKelompokMap }) {
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
   const [month, setMonth] = useState(String(currentMonth));
@@ -49,8 +49,21 @@ function MiniMonthlyReport({ attendances, members, isAdminDesa, isAdminKelompok,
         return { label: k, hadir, total: atts.length, rate: pct(hadir, atts.length) };
       }).filter(s => s.total > 0);
     }
+    if (isSuperAdmin) {
+      // Group by desa for super admin
+      const desaMap = {};
+      monthAtts.forEach(a => {
+        if (!a.desa) return;
+        if (!desaMap[a.desa]) desaMap[a.desa] = { hadir: 0, total: 0 };
+        desaMap[a.desa].total++;
+        if (a.status === "Hadir") desaMap[a.desa].hadir++;
+      });
+      return Object.entries(desaMap)
+        .map(([desa, s]) => ({ label: desa, hadir: s.hadir, total: s.total, rate: pct(s.hadir, s.total) }))
+        .sort((a, b) => b.total - a.total);
+    }
     return [];
-  }, [monthAtts, isAdminDesa, isAdminKelompok, userDesa, userKelompok, desaKelompokMap]);
+  }, [monthAtts, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok, desaKelompokMap]);
 
   return (
     <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
@@ -82,7 +95,7 @@ function MiniMonthlyReport({ attendances, members, isAdminDesa, isAdminKelompok,
             <thead>
               <tr className="bg-secondary/50">
                 <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
-                  {isAdminKelompok ? "Kelompok" : "Kelompok"}
+                  {isSuperAdmin ? "Desa" : "Kelompok"}
                 </th>
                 <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground">Hadir</th>
                 <th className="px-3 py-2 text-center text-xs font-semibold text-muted-foreground">Total Absen</th>
@@ -499,18 +512,17 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Mini Laporan Bulanan — untuk admin desa & kelompok */}
-      {(isAdminDesa || isAdminKelompok) && (
-        <MiniMonthlyReport
-          attendances={attendances}
-          members={members}
-          isAdminDesa={isAdminDesa}
-          isAdminKelompok={isAdminKelompok}
-          userDesa={userDesa}
-          userKelompok={userKelompok}
-          desaKelompokMap={config.desa_kelompok_map || {}}
-        />
-      )}
+      {/* Mini Laporan Bulanan — untuk semua admin */}
+      <MiniMonthlyReport
+        attendances={attendances}
+        members={members}
+        isSuperAdmin={isSuperAdmin}
+        isAdminDesa={isAdminDesa}
+        isAdminKelompok={isAdminKelompok}
+        userDesa={userDesa}
+        userKelompok={userKelompok}
+        desaKelompokMap={config.desa_kelompok_map || {}}
+      />
 
       {/* Quick Broadcast — untuk admin desa & kelompok */}
       {(isAdminDesa || isAdminKelompok) && (
