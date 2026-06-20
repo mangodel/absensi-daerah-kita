@@ -18,7 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, ClipboardList, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, CalendarDays } from "lucide-react";
+import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, X, CalendarDays } from "lucide-react";
 import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
 import BroadcastInbox from "@/components/portal/BroadcastInbox";
 import MemberCardPortal from "@/components/portal/MemberCardPortal";
@@ -329,13 +329,35 @@ export default function JamaahPortal() {
           </div>
         )}
 
-        {/* Edit Profil (hanya muncul sekali, tanpa duplikasi readonly) */}
+        {/* Profil */}
         <div className="space-y-4 mb-6">
           {myMember ? (
             <>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                   <CheckCircle className="w-4 h-4 text-accent" />
+                   Data Jamaah
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {READONLY_FIELDS.map(f => {
+                    const raw = f.key === "email" ? (myMember?.email || jamaahUser?.email) : myMember[f.key];
+                    if (!raw) return null;
+                    const val = f.format ? f.format(raw, myMember) : raw;
+                    return (
+                      <div key={f.key} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                        <span className="text-xs text-muted-foreground">{f.label}</span>
+                        <span className="text-xs font-medium text-foreground">{val}</span>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
               <Card id="edit-profil-section">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">Edit Data Diri</CardTitle>
+                  <CardTitle className="text-sm font-semibold">Data Jamaah / Data Diri (Dapat Diedit)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {EDITABLE_FIELDS.map(f => {
@@ -491,36 +513,94 @@ export default function JamaahPortal() {
           )}
         </div>
 
-        {/* Tab: Data Jamaah & Keluarga */}
+        {/* Anggota Keluarga */}
+        {familyMembers.length > 0 && (
+          <Card className="mb-6 border-accent/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Users className="w-4 h-4 text-accent" />
+                Anggota Keluarga ({familyMembers.length})
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">Grup: {myMember?.family_group}</p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+            {[...familyMembers].sort((a, b) => {
+             // Urutan: Kepala Keluarga, Istri, Anak (berdasarkan tahun lahir tertua ke termuda)
+             const aIsKepala = a.id === myMember?.id ? 0 : 1;
+             const bIsKepala = b.id === myMember?.id ? 0 : 1;
+
+             if (aIsKepala !== bIsKepala) return aIsKepala - bIsKepala;
+
+             // Jika kedua-duanya bukan kepala, urutkan berdasarkan tahun lahir (tertua terlebih dahulu)
+             const aYear = a.birth_year || 9999;
+             const bYear = b.birth_year || 9999;
+             return aYear - bYear;
+            }).map(member => {
+             const isKepalaKeluarga = member.id === myMember?.id;
+             const isIstri = !isKepalaKeluarga && member.marital_status === "Menikah" && member.gender === "Perempuan";
+             const isAnak = !isKepalaKeluarga && (member.marital_status === "Belum Menikah" || member.marital_status === null || member.marital_status === "");
+
+             return (
+               <div key={member.id} className={`p-3 rounded-lg border ${isKepalaKeluarga ? 'border-primary/30 bg-primary/5' : 'border-border'} flex items-center justify-between`}>
+                 <div className="flex-1">
+                   <p className="text-sm font-semibold">{member.full_name}</p>
+                   <div className="flex items-center gap-2 mt-1 flex-wrap">
+                     {isKepalaKeluarga && <Badge className="text-[10px] h-auto py-0.5">Kepala Keluarga</Badge>}
+                     {isIstri && <Badge variant="secondary" className="text-[10px] h-auto py-0.5">Istri</Badge>}
+                     {isAnak && <Badge variant="outline" className="text-[10px] h-auto py-0.5">Anak</Badge>}
+                     {member.gender && <span className="text-xs text-muted-foreground">{member.gender}</span>}
+                   </div>
+                   {member.phone && <p className="text-xs text-muted-foreground mt-1">{member.phone}</p>}
+                 </div>
+                 <Button
+                   variant="ghost"
+                   size="icon"
+                   onClick={() => handleEditFamilyMember(member)}
+                   className="text-muted-foreground hover:text-foreground"
+                 >
+                   <Edit2 className="w-4 h-4" />
+                 </Button>
+               </div>
+             );
+            })}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tab: Data Jamaah, Anggota Keluarga, Struktur Organisasi */}
         <Tabs defaultValue="data" className="mb-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="data">Data Jamaah</TabsTrigger>
-            <TabsTrigger value="keluarga">Keluarga {familyMembers.length > 0 ? `(${familyMembers.length})` : ""}</TabsTrigger>
+            <TabsTrigger value="keluarga">Keluarga</TabsTrigger>
+            <TabsTrigger value="struktur">Struktur</TabsTrigger>
           </TabsList>
 
           <TabsContent value="data" className="mt-4">
             {myMember ? (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-accent" />
-                    Data Jamaah
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {READONLY_FIELDS.map(f => {
-                    const raw = f.key === "email" ? (myMember?.email || jamaahUser?.email) : myMember[f.key];
-                    if (!raw) return null;
-                    const val = f.format ? f.format(raw, myMember) : raw;
-                    return (
-                      <div key={f.key} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
-                        <span className="text-xs text-muted-foreground">{f.label}</span>
-                        <span className="text-xs font-medium text-foreground">{val}</span>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-accent" />
+                      Data Jamaah
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {READONLY_FIELDS.map(f => {
+                      const raw = f.key === "email" ? (myMember?.email || jamaahUser?.email) : myMember[f.key];
+                      if (!raw) return null;
+                      const val = f.format ? f.format(raw, myMember) : raw;
+                      return (
+                        <div key={f.key} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                          <span className="text-xs text-muted-foreground">{f.label}</span>
+                          <span className="text-xs font-medium text-foreground">{val}</span>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+                <p className="text-xs text-muted-foreground text-center py-4">Untuk mengubah data, buka menu utama dan edit profil Anda</p>
+              </div>
             ) : (
               <Card>
                 <CardContent className="py-12 text-center">
@@ -536,18 +616,20 @@ export default function JamaahPortal() {
               <Card className="border-accent/20">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold">Anggota Keluarga ({familyMembers.length})</CardTitle>
-                  {myMember?.family_group && <p className="text-xs text-muted-foreground mt-1">Grup: {myMember.family_group}</p>}
+                  <p className="text-xs text-muted-foreground mt-1">Grup: {myMember?.family_group}</p>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {[...familyMembers].sort((a, b) => {
                     const aIsKepala = a.id === myMember?.id ? 0 : 1;
                     const bIsKepala = b.id === myMember?.id ? 0 : 1;
                     if (aIsKepala !== bIsKepala) return aIsKepala - bIsKepala;
-                    return (a.birth_year || 9999) - (b.birth_year || 9999);
+                    const aYear = a.birth_year || 9999;
+                    const bYear = b.birth_year || 9999;
+                    return aYear - bYear;
                   }).map(member => {
                     const isKepalaKeluarga = member.id === myMember?.id;
                     const isIstri = !isKepalaKeluarga && member.marital_status === "Menikah" && member.gender === "Perempuan";
-                    const isAnak = !isKepalaKeluarga && (!member.marital_status || member.marital_status === "Belum Menikah");
+                    const isAnak = !isKepalaKeluarga && (member.marital_status === "Belum Menikah" || member.marital_status === null || member.marital_status === "");
                     return (
                       <div key={member.id} className={`p-3 rounded-lg border ${isKepalaKeluarga ? 'border-primary/30 bg-primary/5' : 'border-border'} flex items-center justify-between`}>
                         <div className="flex-1">
@@ -555,19 +637,11 @@ export default function JamaahPortal() {
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             {isKepalaKeluarga && <Badge className="text-[10px] h-auto py-0.5">Kepala Keluarga</Badge>}
                             {isIstri && <Badge variant="secondary" className="text-[10px] h-auto py-0.5">Istri</Badge>}
-                            {isAnak && !isKepalaKeluarga && <Badge variant="outline" className="text-[10px] h-auto py-0.5">Anak</Badge>}
+                            {isAnak && <Badge variant="outline" className="text-[10px] h-auto py-0.5">Anak</Badge>}
                             {member.gender && <span className="text-xs text-muted-foreground">{member.gender}</span>}
                           </div>
                           {member.phone && <p className="text-xs text-muted-foreground mt-1">{member.phone}</p>}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditFamilyMember(member)}
-                          className="text-muted-foreground hover:text-foreground"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
                       </div>
                     );
                   })}
@@ -582,7 +656,7 @@ export default function JamaahPortal() {
               </Card>
             )}
           </TabsContent>
-        </Tabs>
+          </Tabs>
 
           {/* Navigasi ke halaman terpisah */}
           <div className="space-y-3 mt-6">

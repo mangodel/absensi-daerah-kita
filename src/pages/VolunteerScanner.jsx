@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Calendar, Users, ArrowLeft, LogOut, CalendarDays, MapPin, Clock } from "lucide-react";
+import { CheckCircle, QrCode, Search, UserCheck, AlertCircle, Camera, Calendar, Users, ArrowLeft, LogOut } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import CameraScanner from "@/components/event-attendance/CameraScanner";
@@ -115,18 +115,12 @@ function ScannerPanel({ event, operator, onBack }) {
   const [manualId, setManualId] = useState("");
   const [search, setSearch] = useState("");
   const [result, setResult] = useState(null);
-  const [activeTab, setActiveTab] = useState("scan"); // "scan" | "list" | "events"
+  const [activeTab, setActiveTab] = useState("scan"); // "scan" | "list"
 
   const { data: allParticipants = [] } = useQuery({
     queryKey: ["vol-participants", event.id],
     queryFn: () => base44.entities.EventParticipant.filter({ event_id: event.id }),
     enabled: !!event.id,
-  });
-
-  // Semua event aktif untuk tab Kegiatan
-  const { data: allEvents = [] } = useQuery({
-    queryKey: ["vol-all-events"],
-    queryFn: () => base44.entities.Event.list("-date"),
   });
 
   // Filter peserta berdasarkan kelompok operator (jika ada)
@@ -234,21 +228,15 @@ function ScannerPanel({ event, operator, onBack }) {
       <div className="flex bg-secondary/50 mx-4 mt-4 rounded-xl p-1 gap-1">
         <button
           onClick={() => setActiveTab("scan")}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === "scan" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
+          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "scan" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
         >
-          <QrCode className="w-3.5 h-3.5 inline mr-1" />Scan
+          <QrCode className="w-4 h-4 inline mr-1.5" />Scan Absensi
         </button>
         <button
           onClick={() => setActiveTab("list")}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === "list" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
+          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "list" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
         >
-          <Users className="w-3.5 h-3.5 inline mr-1" />Hadir ({hadirCount})
-        </button>
-        <button
-          onClick={() => setActiveTab("events")}
-          className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === "events" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"}`}
-        >
-          <CalendarDays className="w-3.5 h-3.5 inline mr-1" />Kegiatan
+          <Users className="w-4 h-4 inline mr-1.5" />Daftar Hadir ({hadirCount})
         </button>
       </div>
 
@@ -394,46 +382,6 @@ function ScannerPanel({ event, operator, onBack }) {
             )}
           </>
         )}
-
-        {/* ── TAB EVENTS ── */}
-        {activeTab === "events" && (() => {
-          const today = new Date();
-          today.setHours(0,0,0,0);
-          const upcoming = allEvents
-            .filter(e => e.date && new Date(e.date) >= today)
-            .sort((a,b) => new Date(a.date) - new Date(b.date))
-            .slice(0, 20);
-          const LEVEL_COLOR = {
-            Daerah: "bg-indigo-50 border-indigo-200 text-indigo-700",
-            Desa: "bg-emerald-50 border-emerald-200 text-emerald-700",
-            Kelompok: "bg-amber-50 border-amber-200 text-amber-700",
-          };
-          return (
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Jadwal Kegiatan Mendatang</p>
-              {upcoming.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground text-sm">
-                  <CalendarDays className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  Tidak ada kegiatan mendatang
-                </div>
-              ) : (
-                upcoming.map(e => (
-                  <div key={e.id} className={`rounded-2xl border p-4 space-y-1 ${LEVEL_COLOR[e.level] || "bg-card border-border"}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-sm">{e.name}</p>
-                      <span className="text-[10px] font-medium border rounded-md px-1.5 py-0.5 shrink-0">{e.level}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs opacity-80">
-                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(e.date), "EEE, dd MMM yyyy", { locale: id })}{e.time ? ` · ${e.time}` : ""}</span>
-                    </div>
-                    {e.location && <p className="text-xs opacity-70 flex items-center gap-1"><MapPin className="w-3 h-3" />{e.location}</p>}
-                    {e.materi && <p className="text-xs opacity-70">{e.materi}</p>}
-                  </div>
-                ))
-              )}
-            </div>
-          );
-        })()}
 
         {/* ── TAB LIST ── */}
         {activeTab === "list" && (
