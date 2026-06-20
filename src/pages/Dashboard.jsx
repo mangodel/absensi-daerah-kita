@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home, Megaphone, Plus, ArrowRightLeft, AlertCircle, Plane } from "lucide-react";
+import { Users, UserCheck, UserX, CalendarCheck, Bell, FileBarChart, Home, Megaphone, Plus, ArrowRightLeft, AlertCircle, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import StatCard from "@/components/dashboard/StatCard";
 import GenerusBreakdown from "@/components/dashboard/GenerusBreakdown";
 import AttendanceChart from "@/components/dashboard/AttendanceChart";
@@ -120,6 +121,7 @@ export default function Dashboard() {
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [syncingAttendance, setSyncingAttendance] = useState(false);
+  const [inactiveOpen, setInactiveOpen] = useState(false);
   const queryClient = useQueryClient();
   const { filterMembers, filterEvents, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
 
@@ -270,7 +272,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
          <StatCard title="Total Jamaah" value={members.length} icon={Users} color="primary" />
          <StatCard title="Aktif" value={activeMembers} icon={UserCheck} color="accent" />
+         <StatCard title="Tidak Aktif" value={inactiveMembers} icon={UserX} color="destructive" onClick={() => setInactiveOpen(true)} />
          <StatCard title="Total KK" value={totalKK} icon={Home} color="warning" />
+       </div>
+       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
          <StatCard title="Kehadiran" value={`${attendanceRate}%`} subtitle={`Tahun ${selectedYear}`} icon={CalendarCheck} color="primary" />
        </div>
 
@@ -540,6 +545,41 @@ export default function Dashboard() {
         desaOverride={userDesa}
         kelompokOverride={userKelompok}
       />
+
+      {/* Modal Jamaah Tidak Aktif */}
+      <Dialog open={inactiveOpen} onOpenChange={setInactiveOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserX className="w-5 h-5 text-destructive" />
+              Jamaah Tidak Aktif ({inactiveMembers})
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {members.filter(m => m.status === "Tidak Aktif").length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Tidak ada jamaah tidak aktif.</p>
+            ) : (
+              members.filter(m => m.status === "Tidak Aktif")
+                .sort((a, b) => (a.desa || "").localeCompare(b.desa || "") || (a.kelompok || "").localeCompare(b.kelompok || ""))
+                .map((m, i) => (
+                  <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border border-border hover:bg-secondary/30">
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-full bg-destructive/10 text-destructive text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                      <div>
+                        <p className="text-sm font-medium">{m.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{m.desa} / {m.kelompok}</p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      {m.gender && <p className="text-xs text-muted-foreground">{m.gender}</p>}
+                      {m.birth_year && <p className="text-xs text-muted-foreground">{new Date().getFullYear() - m.birth_year} th</p>}
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,13 @@
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { Users, CheckCircle, XCircle, Home } from "lucide-react";
 
+const VISA_STATS = [
+  { key: "Citizen", label: "Citizen", color: "text-indigo-600" },
+  { key: "PR", label: "PR", color: "text-emerald-600" },
+  { key: "WHV", label: "WHV", color: "text-amber-600" },
+  { key: "Student", label: "Student", color: "text-purple-600" },
+];
+
 const currentYear = new Date().getFullYear();
 const GENERUS_CATS = [
   { key: "balita",    label: "Balita",     color: "#f9a8d4", minAge: 0,  maxAge: 4  },
@@ -93,10 +100,10 @@ export default function DesaOverview({ members }) {
                   <Home className="w-3 h-3" />{desaKK} KK
                 </span>
               </div>
-              <div className="flex gap-4 text-xs">
+              <div className="flex flex-wrap gap-3 text-xs">
                 <div className="flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">{desaMembers.length} anggota</span>
+                  <span className="text-muted-foreground">{desaMembers.length} jamaah</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle className="w-3.5 h-3.5 text-accent" />
@@ -106,6 +113,18 @@ export default function DesaOverview({ members }) {
                   <XCircle className="w-3.5 h-3.5 text-destructive" />
                   <span className="text-destructive font-medium">{inactive} tidak aktif</span>
                 </div>
+              </div>
+              {/* Visa stats per desa */}
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
+                {VISA_STATS.map(v => {
+                  const count = desaMembers.filter(m => m.visa_status === v.key && m.status === "Aktif").length;
+                  if (count === 0) return null;
+                  return (
+                    <span key={v.key} className={`font-medium ${v.color}`}>
+                      {v.label}: {count}
+                    </span>
+                  );
+                })}
               </div>
               <div className="space-y-2">
                 {kelompoks.map(k => {
