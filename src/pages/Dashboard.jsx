@@ -283,7 +283,13 @@ export default function Dashboard() {
         {isSuperAdmin && <>
           <StatCard title="Citizen" value={members.filter(m => m.visa_status === "Citizen" && m.status === "Aktif").length} icon={Users} color="accent" />
           <StatCard title="PR" value={members.filter(m => m.visa_status === "PR" && m.status === "Aktif").length} icon={Users} color="primary" />
-          <StatCard title="WHV / Student" value={members.filter(m => (m.visa_status === "WHV" || m.visa_status === "Student") && m.status === "Aktif").length} icon={Users} color="warning" />
+          <StatCard
+            title="WHV / Student"
+            value={`${members.filter(m => m.visa_status === "WHV" && m.status === "Aktif").length} / ${members.filter(m => m.visa_status === "Student" && m.status === "Aktif").length}`}
+            subtitle="WHV · Student"
+            icon={Users}
+            color="warning"
+          />
         </>}
       </div>
 
