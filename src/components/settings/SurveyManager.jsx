@@ -267,13 +267,15 @@ export default function SurveyManager() {
                     >
                       <BarChart2 className="w-4 h-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(survey)}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
+                    {canDelete(survey) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(survey)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    )}
                     {canDelete(survey) && (
                       <Button
                         size="sm"
