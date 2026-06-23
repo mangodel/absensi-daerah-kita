@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Loader2, Mail, Lock, QrCode } from "lucide-react";
+import { AlertCircle, Loader2, Mail, Lock, QrCode, KeyRound, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -15,6 +15,10 @@ export default function JamaahLogin() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -31,6 +35,16 @@ export default function JamaahLogin() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    try {
+      await base44.auth.resetPasswordRequest(forgotEmail);
+    } catch {}
+    setForgotSuccess(true);
+    setForgotLoading(false);
   };
 
   const loginBgUrl = config.login_bg_url || "";
@@ -92,7 +106,12 @@ export default function JamaahLogin() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Password</Label>
+                <button type="button" onClick={() => { setShowForgot(true); setForgotEmail(formData.email); }} className="text-xs text-primary hover:underline">
+                  Lupa password?
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -110,6 +129,43 @@ export default function JamaahLogin() {
               {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {loading ? "Masuk..." : "Masuk"}
             </Button>
+
+            {showForgot && !forgotSuccess && (
+              <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
+                <div className="text-center space-y-1">
+                  <KeyRound className="w-8 h-8 text-primary mx-auto" />
+                  <p className="font-semibold text-sm">Reset Password</p>
+                  <p className="text-xs text-muted-foreground">Masukkan email Anda untuk menerima link reset password.</p>
+                </div>
+                <form onSubmit={handleForgotPassword} className="space-y-3">
+                  <Input
+                    type="email"
+                    placeholder="email@contoh.com"
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                  <Button type="submit" variant="outline" className="w-full" disabled={forgotLoading}>
+                    {forgotLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Kirim Link Reset
+                  </Button>
+                  <button type="button" onClick={() => setShowForgot(false)} className="w-full text-xs text-muted-foreground hover:text-foreground text-center">
+                    ← Batal
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {forgotSuccess && (
+              <div className="space-y-3 rounded-lg border border-accent/30 bg-accent/10 p-4 text-center">
+                <CheckCircle2 className="w-8 h-8 text-accent mx-auto" />
+                <p className="text-sm font-medium">Link reset password telah dikirim ke email Anda (jika terdaftar).</p>
+                <button type="button" onClick={() => { setShowForgot(false); setForgotSuccess(false); setForgotEmail(""); }} className="text-xs text-primary hover:underline">
+                  ← Kembali ke login
+                </button>
+              </div>
+            )}
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
