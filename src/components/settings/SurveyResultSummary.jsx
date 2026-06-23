@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft, Users, BarChart2, MessageSquare, CheckSquare, Circle } from "lucide-react";
+import { useUserRole } from "@/lib/useUserRole";
 
 const typeIcons = {
   text: MessageSquare,
@@ -113,9 +114,22 @@ function QuestionSummary({ question, responses, idx }) {
 }
 
 export default function SurveyResultSummary({ survey, onBack }) {
-  const { data: responses = [], isLoading } = useQuery({
+  const { isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
+
+  const { data: allResponses = [], isLoading } = useQuery({
     queryKey: ["survey-responses", survey.id],
     queryFn: () => base44.entities.SurveyResponse.filter({ survey_id: survey.id }),
+  });
+
+  // Filter responses berdasarkan scope role admin:
+  // super_admin → semua responses
+  // admin_desa → hanya responses dari desa miliknya
+  // admin_kelompok → hanya responses dari desa + kelompok miliknya
+  const responses = (allResponses || []).filter(r => {
+    if (isSuperAdmin) return true;
+    if (isAdminDesa && userDesa) return r.desa === userDesa;
+    if (isAdminKelompok && userDesa && userKelompok) return r.desa === userDesa && r.kelompok === userKelompok;
+    return false;
   });
 
   const questions = JSON.parse(survey.questions || "[]");
