@@ -4,34 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle, Loader2, Mail, User, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle, Loader2, Mail, User, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 export default function JamaahSignup() {
   const navigate = useNavigate();
-  const [step, setStep] = useState("register"); // "register" | "match" | "claim" | "family" | "success"
+  const [step, setStep] = useState("register"); // "register" | "otp" | "success"
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ fullName: "", email: "", password: "" });
-  const [matchedMembers, setMatchedMembers] = useState([]);
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [registeredUser, setRegisteredUser] = useState(null);
-  const [familyMembers, setFamilyMembers] = useState([]);
-  const [familyForm, setFamilyForm] = useState({ full_name: "", gender: "", marital_status: "" });
-
-  // Fungsi untuk mencocokkan nama (fuzzy match sederhana)
-  const fuzzyMatch = (str1, str2) => {
-    const s1 = str1.toLowerCase().trim();
-    const s2 = str2.toLowerCase().trim();
-    if (s1 === s2) return 100;
-    if (s1.includes(s2) || s2.includes(s1)) return 80;
-    
-    // Cek kesamaan kata per kata
-    const words1 = s1.split(/\s+/);
-    const words2 = s2.split(/\s+/);
-    const commonWords = words1.filter(w => words2.some(w2 => w2.includes(w) || w.includes(w2))).length;
-    return (commonWords / Math.max(words1.length, words2.length)) * 100;
-  };
+  const [otpCode, setOtpCode] = useState("");
 
   // Step 1: Register user baru
   const handleRegister = async (e) => {
@@ -40,31 +22,16 @@ export default function JamaahSignup() {
       toast.error("Isi semua field terlebih dahulu");
       return;
     }
+    if (formData.password.length < 8) {
+      toast.error("Password minimal 8 karakter");
+      return;
+    }
 
     setLoading(true);
     try {
-      // Register via auth SDK (tanpa login)
       await base44.auth.register({ email: formData.email, password: formData.password });
-      
-      // Cari member yang mirip berdasarkan nama & email
-      const allMembers = await base44.entities.Member.list();
-      const matched = allMembers
-        .map(m => ({
-          ...m,
-          nameScore: fuzzyMatch(m.full_name, formData.fullName),
-          emailScore: m.email ? (m.email.toLowerCase() === formData.email.toLowerCase() ? 100 : 0) : 0,
-        }))
-        .filter(m => m.nameScore >= 40 || m.emailScore >= 90)
-        .sort((a, b) => (b.nameScore + b.emailScore) - (a.nameScore + a.emailScore));
-
-      setMatchedMembers(matched);
-      setRegisteredUser({ email: formData.email, fullName: formData.fullName });
-      
-      if (matched.length > 0) {
-        setStep("match");
-      } else {
-        setStep("family");
-      }
+      toast.success("Kode OTP telah dikirim ke email Anda");
+      setStep("otp");
     } catch (err) {
       toast.error(err.message || "Registrasi gagal");
     } finally {
@@ -72,118 +39,39 @@ export default function JamaahSignup() {
     }
   };
 
-  // Step 2: Claim member yang cocok
-  const handleClaim = async () => {
-    if (!selectedMember || !registeredUser) return;
-
-    setLoading(true);
-    try {
-      // Tunggu user terdaftar di DB
-      await new Promise(r => setTimeout(r, 1500));
-      
-      // Cari user yang baru register
-      const allUsers = await base44.entities.User.list();
-      const newUser = allUsers.find(u => u.email?.toLowerCase() === registeredUser.email.toLowerCase());
-      
-      if (newUser) {
-        // Link member ke user dengan update email
-        await base44.entities.Member.update(selectedMember.id, {
-          email: registeredUser.email
-        });
-        
-        // Update user dengan nama dari member
-        await base44.entities.User.update(newUser.id, {
-          full_name: selectedMember.full_name
-        });
-        
-        toast.success("Data berhasil diklaim! Anda sekarang terhubung dengan data jamaah.");
-      }
-      
-      // Jika sudah klaim data yang ada, langsung ke success — TIDAK buat data baru
-      setStep("success");
-    } catch (err) {
-      toast.error(err.message || "Gagal mengklaim data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 2b: Skip claim — lanjut tambah data baru tanpa claim
-  const handleSkipClaim = () => {
-    setSelectedMember(null);
-    setStep("family");
-  };
-
-  // Add family member
-  const handleAddFamilyMember = () => {
-    if (!familyForm.full_name) {
-      toast.error("Masukkan nama anggota keluarga");
+  // Step 2: Verifikasi OTP
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.length < 4) {
+      toast.error("Masukkan kode OTP yang valid");
       return;
     }
-    setFamilyMembers(prev => [...prev, { ...familyForm, id: Date.now() }]);
-    setFamilyForm({ full_name: "", gender: "", marital_status: "" });
-  };
 
-  // Remove family member
-  const handleRemoveFamilyMember = (id) => {
-    setFamilyMembers(prev => prev.filter(m => m.id !== id));
-  };
-
-  // Submit family members
-  const handleSaveFamily = async () => {
     setLoading(true);
     try {
-      // Tunggu user terdaftar
-      await new Promise(r => setTimeout(r, 1000));
-      
-      // Cari user yang baru register
-      const allUsers = await base44.entities.User.list();
-      const newUser = allUsers.find(u => u.email?.toLowerCase() === registeredUser.email.toLowerCase());
-      
-      if (!newUser) throw new Error("User tidak ditemukan");
-
-      // Get desa & kelompok dari default
-      const desa = "Default";
-      const kelompok = "Default";
-      const family_group = formData.fullName;
-
-      // Tidak ada claimed member di step ini (jika claim sudah selesai lebih awal)
-      // Buat member baru hanya untuk kepala keluarga baru (tanpa claim)
-      const memberRecords = [
-        {
-          full_name: formData.fullName,
-          email: registeredUser.email,
-          desa,
-          kelompok,
-          family_group,
-          status: "Aktif"
-        },
-        ...familyMembers.map(m => ({
-          full_name: m.full_name,
-          gender: m.gender || undefined,
-          marital_status: m.marital_status || undefined,
-          desa,
-          kelompok,
-          family_group,
-          status: "Aktif"
-        }))
-      ];
-
-      for (const memberData of memberRecords) {
-        try {
-          await base44.entities.Member.create(memberData);
-        } catch (err) {
-          console.error("Error creating member:", err);
-        }
-      }
-
-      toast.success(`Pendaftaran berhasil! ${memberRecords.length} data terdaftar.`);
+      const result = await base44.auth.verifyOtp({ email: formData.email, otpCode });
+      base44.auth.setToken(result.access_token);
       setStep("success");
     } catch (err) {
-      toast.error(err.message || "Gagal menyimpan data keluarga");
+      toast.error(err.message || "Verifikasi OTP gagal");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Resend OTP
+  const handleResendOtp = async () => {
+    try {
+      await base44.auth.resendOtp(formData.email);
+      toast.success("Kode OTP baru telah dikirim");
+    } catch (err) {
+      toast.error(err.message || "Gagal mengirim ulang OTP");
+    }
+  };
+
+  // Redirect ke portal jamaah
+  const goToPortal = () => {
+    window.location.href = "/jamaah";
   };
 
   return (
@@ -243,137 +131,40 @@ export default function JamaahSignup() {
           </>
         )}
 
-        {step === "match" && (
+        {step === "otp" && (
           <>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Data Jamaah Cocok Ditemukan</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Pilih data Anda untuk diklaim:</p>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-primary" />
+                Verifikasi Email
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Masukkan kode OTP yang dikirim ke <strong>{formData.email}</strong>
+              </p>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {matchedMembers.map(member => (
-                <div
-                  key={member.id}
-                  onClick={() => setSelectedMember(member)}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedMember?.id === member.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <p className="font-semibold text-sm">{member.full_name}</p>
-                  <p className="text-xs text-muted-foreground">{member.desa} / {member.kelompok}</p>
-                  {member.email && <p className="text-xs text-muted-foreground">{member.email}</p>}
-                </div>
-              ))}
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  onClick={handleClaim}
-                  disabled={!selectedMember || loading}
-                  className="flex-1"
-                >
-                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  Klaim Data Ini
+            <CardContent>
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Kode OTP"
+                  value={otpCode}
+                  onChange={e => setOtpCode(e.target.value)}
+                  className="text-center text-lg tracking-widest"
+                  maxLength={6}
+                />
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  {loading ? "Memverifikasi..." : "Verifikasi"}
                 </Button>
-                <Button variant="outline" onClick={handleSkipClaim} disabled={loading} className="flex-1">
-                  Skip
-                </Button>
-              </div>
-            </CardContent>
-          </>
-        )}
-
-        {step === "family" && (
-          <>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Daftarkan Anggota Keluarga</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Opsional: Tambahkan data istri, anak, dan keluarga lainnya</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Kepala keluarga info */}
-              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                <p className="text-xs text-muted-foreground mb-1">Kepala Keluarga:</p>
-                <p className="font-semibold text-sm">{formData.fullName}</p>
-              </div>
-
-              {/* Form tambah anggota */}
-              <div className="space-y-3 p-3 rounded-lg border border-border bg-muted/30">
-                <p className="text-xs font-semibold">Tambah Anggota Keluarga</p>
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Nama lengkap"
-                    value={familyForm.full_name}
-                    onChange={e => setFamilyForm(prev => ({ ...prev, full_name: e.target.value }))}
-                    className="text-sm"
-                  />
-                  <select
-                    value={familyForm.gender}
-                    onChange={e => setFamilyForm(prev => ({ ...prev, gender: e.target.value }))}
-                    className="w-full text-sm rounded-md border border-input bg-transparent px-3 py-2"
-                  >
-                    <option value="">Jenis Kelamin</option>
-                    <option value="Laki-laki">Laki-laki</option>
-                    <option value="Perempuan">Perempuan</option>
-                  </select>
-                  <select
-                    value={familyForm.marital_status}
-                    onChange={e => setFamilyForm(prev => ({ ...prev, marital_status: e.target.value }))}
-                    className="w-full text-sm rounded-md border border-input bg-transparent px-3 py-2"
-                  >
-                    <option value="">Status Pernikahan</option>
-                    <option value="Menikah">Menikah</option>
-                    <option value="Belum Menikah">Belum Menikah</option>
-                    <option value="Cerai">Cerai</option>
-                    <option value="Janda/Duda">Janda/Duda</option>
-                  </select>
-                  <Button
-                    type="button"
-                    onClick={handleAddFamilyMember}
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-sm gap-1"
-                  >
-                    <Plus className="w-3 h-3" />
-                    Tambah Anggota
-                  </Button>
-                </div>
-              </div>
-
-              {/* List anggota yang sudah ditambah */}
-              {familyMembers.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold">Anggota Keluarga ({familyMembers.length}):</p>
-                  {familyMembers.map(member => (
-                    <div key={member.id} className="p-2.5 rounded-lg border border-border bg-card flex items-center justify-between text-sm">
-                      <div className="flex-1">
-                        <p className="font-medium">{member.full_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {member.gender && `${member.gender}`}
-                          {member.gender && member.marital_status && ' • '}
-                          {member.marital_status}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveFamilyMember(member.id)}
-                        className="text-destructive hover:bg-destructive/10 p-1.5 rounded"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2">
-                <Button
-                  onClick={handleSaveFamily}
-                  disabled={loading}
-                  className="flex-1"
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  className="w-full text-xs text-primary hover:underline"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  {familyMembers.length > 0 ? `Simpan ${familyMembers.length + 1} Anggota` : "Lanjut Tanpa Anggota"}
-                </Button>
-              </div>
+                  Tidak menerima kode? Kirim ulang
+                </button>
+              </form>
             </CardContent>
           </>
         )}
@@ -387,27 +178,14 @@ export default function JamaahSignup() {
               <CardTitle className="text-lg">Pendaftaran Berhasil!</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-center">
-              {selectedMember ? (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    Data <strong>{selectedMember.full_name}</strong> sudah diklaim.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Anda bisa login sekarang dan mengakses portal jamaah.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    Akun baru Anda berhasil dibuat.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Hubungi admin jika ingin menautkan dengan data anggota yang sudah terdaftar.
-                  </p>
-                </>
-              )}
-              <Button onClick={() => navigate("/login")} className="w-full mt-4">
-                Lanjut ke Login
+              <p className="text-sm text-muted-foreground">
+                Akun <strong>{formData.email}</strong> telah terverifikasi.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Klik tombol di bawah untuk masuk ke Portal Jamaah. Jika data Anda belum terhubung, hubungi admin untuk menautkan data jamaah Anda.
+              </p>
+              <Button onClick={goToPortal} className="w-full mt-4">
+                Masuk ke Portal Jamaah
               </Button>
             </CardContent>
           </>
