@@ -21,6 +21,7 @@ import { isToday, isPast, format } from "date-fns";
 import { id } from "date-fns/locale";
 import { MONTHS } from "@/lib/constants";
 import KelompokAttendanceDetail from "@/components/dashboard/KelompokAttendanceDetail";
+import JamaahDashboard from "@/components/dashboard/JamaahDashboard";
 import { toast } from "sonner";
 
 function pct(val, total) {
@@ -123,7 +124,7 @@ export default function Dashboard() {
   const [syncingAttendance, setSyncingAttendance] = useState(false);
   const [inactiveOpen, setInactiveOpen] = useState(false);
   const queryClient = useQueryClient();
-  const { filterMembers, filterEvents, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
+  const { filterMembers, filterEvents, isSuperAdmin, isAdminDesa, isAdminKelompok, isJamaah, userDesa, userKelompok } = useUserRole();
 
   const handleSyncAttendance = async () => {
     setSyncingAttendance(true);
@@ -234,6 +235,8 @@ export default function Dashboard() {
       return rate < 50;
     });
   }, [members, attendances, lastMonthNum, lastMonthYear]);
+
+  if (isJamaah) return <JamaahDashboard />;
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">

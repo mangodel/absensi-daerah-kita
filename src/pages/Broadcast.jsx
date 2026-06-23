@@ -8,10 +8,12 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import BroadcastDialog from "@/components/broadcast/BroadcastDialog";
 import { useUserRole } from "@/lib/useUserRole";
+import { useAuth } from "@/lib/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Broadcast() {
-  const { canManageMembers } = useUserRole();
+  const { canManageBroadcasts, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
@@ -25,6 +27,16 @@ export default function Broadcast() {
     queryKey: ["members"],
     queryFn: () => base44.entities.Member.list(),
   });
+
+  // Scope broadcast berdasarkan role:
+  // super_admin → Semua (seluruh database)
+  // admin_desa → Desa (seluruh kelompok se-desanya)
+  // admin_kelompok → Kelompok (jamaah di kelompoknya saja)
+  const scopeOverride = isAdminKelompok ? "Kelompok" : isAdminDesa ? "Desa" : undefined;
+  const desaOverride = (isAdminDesa || isAdminKelompok) ? userDesa : undefined;
+  const kelompokOverride = isAdminKelompok ? userKelompok : undefined;
+
+  const canDelete = (b) => isSuperAdmin || b.sent_by === user?.email;
 
   const handleDelete = async () => {
     if (!deleteItem) return;
@@ -51,7 +63,7 @@ export default function Broadcast() {
           <h1 className="text-2xl font-bold text-foreground">Broadcast Pesan</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Kirim informasi penting kepada jamaah secara cepat</p>
         </div>
-        {canManageMembers && (
+        {canManageBroadcasts && (
           <Button onClick={() => setDialogOpen(true)} className="gap-2">
             <Plus className="w-4 h-4" />
             Buat Broadcast
@@ -121,7 +133,7 @@ export default function Broadcast() {
                     )}
                   </div>
                 </div>
-                {canManageMembers && (
+                {canDelete(b) && (
                   <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive shrink-0"
                     onClick={() => setDeleteItem(b)}>
                     <Trash2 className="w-4 h-4" />
@@ -138,6 +150,9 @@ export default function Broadcast() {
         onOpenChange={setDialogOpen}
         members={allMembers}
         onSent={() => queryClient.invalidateQueries({ queryKey: ["broadcasts"] })}
+        scopeOverride={scopeOverride}
+        desaOverride={desaOverride}
+        kelompokOverride={kelompokOverride}
       />
 
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>

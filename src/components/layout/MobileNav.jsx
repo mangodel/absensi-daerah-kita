@@ -19,7 +19,7 @@ import {
 
 export default function MobileNav() {
   const location = useLocation();
-  const { canAccessSettings, isSuperAdmin, isAdminDesa } = useUserRole();
+  const { canAccessSettings, isSuperAdmin, isAdminDesa, isAdminKelompok, isJamaah } = useUserRole();
   const [showLogout, setShowLogout] = useState(false);
   const [tabStacks, setTabStacks] = useState({});
 
@@ -31,18 +31,22 @@ export default function MobileNav() {
 
   const navItems = [
     { label: "Dashboard", icon: LayoutDashboard, path: "/" },
-    { label: "Jamaah", icon: Users, path: "/members" },
+    ...(isJamaah ? [] : [
+      { label: "Jamaah", icon: Users, path: "/members" },
+    ]),
     { label: "Kegiatan", icon: CalendarDays, path: "/events" },
-    { label: "Absensi", icon: CalendarCheck, path: "/attendance" },
-    { label: "Struktur", icon: GitBranch, path: "/structure" },
-    { label: "Laporan", icon: FileBarChart, path: "/reports" },
+    ...(isJamaah ? [] : [
+      { label: "Absensi", icon: CalendarCheck, path: "/attendance" },
+      { label: "Struktur", icon: GitBranch, path: "/structure" },
+      { label: "Laporan", icon: FileBarChart, path: "/reports" },
+      { label: "Absensi Event", icon: ScanLine, path: "/event-attendance" },
+      { label: "Pengingat", icon: Bell, path: "/reminders", badge: urgentCount },
+    ]),
     { label: "Dokumen", icon: FolderOpen, path: "/documents" },
-    { label: "Absensi Event", icon: ScanLine, path: "/event-attendance" },
-    { label: "Pengingat", icon: Bell, path: "/reminders", badge: urgentCount },
     { label: "Portal", icon: UserCircle, path: "/jamaah" },
     ...((isSuperAdmin || isAdminDesa) ? [{ label: "Scan Vol", icon: ScanLine, path: "/scanner-volunteer" }] : []),
-    ...((isSuperAdmin || isAdminDesa) ? [{ label: "Broadcast", icon: Megaphone, path: "/broadcast" }] : []),
-    ...((isSuperAdmin || isAdminDesa) ? [{ label: "Survei", icon: ClipboardList, path: "/survey" }] : []),
+    ...((isSuperAdmin || isAdminDesa || isAdminKelompok) ? [{ label: "Broadcast", icon: Megaphone, path: "/broadcast" }] : []),
+    ...((isSuperAdmin || isAdminDesa || isAdminKelompok) ? [{ label: "Survei", icon: ClipboardList, path: "/survey" }] : []),
     ...(canAccessSettings ? [{ label: "Setelan", icon: Settings, path: "/settings" }] : []),
   ];
 

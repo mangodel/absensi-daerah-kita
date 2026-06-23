@@ -17,7 +17,8 @@ export function useUserRole() {
 
   const isSuperAdmin = role === "super_admin" || role === "admin";
   const isAdminDesa = role === "admin_desa";
-  const isAdminKelompok = role === "admin_kelompok" || role === "user";
+  const isAdminKelompok = role === "admin_kelompok";
+  const isJamaah = role === "user";
 
   /** Filter members berdasarkan role */
   const filterMembers = (members) => {
@@ -64,6 +65,9 @@ export function useUserRole() {
   const canManageMembers = isSuperAdmin || isAdminDesa || isAdminKelompok;
   const canAccessSettings = isSuperAdmin;
 
+  // Broadcast: only admins can manage, jamaah cannot
+  const canManageBroadcasts = isSuperAdmin || isAdminDesa || isAdminKelompok;
+
   // Event management: admin_kelompok hanya bisa buat/edit event Kelompok
   const canManageEvents = isSuperAdmin || isAdminDesa || isAdminKelompok;
   const canManageOnlyKelompokEvents = isAdminKelompok && !isSuperAdmin && !isAdminDesa;
@@ -90,6 +94,7 @@ export function useUserRole() {
     isSuperAdmin,
     isAdminDesa,
     isAdminKelompok,
+    isJamaah,
     filterMembers,
     filterEvents,
     canEdit,
@@ -103,5 +108,6 @@ export function useUserRole() {
     canManageTransfers,
     canInviteUsers,
     canAccessSettings,
+    canManageBroadcasts,
   };
 }

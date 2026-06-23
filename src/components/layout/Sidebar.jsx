@@ -41,7 +41,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { config } = useAppConfig();
   const { user } = useAuth();
-  const { canAccessSettings, role, userDesa, userKelompok, isSuperAdmin, isAdminDesa, isAdminKelompok } = useUserRole();
+  const { canAccessSettings, role, userDesa, userKelompok, isSuperAdmin, isAdminDesa, isAdminKelompok, isJamaah } = useUserRole();
 
   const { data: reminders = [] } = useQuery({
     queryKey: ["reminders"],
@@ -54,6 +54,10 @@ export default function Sidebar() {
 
   // Filter nav based on role
   const visibleNav = navItems.filter(item => {
+    if (isJamaah) {
+      // Jamaah hanya lihat: Dashboard, Kegiatan, Dokumen, Portal Jamaah
+      return ["/", "/events", "/documents", "/jamaah"].includes(item.path);
+    }
     if (item.path === "/transfers") return isSuperAdmin || isAdminDesa || isAdminKelompok;
     if (item.path === "/structure") return isSuperAdmin || isAdminDesa || isAdminKelompok;
     if (item.path === "/broadcast") return isSuperAdmin || isAdminDesa || isAdminKelompok;
