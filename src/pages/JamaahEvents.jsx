@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import EventReminderButton from "@/components/portal/EventReminderButton";
 import { useEventReminderChecker } from "@/hooks/useEventReminders";
-import { checkGeofence } from "@/components/event-attendance/GeoCheckin";
 
 const LEVEL_COLORS = {
   Daerah: "bg-indigo-100 text-indigo-700 border-indigo-300",
@@ -56,8 +55,6 @@ export default function JamaahEvents() {
   const [scanResult, setScanResult] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [checkinSuccess, setCheckinSuccess] = useState(null);
-  const [geoChecking, setGeoChecking] = useState(false);
-  const [geoError, setGeoError] = useState(null);
   const scannerRef = useRef(null);
   const html5QrRef = useRef(null);
 
@@ -136,8 +133,6 @@ export default function JamaahEvents() {
       queryClient.invalidateQueries({ queryKey: ["my-attendances"] });
       setCheckinSuccess(vars.eventName);
       setScanOpen(false);
-      setScanResult(null);
-      setGeoError(null);
       stopScanner();
       toast.success("Absensi berhasil dicatat!");
     },
@@ -203,26 +198,12 @@ export default function JamaahEvents() {
     setScanEvent(null);
   };
 
-  const handleConfirmScanCheckin = async () => {
+  const handleDirectCheckin = (event) => {
+    checkinMutation.mutate({ eventId: event.id, eventName: event.name, eventLevel: event.level });
+  };
+
+  const handleConfirmScanCheckin = () => {
     if (!scanResult) return;
-    setGeoChecking(true);
-    setGeoError(null);
-
-    // Geolocation validation — only allow check-in near event venue
-    const geo = await checkGeofence({
-      venueLat: scanResult.venue_lat,
-      venueLng: scanResult.venue_lng,
-      radiusM: scanResult.venue_radius_m,
-    });
-
-    if (!geo.allowed) {
-      setGeoChecking(false);
-      setGeoError(geo.error || "Anda berada di luar jangkauan lokasi event.");
-      toast.error(geo.error || "Anda berada di luar jangkauan lokasi event.");
-      return;
-    }
-
-    setGeoChecking(false);
     checkinMutation.mutate({ eventId: scanResult.id, eventName: scanResult.name, eventLevel: scanResult.level });
   };
 
@@ -313,7 +294,7 @@ export default function JamaahEvents() {
                     </h2>
                     <div className="space-y-3">
                       {byLevel.Daerah.map(ev => (
-                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />
+                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />
                       ))}
                     </div>
                   </section>
@@ -325,7 +306,7 @@ export default function JamaahEvents() {
                     </h2>
                     <div className="space-y-3">
                       {byLevel.Desa.map(ev => (
-                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />
+                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />
                       ))}
                     </div>
                   </section>
@@ -337,7 +318,7 @@ export default function JamaahEvents() {
                     </h2>
                     <div className="space-y-3">
                       {byLevel.Kelompok.map(ev => (
-                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />
+                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />
                       ))}
                     </div>
                   </section>
@@ -417,7 +398,7 @@ export default function JamaahEvents() {
                   <p className="text-xs text-muted-foreground text-center py-4">Tidak ada kegiatan</p>
                 ) : (
                   <div className="space-y-2">
-                    {selectedDayEvents.map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />)}
+                    {selectedDayEvents.map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)}
                   </div>
                 )}
               </div>
@@ -435,7 +416,7 @@ export default function JamaahEvents() {
                   {visibleEvents
                     .filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth))
                     .sort((a, b) => new Date(a.date) - new Date(b.date))
-                    .map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />)
+                    .map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)
                   }
                   {visibleEvents.filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth)).length === 0 && (
                     <p className="text-xs text-muted-foreground text-center py-6">Tidak ada kegiatan bulan ini</p>
@@ -481,32 +462,12 @@ export default function JamaahEvents() {
                 <p className="font-semibold text-sm">{scanResult.name}</p>
                 {scanResult.date && <p className="text-xs text-muted-foreground">{format(new Date(scanResult.date), "dd MMMM yyyy", { locale: id })}</p>}
                 <Badge variant="outline" className={`text-xs ${LEVEL_COLORS[scanResult.level]}`}>{scanResult.level}</Badge>
-                {scanResult.venue_lat && scanResult.venue_lng && (
-                  <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
-                    <MapPin className="w-3 h-3" /> Geo-fence aktif (radius {scanResult.venue_radius_m || 200}m)
-                  </p>
-                )}
               </div>
-              {geoError && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3 text-center">
-                  <p className="text-xs font-medium text-destructive">{geoError}</p>
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground text-center">
-                {scanResult.venue_lat
-                  ? "Pastikan Anda berada di lokasi event, lalu konfirmasi absensi."
-                  : "Konfirmasi absensi Anda untuk kegiatan ini?"}
-              </p>
+              <p className="text-xs text-muted-foreground text-center">Konfirmasi absensi Anda untuk kegiatan ini?</p>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleScanClose} className="flex-1">Batal</Button>
-                <Button
-                  onClick={handleConfirmScanCheckin}
-                  disabled={checkinMutation.isPending || geoChecking}
-                  className="flex-1 bg-accent hover:bg-accent/90"
-                >
-                  {(checkinMutation.isPending || geoChecking)
-                    ? <><Loader2 className="w-4 h-4 animate-spin mr-1" /> {geoChecking ? "Cek Lokasi..." : "Mencatat..."}</>
-                    : "Konfirmasi Hadir"}
+                <Button onClick={handleConfirmScanCheckin} disabled={checkinMutation.isPending} className="flex-1 bg-accent hover:bg-accent/90">
+                  {checkinMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Konfirmasi Hadir"}
                 </Button>
               </div>
             </div>
@@ -517,7 +478,7 @@ export default function JamaahEvents() {
   );
 }
 
-function DetailEventCard({ event, myMember, myAttendances }) {
+function DetailEventCard({ event, myMember, myAttendances, onCheckin, isPending }) {
   const [expanded, setExpanded] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const isEventToday = event.date === today;
@@ -558,17 +519,17 @@ function DetailEventCard({ event, myMember, myAttendances }) {
         {/* Actions */}
         <div className="mt-3 flex items-center gap-2 flex-wrap">
           <EventReminderButton event={event} />
-          {isEventToday && myMember && alreadyCheckedIn && (
-            <div className="flex items-center gap-1.5 text-accent">
-              <CheckCircle className="w-3.5 h-3.5" />
-              <span className="text-xs font-medium">Sudah Hadir</span>
-            </div>
-          )}
-          {isEventToday && myMember && !alreadyCheckedIn && (
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <QrCode className="w-3.5 h-3.5" />
-              <span className="text-xs">Scan QR di lokasi untuk absen</span>
-            </div>
+          {isEventToday && myMember && (
+            alreadyCheckedIn ? (
+              <div className="flex items-center gap-1.5 text-accent">
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Sudah Hadir</span>
+              </div>
+            ) : (
+              <Button size="sm" className="h-7 text-xs px-3 bg-accent hover:bg-accent/90" onClick={() => onCheckin(event)} disabled={isPending}>
+                {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Catat Hadir"}
+              </Button>
+            )
           )}
           {hasDetails && (
             <button

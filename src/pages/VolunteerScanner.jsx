@@ -15,7 +15,6 @@ import CameraScanner from "@/components/event-attendance/CameraScanner";
 import VolunteerLogin from "@/components/volunteer/VolunteerLogin";
 import AttendanceTable from "@/components/attendance/AttendanceTable";
 import { useAppConfig } from "@/lib/AppConfigContext";
-import { isAdult } from "@/lib/ageUtils";
 import { toast } from "sonner";
 
 const SESSION_KEY = "volunteer_operator";
@@ -590,7 +589,6 @@ function AbsensiPanel({ operator, onBack }) {
 
   const scopedMembers = members.filter(m => {
     if (m.status !== "Aktif") return false;
-    if (!isAdult(m)) return false;
     if (!selectedEvent) return false;
     if (operator?.kelompok && m.kelompok !== operator.kelompok) return false;
     else if (!operator?.kelompok && operator?.desa && m.desa !== operator.desa) return false;

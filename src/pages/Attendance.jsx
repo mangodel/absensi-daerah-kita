@@ -19,7 +19,6 @@ import PullToRefresh from "@/components/PullToRefresh";
 import { MobileSelect } from "@/components/ui/mobile-select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ContinuousCameraScanner from "@/components/shared/ContinuousCameraScanner";
-import { isAdult } from "@/lib/ageUtils";
 import { toast } from "sonner";
 
 const levelColors = {
@@ -39,6 +38,7 @@ export default function Attendance() {
   const [filterVisa, setFilterVisa] = useState("all");
   const [filterMuballigh, setFilterMuballigh] = useState("all"); // "all" | "muballigh_only" | "muballighot_only" | "muballigh_both"
   const [filterDapukan, setFilterDapukan] = useState("all");
+  const [filterAgeGroup, setFilterAgeGroup] = useState("all"); // "all" | "dewasa" | "generus"
   const [attendanceData, setAttendanceData] = useState({});
   const [saving, setSaving] = useState(false);
   const [viewYear, setViewYear] = useState(String(currentYear));
@@ -120,7 +120,7 @@ export default function Attendance() {
   }, [selectedEventId, events.length]);
 
   const scopedMembers = filterMembers(members);
-  const activeMembers = scopedMembers.filter(m => m.status === "Aktif" && isAdult(m));
+  const activeMembers = scopedMembers.filter(m => m.status === "Aktif");
 
   const thisYear = new Date().getFullYear();
 
@@ -181,7 +181,15 @@ export default function Attendance() {
     if (filterMuballigh === "muballigh_only") matchMuballigh = m.muballigh_status === "Muballigh";
     else if (filterMuballigh === "muballighot_only") matchMuballigh = m.muballigh_status === "Muballighot";
     else if (filterMuballigh === "muballigh_both") matchMuballigh = m.muballigh_status === "Muballigh" || m.muballigh_status === "Muballighot";
-    return matchDesa && matchKelompok && matchVisa && matchDapukan && matchMuballigh;
+    let matchAge = true;
+    if (filterAgeGroup === "dewasa") {
+      const age = m.birth_year ? thisYear - m.birth_year : 999;
+      matchAge = age >= 18;
+    } else if (filterAgeGroup === "generus") {
+      const age = m.birth_year ? thisYear - m.birth_year : 999;
+      matchAge = age < 18;
+    }
+    return matchDesa && matchKelompok && matchVisa && matchDapukan && matchMuballigh && matchAge;
   });
 
   const handleStatusChange = (memberId, status) => {
@@ -429,6 +437,7 @@ export default function Attendance() {
                       {selectedEvent.level === "Daerah" && (
                        <MobileSelect value={filterDapukan} onValueChange={setFilterDapukan} label="Dapukan" options={["all", ...DAPUKAN_LIST]} placeholder="Dapukan" />
                       )}
+                      <MobileSelect value={filterAgeGroup} onValueChange={setFilterAgeGroup} label="Usia" options={["all", "dewasa", "generus"]} placeholder="Usia" />
                       </>
                       ) : (
                       <>
@@ -446,6 +455,14 @@ export default function Attendance() {
                           <SelectItem value="muballigh_both">Mubaligh &amp; Mubalighot</SelectItem>
                           <SelectItem value="muballigh_only">Mubaligh Saja</SelectItem>
                           <SelectItem value="muballighot_only">Mubalighot Saja</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={filterAgeGroup} onValueChange={setFilterAgeGroup}>
+                        <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Semua Usia</SelectItem>
+                          <SelectItem value="dewasa">Jamaah Dewasa (18+)</SelectItem>
+                          <SelectItem value="generus">Generus (&lt;18 thn)</SelectItem>
                         </SelectContent>
                       </Select>
                       {selectedEvent.level === "Daerah" && (

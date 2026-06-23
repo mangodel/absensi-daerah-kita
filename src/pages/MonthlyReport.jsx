@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileBarChart, Users, CalendarCheck, ChevronDown, ChevronUp, Download, Image } from "lucide-react";
 import { MONTHS } from "@/lib/constants";
-import { isAdult } from "@/lib/ageUtils";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
   PieChart, Pie, Cell, LineChart, Line
@@ -73,9 +72,6 @@ export default function MonthlyReport() {
   const members = filterMembers(allMembers);
   const events = filterEvents(allEvents);
 
-  // Build set of adult member IDs to exclude generus from attendance reports
-  const adultMemberIds = new Set(members.filter(isAdult).map(m => m.id));
-
   const month = Number(selectedMonth);
   const year = Number(selectedYear);
 
@@ -84,7 +80,7 @@ export default function MonthlyReport() {
     ? [Math.floor((month - 1) / 3) * 3 + 1, Math.floor((month - 1) / 3) * 3 + 2, Math.floor((month - 1) / 3) * 3 + 3]
     : [month];
 
-  const allMonthAttendances = allAttendances.filter(a => reportMonths.includes(a.month) && a.year === year && adultMemberIds.has(a.member_id));
+  const allMonthAttendances = allAttendances.filter(a => reportMonths.includes(a.month) && a.year === year);
   const monthAttendances = useMemo(() => {
     if (isSuperAdmin) return allMonthAttendances;
     if (isAdminDesa && userDesa) return allMonthAttendances.filter(a => a.desa === userDesa);
@@ -105,7 +101,7 @@ export default function MonthlyReport() {
     }
 
     return desaList.map(desa => {
-      const desaMembers = members.filter(m => m.desa === desa && m.status === "Aktif" && isAdult(m));
+      const desaMembers = members.filter(m => m.desa === desa && m.status === "Aktif");
       const kelompoks = (desaKelompokMap[desa] || []).filter(k =>
         isAdminKelompok ? k === userKelompok : true
       );
@@ -138,7 +134,7 @@ export default function MonthlyReport() {
     });
   }, [members, allMonthAttendances, allEvents, desaKelompokMap, isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok, month, year, filterDesa, filterKelompok]);
 
-  const totalActiveMembers = members.filter(m => m.status === "Aktif" && isAdult(m)).length;
+  const totalActiveMembers = members.filter(m => m.status === "Aktif").length;
   const totalHadir = monthAttendances.filter(a => a.status === "Hadir").length;
   const totalIzinSekolah = monthAttendances.filter(a => a.status === "Izin Sekolah").length;
   const totalIzinKerja = monthAttendances.filter(a => a.status === "Izin Kerja").length;
@@ -413,7 +409,7 @@ export default function MonthlyReport() {
                       {kelompokStats.map(({ kelompok }) => {
                         const thisYear = new Date().getFullYear();
                         const kMembers = members
-                          .filter(m => m.desa === desa && m.kelompok === kelompok && m.status === "Aktif" && isAdult(m))
+                          .filter(m => m.desa === desa && m.kelompok === kelompok && m.status === "Aktif")
                           .sort((a, b) => {
                             const ageA = a.birth_year ? thisYear - a.birth_year : 999;
                             const ageB = b.birth_year ? thisYear - b.birth_year : 999;
@@ -462,7 +458,7 @@ export default function MonthlyReport() {
           <div className="space-y-3">
             <h2 className="text-sm font-semibold text-foreground">Rekap Kehadiran Per Kepala Keluarga (KK)</h2>
             {desaStats.map(({ desa }) => {
-              const desaMembers = members.filter(m => m.desa === desa && m.status === "Aktif" && isAdult(m));
+              const desaMembers = members.filter(m => m.desa === desa && m.status === "Aktif");
               const familyGroups = new Map();
               
               desaMembers.forEach(m => {

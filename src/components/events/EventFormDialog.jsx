@@ -12,13 +12,10 @@ import { useAppConfig } from "@/lib/AppConfigContext";
 import { Users, X, CheckSquare, RefreshCw, Upload, FileText, Loader2 } from "lucide-react";
 import { RECURRING_PATTERNS, RECURRING_DURATIONS, generateRecurringDates, dateToISO } from "@/lib/recurringUtils";
 import EventParticipantManager from "./EventParticipantManager";
-import VenueLocationPicker from "@/components/event-attendance/VenueLocationPicker";
-import { MapPin } from "lucide-react";
 
 const empty = {
   name: "", level: "Kelompok", desa: "", kelompok: "",
   date: "", time: "", description: "", location: "",
-  venue_lat: null, venue_lng: null, venue_radius_m: 200,
   materi: "", pemateri: "", notes: "",
   document_url: "", document_name: "",
   participant_dapukan: [],
@@ -93,7 +90,6 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
   const [form, setForm] = useState(empty);
   const [uploading, setUploading] = useState(false);
   const [selectedPresets, setSelectedPresets] = useState([]); // multi-select preset keys
-  const [showVenuePicker, setShowVenuePicker] = useState(false);
   const isEdit = !!event;
 
   const { data: members = [] } = useQuery({
@@ -194,8 +190,8 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
     });
   };
 
-  // All dapukan options except "Jamaah"
-  const dapukanOptions = DAPUKAN_LIST.filter(d => d !== "Jamaah");
+  // All dapukan options except "Jamaah" / "Jamaah Biasa"
+  const dapukanOptions = DAPUKAN_LIST.filter(d => d !== "Jamaah Biasa" && d !== "Jamaah");
   const selectedDapukan = form.participant_dapukan || [];
   const allSelected = selectedPresets.length === 0 && selectedDapukan.length === 0;
 
@@ -311,49 +307,6 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
             <Label className="text-xs font-medium">Lokasi</Label>
             <Input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} placeholder="Opsional" />
           </div>
-
-          {/* Venue Location (Geo-fence for QR attendance) */}
-          <div className="space-y-2 border border-border rounded-xl p-3 bg-secondary/20">
-            <Label className="text-xs font-medium flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-primary" /> Lokasi Absensi (Geo-fence)
-            </Label>
-            <p className="text-[11px] text-muted-foreground">Tentukan titik lokasi venue. Jamaah hanya bisa absen via QR saat berada di dekat lokasi ini.</p>
-            {form.venue_lat && form.venue_lng ? (
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="text-[10px] bg-accent/10 text-accent border-accent/20">
-                  ✓ {Number(form.venue_lat).toFixed(6)}, {Number(form.venue_lng).toFixed(6)}
-                </Badge>
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowVenuePicker(true)}>Ubah</Button>
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-destructive" onClick={() => setForm(f => ({ ...f, venue_lat: null, venue_lng: null }))}>Hapus</Button>
-              </div>
-            ) : (
-              <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setShowVenuePicker(true)}>
-                <MapPin className="w-3.5 h-3.5 mr-1" /> Pilih Lokasi di Peta
-              </Button>
-            )}
-            {form.venue_lat && form.venue_lng && (
-              <div className="flex items-center gap-2">
-                <Label className="text-[11px] text-muted-foreground whitespace-nowrap">Radius (m):</Label>
-                <Input
-                  type="number"
-                  value={form.venue_radius_m || 200}
-                  onChange={e => setForm(f => ({ ...f, venue_radius_m: Number(e.target.value) || 200 }))}
-                  className="h-8 w-24 text-xs"
-                  min={50}
-                  step={50}
-                />
-              </div>
-            )}
-          </div>
-
-          {showVenuePicker && (
-            <VenueLocationPicker
-              lat={form.venue_lat}
-              lng={form.venue_lng}
-              onConfirm={(lat, lng) => setForm(f => ({ ...f, venue_lat: Number(lat), venue_lng: Number(lng) }))}
-              onClose={() => setShowVenuePicker(false)}
-            />
-          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Deskripsi</Label>

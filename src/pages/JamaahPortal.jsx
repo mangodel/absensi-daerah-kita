@@ -56,7 +56,7 @@ const READONLY_FIELDS = [
   { key: "email", label: "Email" },
   { key: "desa", label: "Desa" },
   { key: "kelompok", label: "Kelompok" },
-  { key: "dapukan", label: "Dapukan", format: (val, member) => getDapukanTitle(val, member?.dapukan_level) },
+  { key: "dapukan", label: "Jabatan", format: (val, member) => getDapukanTitle(val, member?.dapukan_level) },
   { key: "visa_status", label: "Status Visa" },
   { key: "employment", label: "Pekerjaan" },
 ];
