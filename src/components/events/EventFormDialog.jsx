@@ -190,8 +190,8 @@ export default function EventFormDialog({ open, onOpenChange, event, prefilledDa
     });
   };
 
-  // All dapukan options except "Jamaah" / "Jamaah Biasa"
-  const dapukanOptions = DAPUKAN_LIST.filter(d => d !== "Jamaah Biasa" && d !== "Jamaah");
+  // All dapukan options except "Jamaah"
+  const dapukanOptions = DAPUKAN_LIST.filter(d => d !== "Jamaah");
   const selectedDapukan = form.participant_dapukan || [];
   const allSelected = selectedPresets.length === 0 && selectedDapukan.length === 0;
 

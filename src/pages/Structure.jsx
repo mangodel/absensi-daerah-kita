@@ -70,7 +70,6 @@ function getPengurusKategori(pengurusList) {
     if (kat.isOther) {
       members = pengurusList.filter(m =>
         !KNOWN_DAPUKAN.includes(m.dapukan) &&
-        m.dapukan !== "Jamaah Biasa" &&
         m.dapukan !== "Jamaah" &&
         !m.dapukan?.toLowerCase().includes("muball") &&
         !m.dapukan?.toLowerCase().includes("mubaligh")
@@ -91,13 +90,13 @@ function getPengurusKategori(pengurusList) {
 }
 
 function isPengurus(m) {
-  return m.dapukan && m.dapukan !== "Jamaah Biasa" && m.dapukan !== "Jamaah";
+  return m.dapukan && m.dapukan !== "Jamaah";
 }
 
 // Helper: dapatkan label dapukan beserta tingkatannya
 function getDapukanLabel(member) {
   const d = member.dapukan || "";
-  if (!d || d === "Jamaah" || d === "Jamaah Biasa") return null;
+  if (!d || d === "Jamaah") return null;
   return getDapukanTitle(d, member.dapukan_level);
 }
 
@@ -431,7 +430,7 @@ export default function Structure() {
                   const kkSet = new Set(kelompokMembers.filter(m => m.family_group).map(m => m.family_group));
                   const kkCount = kkSet.size;
                   const subKelompoks = [...new Set(kelompokMembers.filter(m => m.sub_kelompok).map(m => m.sub_kelompok))];
-                  const jamaahBiasa = applyMubalighFilter(kelompokMembers.filter(m => !isPengurus(m) && m.dapukan !== "Jamaah" && m.dapukan !== "Jamaah Biasa"));
+                  const jamaahBiasa = applyMubalighFilter(kelompokMembers.filter(m => !isPengurus(m) && m.dapukan !== "Jamaah"));
 
                   const kCitizen = kelompokMembers.filter(m => m.visa_status === "Citizen" && m.status === "Aktif").length;
                   const kPR = kelompokMembers.filter(m => m.visa_status === "PR" && m.status === "Aktif").length;
@@ -477,7 +476,7 @@ export default function Structure() {
                           {jamaahBiasa.map(m => (
                             <div key={m.id} className="text-xs flex items-center justify-between gap-2">
                               <span className="flex items-center gap-1.5">{m.full_name}
-                                {m.dapukan && m.dapukan !== "Jamaah" && m.dapukan !== "Jamaah Biasa" && (
+                                {m.dapukan && m.dapukan !== "Jamaah" && (
                                   <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 bg-violet-50 text-violet-700 border-violet-200">{m.dapukan}</Badge>
                                 )}
                               </span>

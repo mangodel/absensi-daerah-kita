@@ -127,7 +127,7 @@ export default function JamaahDashboard() {
               <p className="font-medium text-foreground">{myMember.desa} / {myMember.kelompok}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-0.5">Jabatan</p>
+              <p className="text-xs text-muted-foreground mb-0.5">Dapukan</p>
               <Badge variant="outline" className="text-xs">
                 {getDapukanTitle(myMember.dapukan, myMember.dapukan_level)}
               </Badge>

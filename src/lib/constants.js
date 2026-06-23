@@ -28,7 +28,7 @@ export const DAPUKAN_LIST = [
   // Keluarga
   "Kepala Keluarga",
 ];
-// Dapukan pengurus (non-Jamaah Biasa), urutan tampil di Struktur
+// Dapukan pengurus (non-Jamaah), urutan tampil di Struktur
 export const DAPUKAN_PENGURUS_ORDER = [
   "Ki", "Wakil",
   "KU", "PKU",

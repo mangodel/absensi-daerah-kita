@@ -157,7 +157,7 @@ export default function GoogleSheetSync() {
         muballigh_status: getField(r, "muballigh_status") || undefined,
         employment:       getField(r, "employment") || undefined,
         phone:            getField(r, "phone") || undefined,
-        dapukan:          getField(r, "dapukan") || "Jamaah Biasa",
+        dapukan:          getField(r, "dapukan") || "Jamaah",
         desa:             getField(r, "desa") || defaultDesa,
         kelompok:         getField(r, "kelompok") || defaultKelompok || "",
         status:           "Aktif",

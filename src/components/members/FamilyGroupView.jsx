@@ -108,7 +108,7 @@ function MemberRow({ member, index, isHead, onEdit, onDelete }) {
           {isHead && (
             <Badge className="text-[9px] px-1 py-0 h-4 bg-primary/10 text-primary border-primary/20" variant="outline">KK</Badge>
           )}
-          {member.dapukan && member.dapukan !== "Jamaah" && member.dapukan !== "Jamaah Biasa" && (
+          {member.dapukan && member.dapukan !== "Jamaah" && (
             <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">{member.dapukan}</Badge>
           )}
         </div>
@@ -165,7 +165,7 @@ function MemberRowMandiri({ member, onEdit, onDelete }) {
           <Badge className="text-[9px] px-1.5 py-0 h-4 bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-400 dark:border-violet-700" variant="outline">
             KK Mandiri
           </Badge>
-          {member.dapukan && member.dapukan !== "Jamaah" && member.dapukan !== "Jamaah Biasa" && (
+          {member.dapukan && member.dapukan !== "Jamaah" && (
             <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">{member.dapukan}</Badge>
           )}
         </div>
