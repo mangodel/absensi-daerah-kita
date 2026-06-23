@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
             emailsSent += batch.length;
           } else {
             const errText = await res.text();
-            console.error(`Resend batch error:`, errText);
+            console.error(`Resend batch error (from: ${fromEmail}):`, errText);
             emailsFailed += batch.length;
           }
         } catch (err) {
