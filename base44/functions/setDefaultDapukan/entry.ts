@@ -16,8 +16,9 @@ Deno.serve(async (req) => {
         // Get all members
         const allMembers = await base44.entities.Member.list();
         
-        // Find members with missing or non-Jamaah dapukan
-        const toUpdate = allMembers.filter(m => !m.dapukan || m.dapukan === 'anggota' || m.dapukan === 'Anggota');
+        // Find members with missing or non-Jamaah dapukan (handle legacy values: anggota, Anggota, Jamaah Biasa, jamaah biasa)
+        const legacyValues = ['anggota', 'Anggota', 'Jamaah Biasa', 'jamaah biasa', 'JAMAH BIASA', 'Jamaah biasa'];
+        const toUpdate = allMembers.filter(m => !m.dapukan || legacyValues.includes(m.dapukan));
 
         if (toUpdate.length === 0) {
             return Response.json({ message: 'No members to update', count: 0 });
