@@ -25,6 +25,7 @@ import MemberCardPortal from "@/components/portal/MemberCardPortal";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { toast } from "sonner";
 import { getDapukanTitle } from "@/lib/constants";
+import { getFamilyMembersWithHead, sortFamilyMembers, getFamilyRole } from "@/lib/familyUtils";
 import { Link } from "react-router-dom";
 
 const COUNTRY_CODES = [
@@ -100,10 +101,9 @@ export default function JamaahPortal() {
     ? members.find(m => m.email?.toLowerCase() === jamaahUser?.email?.toLowerCase())
     : null;
 
-  // Ambil semua anggota keluarga dengan family_group yang sama
-  const familyMembers = myMember
-    ? members.filter(m => m.family_group === myMember.family_group)
-    : [];
+  // Ambil semua anggota keluarga dengan family_group yang sama (termasuk inject KK)
+  const { familyMembers, familyHead } = getFamilyMembersWithHead(members, myMember);
+  const sortedFamilyMembers = sortFamilyMembers(familyMembers, familyHead);
 
   useEffect(() => {
     if (myMember) {
@@ -521,33 +521,19 @@ export default function JamaahPortal() {
                 <Users className="w-4 h-4 text-accent" />
                 Anggota Keluarga ({familyMembers.length})
               </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">Grup: {myMember?.family_group}</p>
+              <p className="text-xs text-muted-foreground mt-1">Grup: {familyHead?.full_name || myMember?.family_group || "-"}</p>
             </CardHeader>
             <CardContent className="space-y-2">
-            {[...familyMembers].sort((a, b) => {
-             // Urutan: Kepala Keluarga, Istri, Anak (berdasarkan tahun lahir tertua ke termuda)
-             const aIsKepala = a.id === myMember?.id ? 0 : 1;
-             const bIsKepala = b.id === myMember?.id ? 0 : 1;
-
-             if (aIsKepala !== bIsKepala) return aIsKepala - bIsKepala;
-
-             // Jika kedua-duanya bukan kepala, urutkan berdasarkan tahun lahir (tertua terlebih dahulu)
-             const aYear = a.birth_year || 9999;
-             const bYear = b.birth_year || 9999;
-             return aYear - bYear;
-            }).map(member => {
-             const isKepalaKeluarga = member.id === myMember?.id;
-             const isIstri = !isKepalaKeluarga && member.marital_status === "Menikah" && member.gender === "Perempuan";
-             const isAnak = !isKepalaKeluarga && (member.marital_status === "Belum Menikah" || member.marital_status === null || member.marital_status === "");
+            {sortedFamilyMembers.map(member => {
+             const role = getFamilyRole(member, familyHead);
+             const isKepalaKeluarga = role === "Kepala Keluarga";
 
              return (
                <div key={member.id} className={`p-3 rounded-lg border ${isKepalaKeluarga ? 'border-primary/30 bg-primary/5' : 'border-border'} flex items-center justify-between`}>
                  <div className="flex-1">
                    <p className="text-sm font-semibold">{member.full_name}</p>
                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                     {isKepalaKeluarga && <Badge className="text-[10px] h-auto py-0.5">Kepala Keluarga</Badge>}
-                     {isIstri && <Badge variant="secondary" className="text-[10px] h-auto py-0.5">Istri</Badge>}
-                     {isAnak && <Badge variant="outline" className="text-[10px] h-auto py-0.5">Anak</Badge>}
+                     {role && <Badge variant={isKepalaKeluarga ? "default" : role === "Istri" ? "secondary" : "outline"} className="text-[10px] h-auto py-0.5">{role}</Badge>}
                      {member.gender && <span className="text-xs text-muted-foreground">{member.gender}</span>}
                    </div>
                    {member.phone && <p className="text-xs text-muted-foreground mt-1">{member.phone}</p>}
@@ -616,28 +602,18 @@ export default function JamaahPortal() {
               <Card className="border-accent/20">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold">Anggota Keluarga ({familyMembers.length})</CardTitle>
-                  <p className="text-xs text-muted-foreground mt-1">Grup: {myMember?.family_group}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Grup: {familyHead?.full_name || myMember?.family_group || "-"}</p>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {[...familyMembers].sort((a, b) => {
-                    const aIsKepala = a.id === myMember?.id ? 0 : 1;
-                    const bIsKepala = b.id === myMember?.id ? 0 : 1;
-                    if (aIsKepala !== bIsKepala) return aIsKepala - bIsKepala;
-                    const aYear = a.birth_year || 9999;
-                    const bYear = b.birth_year || 9999;
-                    return aYear - bYear;
-                  }).map(member => {
-                    const isKepalaKeluarga = member.id === myMember?.id;
-                    const isIstri = !isKepalaKeluarga && member.marital_status === "Menikah" && member.gender === "Perempuan";
-                    const isAnak = !isKepalaKeluarga && (member.marital_status === "Belum Menikah" || member.marital_status === null || member.marital_status === "");
+                  {sortedFamilyMembers.map(member => {
+                    const role = getFamilyRole(member, familyHead);
+                    const isKepalaKeluarga = role === "Kepala Keluarga";
                     return (
                       <div key={member.id} className={`p-3 rounded-lg border ${isKepalaKeluarga ? 'border-primary/30 bg-primary/5' : 'border-border'} flex items-center justify-between`}>
                         <div className="flex-1">
                           <p className="text-sm font-semibold">{member.full_name}</p>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            {isKepalaKeluarga && <Badge className="text-[10px] h-auto py-0.5">Kepala Keluarga</Badge>}
-                            {isIstri && <Badge variant="secondary" className="text-[10px] h-auto py-0.5">Istri</Badge>}
-                            {isAnak && <Badge variant="outline" className="text-[10px] h-auto py-0.5">Anak</Badge>}
+                            {role && <Badge variant={isKepalaKeluarga ? "default" : role === "Istri" ? "secondary" : "outline"} className="text-[10px] h-auto py-0.5">{role}</Badge>}
                             {member.gender && <span className="text-xs text-muted-foreground">{member.gender}</span>}
                           </div>
                           {member.phone && <p className="text-xs text-muted-foreground mt-1">{member.phone}</p>}
