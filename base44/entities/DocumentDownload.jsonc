@@ -34,5 +34,46 @@
   "required": [
     "document_id",
     "downloaded_by"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "handler_allow": true
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "admin_desa"
+              }
+            },
+            {
+              "data.desa": "{{user.desa}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "super_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "super_admin"
+      }
+    }
+  }
 }

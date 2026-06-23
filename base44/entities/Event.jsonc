@@ -136,5 +136,132 @@
     "name",
     "level",
     "date"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "admin_desa"
+              }
+            },
+            {
+              "data.level": "Desa",
+              "data.desa": "{{user.desa}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "admin_kelompok"
+              }
+            },
+            {
+              "data.level": "Kelompok",
+              "data.kelompok": "{{user.kelompok}}",
+              "data.desa": "{{user.desa}}"
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.level": "Daerah"
+        },
+        {
+          "$and": [
+            {
+              "data.level": "Desa"
+            },
+            {
+              "data.desa": "{{user.desa}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.level": "Kelompok"
+            },
+            {
+              "data.desa": "{{user.desa}}"
+            },
+            {
+              "data.kelompok": "{{user.kelompok}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "admin_desa"
+              }
+            },
+            {
+              "data.desa": "{{user.desa}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "admin_kelompok"
+              }
+            },
+            {
+              "data.kelompok": "{{user.kelompok}}",
+              "data.desa": "{{user.desa}}"
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "super_admin"
+      }
+    }
+  }
 }

@@ -49,5 +49,39 @@
   "required": [
     "event_id",
     "full_name"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "handler_allow": true
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin_desa"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin_kelompok"
+          }
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        }
+      ]
+    },
+    "update": null,
+    "delete": null
+  }
 }

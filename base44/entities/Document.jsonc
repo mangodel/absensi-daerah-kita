@@ -66,5 +66,107 @@
   "required": [
     "title",
     "file_url"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "admin_desa"
+              }
+            },
+            {
+              "data.target_desa": "{{user.desa}}"
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.scope": "Semua"
+        },
+        {
+          "$and": [
+            {
+              "data.scope": "Desa"
+            },
+            {
+              "data.target_desa": "{{user.desa}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "data.scope": "Kelompok"
+            },
+            {
+              "data.target_desa": "{{user.desa}}"
+            },
+            {
+              "data.target_kelompok": "{{user.kelompok}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "created_by_id": "{{user.id}}"
+        }
+      ]
+    }
+  }
 }
