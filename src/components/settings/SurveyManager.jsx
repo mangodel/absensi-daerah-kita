@@ -26,11 +26,15 @@ import {
 import { Plus, Trash2, Edit2, Loader2, BarChart2 } from "lucide-react";
 import { toast } from "sonner";
 import SurveyResultSummary from "./SurveyResultSummary";
+import { useUserRole } from "@/lib/useUserRole";
+import { useAuth } from "@/lib/AuthContext";
 
 const QUESTION_TYPES = ["text", "radio", "checkbox"];
 
 export default function SurveyManager() {
   const queryClient = useQueryClient();
+  const { isSuperAdmin, isAdminDesa, isAdminKelompok, userDesa, userKelompok } = useUserRole();
+  const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSurvey, setEditingSurvey] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -40,11 +44,37 @@ export default function SurveyManager() {
   const [questions, setQuestions] = useState([]);
   const [status, setStatus] = useState("Draft");
   const [deadline, setDeadline] = useState("");
+  const [targetScope, setTargetScope] = useState("Semua");
+  const [targetDesa, setTargetDesa] = useState("");
+  const [targetKelompok, setTargetKelompok] = useState("");
 
-  const { data: surveys = [], isLoading } = useQuery({
+  const { data: allSurveys = [], isLoading } = useQuery({
     queryKey: ["surveys"],
     queryFn: () => base44.entities.SurveyConfig.list(),
   });
+
+  // Scope surveys berdasarkan role:
+  // super_admin → semua
+  // admin_desa → Semua + Desa miliknya + Kelompok se-desanya
+  // admin_kelompok → Semua + Desa miliknya + Kelompok miliknya saja
+  const surveys = allSurveys.filter(s => {
+    if (isSuperAdmin) return true;
+    if (s.target_scope === "Semua") return true;
+    if (isAdminDesa && userDesa) {
+      if (s.target_scope === "Desa" && s.target_desa === userDesa) return true;
+      if (s.target_scope === "Kelompok" && s.target_desa === userDesa) return true;
+      return false;
+    }
+    if (isAdminKelompok && userDesa && userKelompok) {
+      if (s.target_scope === "Desa" && s.target_desa === userDesa) return true;
+      if (s.target_scope === "Kelompok" && s.target_desa === userDesa && s.target_kelompok === userKelompok) return true;
+      return false;
+    }
+    return false;
+  });
+
+  // Hanya super_admin atau pembuat survei yang boleh hapus
+  const canDelete = (s) => isSuperAdmin || s.created_by === user?.email;
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.SurveyConfig.create(data),
@@ -85,6 +115,10 @@ export default function SurveyManager() {
     setQuestions([]);
     setStatus("Draft");
     setDeadline("");
+    // Auto-set scope berdasarkan role admin
+    setTargetScope(isAdminKelompok ? "Kelompok" : isAdminDesa ? "Desa" : "Semua");
+    setTargetDesa(isAdminDesa || isAdminKelompok ? (userDesa || "") : "");
+    setTargetKelompok(isAdminKelompok ? (userKelompok || "") : "");
   };
 
   const handleAddQuestion = () => {
@@ -118,18 +152,35 @@ export default function SurveyManager() {
       return;
     }
 
+    // Validasi scope: admin_kelompok hanya bisa buat untuk kelompoknya
+    if (targetScope === "Kelompok" && !targetDesa) {
+      toast.error("Desa target diperlukan untuk scope Kelompok");
+      return;
+    }
+    if (targetScope === "Desa" && !targetDesa) {
+      toast.error("Desa target diperlukan untuk scope Desa");
+      return;
+    }
+
     const data = {
       title,
       description,
       questions: JSON.stringify(questions),
       status,
       deadline: deadline || null,
+      target_scope: targetScope,
+      target_desa: targetScope === "Semua" ? "" : targetDesa,
+      target_kelompok: targetScope === "Kelompok" ? targetKelompok : "",
     };
 
     if (editingSurvey) {
       updateMutation.mutate({ id: editingSurvey.id, data });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate({
+        ...data,
+        created_by: user?.email || "",
+        created_by_name: user?.full_name || user?.email || "",
+      });
     }
   };
 
@@ -140,6 +191,9 @@ export default function SurveyManager() {
     setQuestions(JSON.parse(survey.questions));
     setStatus(survey.status);
     setDeadline(survey.deadline || "");
+    setTargetScope(survey.target_scope || "Semua");
+    setTargetDesa(survey.target_desa || "");
+    setTargetKelompok(survey.target_kelompok || "");
     setDialogOpen(true);
   };
 
@@ -184,10 +238,24 @@ export default function SurveyManager() {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mb-2">{survey.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {JSON.parse(survey.questions).length} pertanyaan
-                      {survey.deadline && ` • Deadline: ${new Date(survey.deadline).toLocaleDateString('id-ID')}`}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>
+                        {JSON.parse(survey.questions).length} pertanyaan
+                        {survey.deadline && ` • Deadline: ${new Date(survey.deadline).toLocaleDateString('id-ID')}`}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <Badge variant="secondary" className="text-[11px]">
+                        {survey.target_scope === "Desa" ? `Desa ${survey.target_desa}` :
+                         survey.target_scope === "Kelompok" ? `Kel. ${survey.target_kelompok}` :
+                         "Semua Jamaah"}
+                      </Badge>
+                      {survey.created_by_name && (
+                        <span className="text-[11px] text-muted-foreground/70">
+                          oleh {survey.created_by_name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -206,14 +274,16 @@ export default function SurveyManager() {
                     >
                       <Edit2 className="w-4 h-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setDeleteTarget(survey)}
-                      className="text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {canDelete(survey) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setDeleteTarget(survey)}
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -279,6 +349,54 @@ export default function SurveyManager() {
                 <option value="Selesai">Selesai</option>
               </select>
             </div>
+
+            {/* Target Scope */}
+            <div className="space-y-1">
+              <Label>Target Penerima</Label>
+              <select
+                value={targetScope}
+                onChange={(e) => setTargetScope(e.target.value)}
+                disabled={isAdminDesa || isAdminKelompok}
+                className="w-full h-9 px-3 rounded-md border border-input bg-transparent text-sm disabled:opacity-60"
+              >
+                <option value="Semua">Semua Jamaah</option>
+                {(!isAdminKelompok) && <option value="Desa">Desa Tertentu</option>}
+                <option value="Kelompok">Kelompok Tertentu</option>
+              </select>
+              {(isAdminDesa || isAdminKelompok) && (
+                <p className="text-[11px] text-muted-foreground italic">
+                  Scope terkunci sesuai level admin Anda
+                </p>
+              )}
+            </div>
+
+            {/* Target Desa */}
+            {targetScope !== "Semua" && (
+              <div className="space-y-1">
+                <Label>Desa Target</Label>
+                <Input
+                  value={targetDesa}
+                  onChange={(e) => setTargetDesa(e.target.value)}
+                  disabled={isAdminDesa || isAdminKelompok}
+                  placeholder="Nama desa"
+                  className="disabled:opacity-60"
+                />
+              </div>
+            )}
+
+            {/* Target Kelompok */}
+            {targetScope === "Kelompok" && (
+              <div className="space-y-1">
+                <Label>Kelompok Target</Label>
+                <Input
+                  value={targetKelompok}
+                  onChange={(e) => setTargetKelompok(e.target.value)}
+                  disabled={isAdminKelompok}
+                  placeholder="Nama kelompok"
+                  className="disabled:opacity-60"
+                />
+              </div>
+            )}
 
             {/* Questions */}
             <div className="space-y-3">

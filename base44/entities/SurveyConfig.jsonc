@@ -51,6 +51,14 @@
       "type": "boolean",
       "default": false,
       "description": "Boleh isi lebih dari sekali?"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Email admin yang membuat survei"
+    },
+    "created_by_name": {
+      "type": "string",
+      "description": "Nama admin yang membuat survei"
     }
   },
   "required": [

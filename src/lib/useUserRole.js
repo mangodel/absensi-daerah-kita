@@ -68,6 +68,9 @@ export function useUserRole() {
   // Broadcast: only admins can manage, jamaah cannot
   const canManageBroadcasts = isSuperAdmin || isAdminDesa || isAdminKelompok;
 
+  // Survey: only admins can manage, jamaah cannot
+  const canManageSurveys = isSuperAdmin || isAdminDesa || isAdminKelompok;
+
   // Event management: admin_kelompok hanya bisa buat/edit event Kelompok
   const canManageEvents = isSuperAdmin || isAdminDesa || isAdminKelompok;
   const canManageOnlyKelompokEvents = isAdminKelompok && !isSuperAdmin && !isAdminDesa;
@@ -109,5 +112,6 @@ export function useUserRole() {
     canInviteUsers,
     canAccessSettings,
     canManageBroadcasts,
+    canManageSurveys,
   };
 }

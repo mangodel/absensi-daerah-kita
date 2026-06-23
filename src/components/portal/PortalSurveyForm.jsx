@@ -85,9 +85,17 @@ export default function PortalSurveyForm({ member, user }) {
   const [openSurveyId, setOpenSurveyId] = useState(null);
   const [answers, setAnswers] = useState({});
 
-  const { data: surveys = [], isLoading } = useQuery({
+  const { data: allActiveSurveys = [], isLoading } = useQuery({
     queryKey: ["surveys-active"],
     queryFn: () => base44.entities.SurveyConfig.filter({ status: "Aktif" }),
+  });
+
+  // Filter surveys berdasarkan scope: jamaah hanya lihat survei yang ditargetkan ke mereka
+  const surveys = (allActiveSurveys || []).filter(s => {
+    if (!s.target_scope || s.target_scope === "Semua") return true;
+    if (s.target_scope === "Desa") return s.target_desa === member?.desa;
+    if (s.target_scope === "Kelompok") return s.target_desa === member?.desa && s.target_kelompok === member?.kelompok;
+    return false;
   });
 
   const { data: myResponses = [] } = useQuery({
