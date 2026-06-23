@@ -33,32 +33,55 @@ Deno.serve(async (req) => {
       recipients = allMembers.filter(m => m.status !== 'Tidak Aktif');
     }
 
-    // Kirim email (hanya jika channel === 'Email')
+    // Kirim email via Resend API (hanya jika channel === 'Email')
     let emailsSent = 0;
     let emailsFailed = 0;
 
     if (channel === 'Email') {
       const emailRecipients = recipients.filter(m => m.email && m.email.includes('@'));
 
-      for (const member of emailRecipients) {
+      const htmlBody = `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #4f46e5; margin-bottom: 16px;">${title}</h2>
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; white-space: pre-wrap; line-height: 1.6;">${message}</div>
+        ${zoom_link ? `<div style="margin-top: 20px; padding: 16px; background: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 4px;">
+          <p style="margin: 0 0 8px 0; color: #0c4a6e; font-weight: bold;">🔗 Link Zoom:</p>
+          <a href="${zoom_link}" style="color: #0284c7; text-decoration: none; font-weight: bold;">${zoom_link}</a>
+        </div>` : ''}
+        <p style="color: #888; font-size: 12px; margin-top: 24px;">Pesan ini dikirim oleh ${user.full_name || user.email} melalui Portal Jamaah.</p>
+      </div>`;
+
+      const apiKey = Deno.env.get("RESEND_API_KEY");
+      const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev";
+
+      // Batch kirim 50 email per request (batas aman Resend)
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < emailRecipients.length; i += BATCH_SIZE) {
+        const batch = emailRecipients.slice(i, i + BATCH_SIZE);
+        const toEmails = batch.map(m => m.email);
         try {
-          await base44.asServiceRole.integrations.Core.SendEmail({
-            to: member.email,
-            subject: title,
-            body: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-              <h2 style="color: #4f46e5; margin-bottom: 16px;">${title}</h2>
-              <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; white-space: pre-wrap; line-height: 1.6;">${message}</div>
-              ${zoom_link ? `<div style="margin-top: 20px; padding: 16px; background: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 4px;">
-                <p style="margin: 0 0 8px 0; color: #0c4a6e; font-weight: bold;">🔗 Link Zoom:</p>
-                <a href="${zoom_link}" style="color: #0284c7; text-decoration: none; font-weight: bold;">${zoom_link}</a>
-              </div>` : ''}
-              <p style="color: #888; font-size: 12px; margin-top: 24px;">Pesan ini dikirim oleh ${user.full_name || user.email} melalui Portal Jamaah.</p>
-            </div>`
+          const res = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              from: fromEmail,
+              to: toEmails,
+              subject: title,
+              html: htmlBody
+            })
           });
-          emailsSent++;
+          if (res.ok) {
+            emailsSent += batch.length;
+          } else {
+            const errText = await res.text();
+            console.error(`Resend batch error:`, errText);
+            emailsFailed += batch.length;
+          }
         } catch (err) {
-          console.error(`Failed to send to ${member.email}:`, err.message);
-          emailsFailed++;
+          console.error(`Resend batch failed:`, err.message);
+          emailsFailed += batch.length;
         }
       }
     }
