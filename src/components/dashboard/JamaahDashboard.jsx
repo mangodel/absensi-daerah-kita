@@ -7,6 +7,7 @@ import { User, Users, CalendarCheck, ClipboardList, Home, Phone, Mail, MapPin } 
 import { getFamilyMembersWithHead, sortFamilyMembers, getFamilyRole } from "@/lib/familyUtils";
 import { getDapukanTitle } from "@/lib/constants";
 import { MONTHS } from "@/lib/constants";
+import { isAdult } from "@/lib/ageUtils";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -44,13 +45,13 @@ export default function JamaahDashboard() {
   const { familyMembers, familyHead } = getFamilyMembersWithHead(members, myMember);
   const sortedFamilyMembers = sortFamilyMembers(familyMembers, familyHead);
 
-  // Filter attendance untuk diri sendiri + keluarga
-  const familyIds = familyMembers.map(m => m.id);
-  const familyAttendances = attendances.filter(a => familyIds.includes(a.member_id));
+  // Filter attendance untuk diri sendiri + keluarga (hanya dewasa 18+)
+  const adultFamilyIds = familyMembers.filter(isAdult).map(m => m.id);
+  const familyAttendances = attendances.filter(a => adultFamilyIds.includes(a.member_id));
   const yearFamilyAttendances = familyAttendances.filter(a => a.year === Number(selectedYear));
 
   // Statistik kehadiran
-  const myAttendances = attendances.filter(a => a.member_id === myMember?.id && a.year === Number(selectedYear));
+  const myAttendances = familyAttendances.filter(a => a.member_id === myMember?.id && a.year === Number(selectedYear));
   const myHadir = myAttendances.filter(a => a.status === "Hadir").length;
   const myRate = myAttendances.length > 0 ? Math.round((myHadir / myAttendances.length) * 100) : 0;
 
@@ -237,8 +238,8 @@ export default function JamaahDashboard() {
           ) : (
             <div className="space-y-2">
               {sortedFamilyMembers.map((m, i) => {
-                const role = getFamilyRole(m, familyHead);
-                const memberAtts = attendances.filter(a => a.member_id === m.id && a.year === Number(selectedYear));
+                 const role = getFamilyRole(m, familyHead);
+                 const memberAtts = familyAttendances.filter(a => a.member_id === m.id && a.year === Number(selectedYear));
                 const hadir = memberAtts.filter(a => a.status === "Hadir").length;
                 const rate = memberAtts.length > 0 ? Math.round((hadir / memberAtts.length) * 100) : null;
                 const isMe = m.id === myMember?.id;

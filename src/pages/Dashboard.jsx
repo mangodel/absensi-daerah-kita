@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { isToday, isPast, format } from "date-fns";
 import { id } from "date-fns/locale";
 import { MONTHS } from "@/lib/constants";
+import { isAdult } from "@/lib/ageUtils";
 import KelompokAttendanceDetail from "@/components/dashboard/KelompokAttendanceDetail";
 import JamaahDashboard from "@/components/dashboard/JamaahDashboard";
 import { toast } from "sonner";
@@ -147,6 +148,10 @@ export default function Dashboard() {
   const members = filterMembers(allMembers);
   const events = filterEvents(allEvents);
 
+  // Filter attendance to only include adults (18+) — generus excluded from attendance/reports
+  const adultMemberIds = new Set(members.filter(isAdult).map(m => m.id));
+  const adultAttendances = attendances.filter(a => adultMemberIds.has(a.member_id));
+
   const activeMembers = members.filter(m => m.status === "Aktif").length;
   const inactiveMembers = members.filter(m => m.status === "Tidak Aktif").length;
 
@@ -170,7 +175,7 @@ export default function Dashboard() {
     const mandiri = scopedMems.filter(m => !m.family_group || !m.family_group.trim()).length;
     return berkelompok + mandiri;
   }, [members, isAdminKelompok, isAdminDesa, userKelompok, userDesa]);
-  const yearAttendances = attendances.filter(a => a.year === Number(selectedYear));
+  const yearAttendances = adultAttendances.filter(a => a.year === Number(selectedYear));
   // Admin kelompok: only kelompok-level events attendance (exclude Daerah events)
   // Kelompok: all attendance for their kelompok (including Daerah/Desa events they attend)
   const scopedAttendances = isAdminKelompok && userKelompok
@@ -225,16 +230,17 @@ export default function Dashboard() {
   const lastMonthYear = lastMonth.getFullYear();
   
   const lowAttendanceMembers = useMemo(() => {
-    const lastMonthAtts = attendances.filter(a => a.month === lastMonthNum && a.year === lastMonthYear);
+    const lastMonthAtts = adultAttendances.filter(a => a.month === lastMonthNum && a.year === lastMonthYear);
     
     return members.filter(m => {
+      if (!isAdult(m)) return false; // Generus tidak masuk laporan absensi
       const memberAtts = lastMonthAtts.filter(a => a.member_id === m.id);
       if (memberAtts.length === 0) return false; // Tidak ada data absensi
       const hadirCount = memberAtts.filter(a => a.status === "Hadir").length;
       const rate = (hadirCount / memberAtts.length) * 100;
       return rate < 50;
     });
-  }, [members, attendances, lastMonthNum, lastMonthYear]);
+  }, [members, adultAttendances, lastMonthNum, lastMonthYear]);
 
   if (isJamaah) return <JamaahDashboard />;
 
@@ -337,7 +343,7 @@ export default function Dashboard() {
           {isAdminKelompok && (
             <KelompokAttendanceDetail
               members={members}
-              attendances={attendances}
+              attendances={adultAttendances}
               kelompok={userKelompok}
               month={new Date().getMonth() + 1}
               year={new Date().getFullYear()}
@@ -353,7 +359,7 @@ export default function Dashboard() {
                     <p className="text-sm font-semibold text-foreground">{k}</p>
                     <KelompokAttendanceDetail
                       members={members}
-                      attendances={attendances}
+                      attendances={adultAttendances}
                       kelompok={k}
                       month={new Date().getMonth() + 1}
                       year={new Date().getFullYear()}
@@ -449,7 +455,7 @@ export default function Dashboard() {
               <p className="text-sm text-amber-800 mb-3">Kehadiran di bawah 50% pada {format(lastMonth, "MMMM yyyy", { locale: id })}</p>
               <div className="space-y-2">
                 {lowAttendanceMembers.slice(0, 5).map(m => {
-                  const memberAtts = attendances.filter(a => a.member_id === m.id && a.month === lastMonthNum && a.year === lastMonthYear);
+                  const memberAtts = adultAttendances.filter(a => a.member_id === m.id && a.month === lastMonthNum && a.year === lastMonthYear);
                   const hadirCount = memberAtts.filter(a => a.status === "Hadir").length;
                   const rate = Math.round((hadirCount / memberAtts.length) * 100);
                   return (
@@ -515,7 +521,7 @@ export default function Dashboard() {
       {/* Mini Laporan Bulanan — untuk admin desa & kelompok */}
       {(isAdminDesa || isAdminKelompok) && (
         <MiniMonthlyReport
-          attendances={attendances}
+          attendances={adultAttendances}
           members={members}
           isAdminDesa={isAdminDesa}
           isAdminKelompok={isAdminKelompok}

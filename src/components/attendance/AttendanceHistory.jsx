@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { MONTHS } from "@/lib/constants";
+import { getAdultMemberIds } from "@/lib/ageUtils";
 import { format } from "date-fns";
 
 const statusColors = {
@@ -11,7 +12,8 @@ const statusColors = {
 };
 
 export default function AttendanceHistory({ attendances, members, month, year }) {
-  const monthRecords = attendances.filter(a => a.month === month && a.year === year);
+  const adultIds = getAdultMemberIds(members);
+  const monthRecords = attendances.filter(a => a.month === month && a.year === year && adultIds.has(a.member_id));
 
   // Group by member
   const memberMap = {};

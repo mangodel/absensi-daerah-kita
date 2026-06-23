@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { MONTHS } from "@/lib/constants";
+import { getAdultMemberIds } from "@/lib/ageUtils";
 
 const STATUS_COLORS = {
   Hadir: "#22c55e",
@@ -17,6 +18,8 @@ export default function AttendanceChart({ attendances, members, year, filterDesa
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
+  const adultIds = getAdultMemberIds(members);
+
   const monthlyData = useMemo(() => {
     // Only show months up to current month for the selected year
     const maxMonth = year === currentYear ? currentMonth : 12;
@@ -25,7 +28,8 @@ export default function AttendanceChart({ attendances, members, year, filterDesa
         const matchMonth = a.month === idx + 1 && a.year === year;
         const matchDesa = !filterDesa || filterDesa === "all" || a.desa === filterDesa;
         const matchKelompok = !filterKelompok || filterKelompok === "all" || a.kelompok === filterKelompok;
-        return matchMonth && matchDesa && matchKelompok;
+        const matchAdult = adultIds.has(a.member_id);
+        return matchMonth && matchDesa && matchKelompok && matchAdult;
       });
       const hadir = monthAtts.filter(a => a.status === "Hadir").length;
       const izinSekolah = monthAtts.filter(a => a.status === "Izin Sekolah").length;
@@ -42,7 +46,7 @@ export default function AttendanceChart({ attendances, members, year, filterDesa
         rate: total > 0 ? Math.round((hadir / total) * 100) : 0,
       };
     });
-  }, [attendances, year, filterDesa, filterKelompok]);
+  }, [attendances, members, year, filterDesa, filterKelompok, adultIds]);
 
   // For chart rendering, only include months that have actual data
   const chartData = monthlyData.filter(d => d.total > 0);

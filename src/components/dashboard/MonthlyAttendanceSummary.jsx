@@ -6,6 +6,7 @@ import { useAppConfig } from "@/lib/AppConfigContext";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, TrendingDown, Users } from "lucide-react";
 import { MONTHS } from "@/lib/constants";
+import { isAdult } from "@/lib/ageUtils";
 
 export default function MonthlyAttendanceSummary() {
   const { config } = useAppConfig();
@@ -25,7 +26,7 @@ export default function MonthlyAttendanceSummary() {
   
   const stats = useMemo(() => {
     // Filter berdasarkan role
-    let relevantMembers = allMembers.filter(m => m.status === "Aktif");
+    let relevantMembers = allMembers.filter(m => m.status === "Aktif" && isAdult(m));
     
     if (isAdminKelompok && userKelompok) {
       relevantMembers = relevantMembers.filter(m => m.kelompok === userKelompok);

@@ -1,23 +1,7 @@
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Users, TrendingUp, TrendingDown } from "lucide-react";
-
-const THIS_YEAR = new Date().getFullYear();
-
-function getAge(birth_year) {
-  if (!birth_year) return null;
-  return THIS_YEAR - birth_year;
-}
-
-function isGenerus(member) {
-  const age = getAge(member.birth_year);
-  return age !== null && age < 18;
-}
-
-function isDewasa(member) {
-  const age = getAge(member.birth_year);
-  return age === null || age >= 18;
-}
+import { Users } from "lucide-react";
+import { isAdult, isGenerus } from "@/lib/ageUtils";
 
 export default function KelompokAttendanceDetail({ members, attendances, kelompok, month, year }) {
   const kelompokMembers = members.filter(
@@ -29,9 +13,9 @@ export default function KelompokAttendanceDetail({ members, attendances, kelompo
   );
 
   const memberStats = useMemo(() => {
-    const dewasa = kelompokMembers.filter(m => isDewasa(m));
-    const generus = kelompokMembers.filter(m => isGenerus(m));
-    const sorted = [...dewasa, ...generus];
+    // Only show adults (18+) in attendance detail — generus excluded from attendance
+    const dewasa = kelompokMembers.filter(m => isAdult(m));
+    const sorted = [...dewasa];
 
     return sorted.map((m, i) => {
       const atts = filtered.filter(a => a.member_id === m.id);
@@ -50,8 +34,8 @@ export default function KelompokAttendanceDetail({ members, attendances, kelompo
       <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
         <span className="flex items-center gap-1"><Users className="w-3 h-3" />{kelompokMembers.length} anggota</span>
         <span className="text-primary font-medium">
-          {memberStats.filter(m => !m.isGenerus).length} Dewasa (18+) ·{" "}
-          <span className="text-purple-600">{memberStats.filter(m => m.isGenerus).length} Generus</span>
+          {memberStats.length} Dewasa (18+) ·{" "}
+          <span className="text-purple-600">{kelompokMembers.filter(m => isGenerus(m)).length} Generus</span>
         </span>
       </div>
 
