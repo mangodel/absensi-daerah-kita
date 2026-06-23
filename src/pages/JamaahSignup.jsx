@@ -51,6 +51,12 @@ export default function JamaahSignup() {
     try {
       const result = await base44.auth.verifyOtp({ email: formData.email, otpCode });
       base44.auth.setToken(result.access_token);
+      // Simpan nama lengkap ke profil user
+      if (formData.fullName) {
+        try {
+          await base44.auth.updateMe({ full_name: formData.fullName });
+        } catch {}
+      }
       setStep("success");
     } catch (err) {
       toast.error(err.message || "Verifikasi OTP gagal");
@@ -123,7 +129,7 @@ export default function JamaahSignup() {
                   {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   {loading ? "Mendaftar..." : "Daftar"}
                 </Button>
-                <Button variant="ghost" className="w-full" onClick={() => navigate("/login")}>
+                <Button type="button" variant="ghost" className="w-full" onClick={() => navigate("/jamaah-login")}>
                   Sudah punya akun? Login
                 </Button>
               </form>
