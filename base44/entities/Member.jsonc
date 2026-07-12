@@ -198,6 +198,10 @@
       ],
       "description": "Kode negara nomor kontak darurat"
     },
+    "photo_url": {
+      "type": "string",
+      "description": "URL foto pengurus (untuk display struktur organisasi)"
+    },
     "notes": {
       "type": "string",
       "description": "Catatan tambahan"

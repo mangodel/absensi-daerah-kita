@@ -8,6 +8,7 @@ import AttendanceChart from "@/components/dashboard/AttendanceChart";
 import DesaOverview from "@/components/dashboard/DesaOverview";
 import AustraliaMap from "@/components/dashboard/AustraliaMap";
 import OrganizationDisplay from "@/components/dashboard/OrganizationDisplay";
+import PengurusStructureWithPhotos from "@/components/dashboard/PengurusStructureWithPhotos";
 import MonthlyAttendanceSummary from "@/components/dashboard/MonthlyAttendanceSummary";
 import BroadcastDialog from "@/components/broadcast/BroadcastDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -367,6 +368,15 @@ export default function Dashboard() {
       )}
 
       {(isSuperAdmin || isAdminDesa) && <DesaOverview members={members} />}
+
+      {/* Struktur Pengurus dengan Foto — Daerah & Desa untuk admin Kelompok */}
+      {isAdminKelompok && (
+        <PengurusStructureWithPhotos
+          desa={userDesa}
+          kelompok={userKelompok}
+          showLevels={["Daerah", "Desa"]}
+        />
+      )}
 
       {/* Struktur Organisasi — Daerah untuk semua admin, Desa/Kelompok sesuai scope */}
       {(isSuperAdmin || isAdminDesa || isAdminKelompok) && (

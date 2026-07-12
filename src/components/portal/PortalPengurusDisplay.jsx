@@ -6,9 +6,9 @@ import { Users, Loader2, Phone } from "lucide-react";
 import { getDapukanTitle } from "@/lib/constants";
 
 const LEVEL_STYLES = {
-  Daerah: { label: "Pengurus Daerah", dot: "bg-indigo-500", badge: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-  Desa: { label: "Pengurus Desa", dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  Kelompok: { label: "Pengurus Kelompok", dot: "bg-amber-500", badge: "bg-amber-50 text-amber-700 border-amber-200" },
+  Daerah: { label: "Pengurus Daerah", dot: "bg-indigo-500", badge: "bg-indigo-50 text-indigo-700 border-indigo-200", ring: "ring-indigo-200" },
+  Desa: { label: "Pengurus Desa", dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700 border-emerald-200", ring: "ring-emerald-200" },
+  Kelompok: { label: "Pengurus Kelompok", dot: "bg-amber-500", badge: "bg-amber-50 text-amber-700 border-amber-200", ring: "ring-amber-200" },
 };
 
 function PengrusSection({ members, level }) {
@@ -17,6 +17,8 @@ function PengrusSection({ members, level }) {
     (a.sort_order || 999) - (b.sort_order || 999) ||
     a.full_name.localeCompare(b.full_name)
   );
+
+  const initials = (name) => (name || "?").split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
   return (
     <div>
@@ -28,13 +30,22 @@ function PengrusSection({ members, level }) {
       <div className="space-y-2">
         {sorted.map(m => (
           <div key={m.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/30 border border-border">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{m.full_name}</p>
-              {m.phone && (
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <Phone className="w-2.5 h-2.5" /> {m.phone}
-                </p>
-              )}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-9 h-9 rounded-full overflow-hidden ring-1 ${style.ring || "ring-border"} bg-secondary flex items-center justify-center shrink-0`}>
+                {m.photo_url ? (
+                  <img src={m.photo_url} alt={m.full_name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[10px] font-bold text-muted-foreground">{initials(m.full_name)}</span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{m.full_name}</p>
+                {m.phone && (
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <Phone className="w-2.5 h-2.5" /> {m.phone}
+                  </p>
+                )}
+              </div>
             </div>
             <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${style.badge}`}>
               {getDapukanTitle(m.dapukan, m.dapukan_level)}
