@@ -14,6 +14,7 @@ import FamilyGroupView from "@/components/members/FamilyGroupView";
 import MemberSummaryBar from "@/components/members/MemberSummaryBar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUserRole } from "@/lib/useUserRole";
+import { toast } from "sonner";
 import PullToRefresh from "@/components/PullToRefresh";
 import { MobileSelect } from "@/components/ui/mobile-select";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -74,6 +75,7 @@ export default function Members() {
     },
     onError: (err, newData, context) => {
       if (context?.prevData) queryClient.setQueryData(["members"], context.prevData);
+      toast.error(err.response?.data?.error || err.message || "Gagal menyimpan perubahan");
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["members"] }); setFormOpen(false); setEditMember(null); },
   });
