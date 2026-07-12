@@ -8,8 +8,6 @@ import { DAPUKAN_LIST, DAPUKAN_LEVEL_LIST, BIRTHPLACE_LIST, VISA_STATUS_LIST, MU
 import { useAppConfig } from "@/lib/AppConfigContext";
 import FamilyGroupField from "@/components/members/FamilyGroupField";
 import { base44 } from "@/api/base44Client";
-import { MobileSelect } from "@/components/ui/mobile-select";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2 } from "lucide-react";
 import PhotoUploadField from "@/components/shared/PhotoUploadField";
 
@@ -77,7 +75,6 @@ function generateMemberId(allMembers) {
 }
 
 export default function MemberFormDialog({ open, onOpenChange, member, onSave, allMembers = [] }) {
-  const isMobile = useIsMobile();
   const { config } = useAppConfig();
   const desaList = config.desa_list || [];
   const desaKelompokMap = config.desa_kelompok_map || {};
@@ -187,28 +184,20 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
               />
             </Field>
             <Field label="Jenis Kelamin">
-              {isMobile ? (
-                <MobileSelect value={form.gender} onValueChange={v => set("gender", v)} label="Jenis Kelamin" options={GENDER_LIST} placeholder="Pilih" />
-              ) : (
-                <Select value={form.gender} onValueChange={v => set("gender", v)}>
-                  <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
-                  <SelectContent>
-                    {GENDER_LIST.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={form.gender} onValueChange={v => set("gender", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {GENDER_LIST.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Status Pernikahan">
-              {isMobile ? (
-                <MobileSelect value={form.marital_status} onValueChange={v => set("marital_status", v)} label="Status Pernikahan" options={MARITAL_STATUS_LIST} placeholder="Pilih" />
-              ) : (
-                <Select value={form.marital_status} onValueChange={v => set("marital_status", v)}>
-                  <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
-                  <SelectContent>
-                    {MARITAL_STATUS_LIST.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={form.marital_status} onValueChange={v => set("marital_status", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {MARITAL_STATUS_LIST.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Tahun Lahir">
               <Input
@@ -224,52 +213,36 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
               />
             </Field>
             <Field label="Tempat Lahir">
-              {isMobile ? (
-                <MobileSelect value={form.birthplace} onValueChange={v => set("birthplace", v)} label="Tempat Lahir" options={BIRTHPLACE_LIST} placeholder="Pilih" />
-              ) : (
-                <Select value={form.birthplace} onValueChange={v => set("birthplace", v)}>
-                  <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
-                  <SelectContent>
-                    {BIRTHPLACE_LIST.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={form.birthplace} onValueChange={v => set("birthplace", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {BIRTHPLACE_LIST.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Status Visa">
-              {isMobile ? (
-                <MobileSelect value={form.visa_status} onValueChange={v => set("visa_status", v)} label="Status Visa" options={VISA_STATUS_LIST} placeholder="Pilih" />
-              ) : (
-                <Select value={form.visa_status} onValueChange={v => set("visa_status", v)}>
-                  <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
-                  <SelectContent>
-                    {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={form.visa_status} onValueChange={v => set("visa_status", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {VISA_STATUS_LIST.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Pekerjaan">
-              {isMobile ? (
-                <MobileSelect value={form.employment} onValueChange={v => set("employment", v)} label="Pekerjaan" options={EMPLOYMENT_LIST} placeholder="Pilih" />
-              ) : (
-                <Select value={form.employment} onValueChange={v => set("employment", v)}>
-                  <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
-                  <SelectContent>
-                    {EMPLOYMENT_LIST.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={form.employment} onValueChange={v => set("employment", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {EMPLOYMENT_LIST.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Muballigh / Muballighot">
-              {isMobile ? (
-                <MobileSelect value={form.muballigh_status} onValueChange={v => set("muballigh_status", v)} label="Muballigh / Muballighot" options={MUBALLIGH_STATUS_LIST} placeholder="Pilih" />
-              ) : (
-                <Select value={form.muballigh_status} onValueChange={v => set("muballigh_status", v)}>
-                  <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
-                  <SelectContent>
-                    {MUBALLIGH_STATUS_LIST.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={form.muballigh_status} onValueChange={v => set("muballigh_status", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {MUBALLIGH_STATUS_LIST.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
           </div>
 
@@ -285,28 +258,20 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
               />
             </Field>
             <Field label="Tingkat Dapukan">
-              {isMobile ? (
-                <MobileSelect value={form.dapukan_level} onValueChange={v => set("dapukan_level", v)} label="Tingkat Dapukan" options={DAPUKAN_LEVEL_LIST} placeholder="Pilih" />
-              ) : (
-                <Select value={form.dapukan_level} onValueChange={v => set("dapukan_level", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {DAPUKAN_LEVEL_LIST.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={form.dapukan_level} onValueChange={v => set("dapukan_level", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DAPUKAN_LEVEL_LIST.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Status Keanggotaan">
-              {isMobile ? (
-                <MobileSelect value={form.status} onValueChange={v => set("status", v)} label="Status Keanggotaan" options={MEMBER_STATUS_LIST} placeholder="Pilih" />
-              ) : (
-                <Select value={form.status} onValueChange={v => set("status", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {MEMBER_STATUS_LIST.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={form.status} onValueChange={v => set("status", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {MEMBER_STATUS_LIST.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
           </div>
 
@@ -366,16 +331,12 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
               />
             </Field>
             <Field label="State">
-              {isMobile ? (
-                <MobileSelect value={form.state} onValueChange={v => set("state", v)} label="State" options={["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"]} placeholder="Pilih State" />
-              ) : (
-                <Select value={form.state} onValueChange={v => set("state", v)}>
-                  <SelectTrigger><SelectValue placeholder="Pilih State" /></SelectTrigger>
-                  <SelectContent>
-                    {["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={form.state} onValueChange={v => set("state", v)}>
+                <SelectTrigger><SelectValue placeholder="Pilih State" /></SelectTrigger>
+                <SelectContent>
+                  {["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Postcode">
               <Input
