@@ -106,7 +106,9 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = { ...form, birth_year: form.birth_year ? Number(form.birth_year) : undefined };
+    // Strip built-in fields that must not be sent to the update API
+    const { id, created_date, updated_date, created_by_id, ...memberData } = form;
+    const data = { ...memberData, birth_year: form.birth_year ? Number(form.birth_year) : undefined };
 
     // Auto-set family_group if dapukan is "Kepala Keluarga"
     if (form.dapukan === "Kepala Keluarga") {
