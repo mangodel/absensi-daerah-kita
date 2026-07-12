@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle, Loader2, Mail, User, KeyRound } from "lucide-react";
+import { AlertCircle, CheckCircle, Loader2, Mail, User, KeyRound, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -14,6 +14,7 @@ export default function JamaahSignup() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ fullName: "", email: "", password: "" });
   const [otpCode, setOtpCode] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Step 1: Register user baru
   const handleRegister = async (e) => {
@@ -56,6 +57,15 @@ export default function JamaahSignup() {
         try {
           await base44.auth.updateMe({ full_name: formData.fullName });
         } catch {}
+
+        // Auto-claim: cari member dengan nama yang sama yang belum punya email, lalu tautkan
+        try {
+          const matchingMembers = await base44.entities.Member.filter({ full_name: formData.fullName });
+          const unclaimed = matchingMembers.find(m => !m.email);
+          if (unclaimed) {
+            await base44.entities.Member.update(unclaimed.id, { email: formData.email });
+          }
+        } catch {}
       }
       setStep("success");
     } catch (err) {
@@ -74,6 +84,16 @@ export default function JamaahSignup() {
       toast.error(err.message || "Gagal mengirim ulang OTP");
     }
   };
+
+  // Auto-redirect ke portal setelah sukses
+  useEffect(() => {
+    if (step === "success") {
+      const timer = setTimeout(() => {
+        window.location.href = "/jamaah";
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
 
   // Redirect ke portal jamaah
   const goToPortal = () => {
@@ -118,12 +138,22 @@ export default function JamaahSignup() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm">Password</Label>
-                  <Input
-                    type="password"
-                    placeholder="Minimal 8 karakter"
-                    value={formData.password}
-                    onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Minimal 8 karakter"
+                      value={formData.password}
+                      onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(prev => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
@@ -188,7 +218,7 @@ export default function JamaahSignup() {
                 Akun <strong>{formData.email}</strong> telah terverifikasi.
               </p>
               <p className="text-xs text-muted-foreground">
-                Klik tombol di bawah untuk masuk ke Portal Jamaah. Jika data Anda belum terhubung, hubungi admin untuk menautkan data jamaah Anda.
+                Anda akan diarahkan ke Portal Jamaah secara otomatis...
               </p>
               <Button onClick={goToPortal} className="w-full mt-4">
                 Masuk ke Portal Jamaah

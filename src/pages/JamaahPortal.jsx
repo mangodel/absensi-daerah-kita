@@ -90,20 +90,26 @@ export default function JamaahPortal() {
     checkJamaahAuth();
   }, []);
 
-  // Cari data member berdasarkan email user jamaah
-  const { data: members = [], isLoading: loadingMembers } = useQuery({
-    queryKey: ["my-member", jamaahUser?.email],
-    queryFn: () => base44.entities.Member.list(),
-    enabled: !!jamaahUser,
+  // Cari data member berdasarkan email user jamaah (query targeted, bukan load semua member)
+  const { data: myMemberResults = [], isLoading: loadingMyMember } = useQuery({
+    queryKey: ["my-member-email", jamaahUser?.email],
+    queryFn: () => base44.entities.Member.filter({ email: jamaahUser?.email }),
+    enabled: !!jamaahUser?.email,
   });
 
-  const myMember = jamaahUser?.email
-    ? members.find(m => m.email?.toLowerCase() === jamaahUser?.email?.toLowerCase())
-    : null;
+  const myMember = myMemberResults[0] || null;
 
-  // Ambil semua anggota keluarga dengan family_group yang sama (termasuk inject KK)
-  const { familyMembers, familyHead } = getFamilyMembersWithHead(members, myMember);
+  // Ambil anggota keluarga berdasarkan family_group (query targeted)
+  const { data: familyMembersRaw = [], isLoading: loadingFamily } = useQuery({
+    queryKey: ["family-members-group", myMember?.family_group],
+    queryFn: () => base44.entities.Member.filter({ family_group: myMember?.family_group }),
+    enabled: !!myMember?.family_group,
+  });
+
+  const allMembersForFamily = myMember?.family_group ? familyMembersRaw : (myMember ? [myMember] : []);
+  const { familyMembers, familyHead } = getFamilyMembersWithHead(allMembersForFamily, myMember);
   const sortedFamilyMembers = sortFamilyMembers(familyMembers, familyHead);
+  const loadingMembers = loadingMyMember || (!!myMember?.family_group && loadingFamily);
 
   useEffect(() => {
     if (myMember) {
@@ -132,7 +138,8 @@ export default function JamaahPortal() {
   const updateMutation = useMutation({
     mutationFn: (data) => base44.entities.Member.update(myMember.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-member"] });
+      queryClient.invalidateQueries({ queryKey: ["my-member-email"] });
+      queryClient.invalidateQueries({ queryKey: ["family-members-group"] });
       toast.success("Profil berhasil diperbarui");
     },
     onError: () => toast.error("Gagal menyimpan perubahan"),
@@ -141,7 +148,8 @@ export default function JamaahPortal() {
   const updateFamilyMutation = useMutation({
     mutationFn: (data) => base44.entities.Member.update(editingFamily.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-member"] });
+      queryClient.invalidateQueries({ queryKey: ["my-member-email"] });
+      queryClient.invalidateQueries({ queryKey: ["family-members-group"] });
       setEditingFamily(null);
       toast.success("Data anggota keluarga berhasil diperbarui");
     },
@@ -184,16 +192,13 @@ export default function JamaahPortal() {
         return;
       }
 
-      // Check duplikasi email
-      const existingUsers = await base44.entities.User.list();
-      const emailExists = existingUsers.some(u => u.email.startsWith(suggestedEmail));
-      if (emailExists) {
-        setEmailError("Email sudah terdaftar. Silakan gunakan nama yang berbeda.");
-        return;
-      }
-
-      // Update user email
+      // Update user email — backend akan reject jika email sudah dipakai
       await base44.auth.updateMe({ email: suggestedEmail });
+      // Sinkronkan email ke data member juga
+      if (myMember) {
+        await base44.entities.Member.update(myMember.id, { email: suggestedEmail });
+      }
+      queryClient.invalidateQueries({ queryKey: ["my-member-email"] });
       toast.success(`Email terdaftar: ${suggestedEmail}`);
     } catch (err) {
       setEmailError(err.message || "Gagal mendaftarkan email");

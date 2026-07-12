@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Loader2, Mail, Lock, QrCode, KeyRound, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Loader2, Mail, Lock, QrCode, KeyRound, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAppConfig } from "@/lib/AppConfigContext";
@@ -19,6 +19,7 @@ export default function JamaahLogin() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -115,13 +116,20 @@ export default function JamaahLogin() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  className="pl-10"
-                  type="password"
+                  className="pl-10 pr-10"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password Anda"
                   value={formData.password}
                   onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   disabled={loading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
