@@ -97,6 +97,8 @@ export default function JamaahPortal() {
     queryKey: ["my-member-email", jamaahUser?.email],
     queryFn: () => base44.entities.Member.filter({ email: jamaahUser?.email }),
     enabled: !!jamaahUser?.email,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const myMember = myMemberResults[0] || null;
@@ -106,7 +108,21 @@ export default function JamaahPortal() {
     queryKey: ["family-members-group", myMember?.family_group],
     queryFn: () => base44.entities.Member.filter({ family_group: myMember?.family_group }),
     enabled: !!myMember?.family_group,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
+
+  // Real-time subscription: auto-sync ketika ada perubahan data member di database
+  useEffect(() => {
+    const unsubscribe = base44.entities.Member.subscribe((event) => {
+      // Invalidate semua query terkait agar data portal selalu sync dengan database
+      queryClient.invalidateQueries({ queryKey: ["my-member-email"] });
+      queryClient.invalidateQueries({ queryKey: ["family-members-group"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["broadcasts-portal"] });
+    });
+    return unsubscribe;
+  }, [queryClient]);
 
   const allMembersForFamily = myMember?.family_group ? familyMembersRaw : (myMember ? [myMember] : []);
   const { familyMembers, familyHead } = getFamilyMembersWithHead(allMembersForFamily, myMember);
@@ -135,13 +151,19 @@ export default function JamaahPortal() {
         emergency_phone_country_code: myMember.emergency_phone_country_code || "Indonesia",
       });
     }
-  }, [myMember?.id]);
+  }, [myMember?.id, myMember?.updated_date]);
+
+  const invalidateAllPortalData = () => {
+    queryClient.invalidateQueries({ queryKey: ["my-member-email"] });
+    queryClient.invalidateQueries({ queryKey: ["family-members-group"] });
+    queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
+    queryClient.invalidateQueries({ queryKey: ["broadcasts-portal"] });
+  };
 
   const updateMutation = useMutation({
     mutationFn: (data) => base44.entities.Member.update(myMember.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-member-email"] });
-      queryClient.invalidateQueries({ queryKey: ["family-members-group"] });
+      invalidateAllPortalData();
       toast.success("Profil berhasil diperbarui");
     },
     onError: () => toast.error("Gagal menyimpan perubahan"),
@@ -150,8 +172,7 @@ export default function JamaahPortal() {
   const updateFamilyMutation = useMutation({
     mutationFn: (data) => base44.entities.Member.update(editingFamily.id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-member-email"] });
-      queryClient.invalidateQueries({ queryKey: ["family-members-group"] });
+      invalidateAllPortalData();
       setEditingFamily(null);
       toast.success("Data anggota keluarga berhasil diperbarui");
     },
@@ -200,7 +221,7 @@ export default function JamaahPortal() {
       if (myMember) {
         await base44.entities.Member.update(myMember.id, { email: suggestedEmail });
       }
-      queryClient.invalidateQueries({ queryKey: ["my-member-email"] });
+      invalidateAllPortalData();
       toast.success(`Email terdaftar: ${suggestedEmail}`);
     } catch (err) {
       setEmailError(err.message || "Gagal mendaftarkan email");
