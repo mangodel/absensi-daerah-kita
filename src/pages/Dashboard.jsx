@@ -187,30 +187,21 @@ export default function Dashboard() {
     r.status === "Aktif" && r.due_date && (isPast(new Date(r.due_date)) || isToday(new Date(r.due_date)))
   );
 
-  // For Kelompok Admin: Show 3-5 upcoming events within 1-2 weeks window, at top of dashboard
+  // Upcoming events — limit to 4 weeks ahead for all admin types
   const upcomingEvents = useMemo(() => {
-    if (!isAdminKelompok) {
-      return events
-        .filter(e => e.date && !isPast(new Date(e.date + "T23:59:59")))
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .slice(0, 3);
-    }
-    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const oneWeekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const twoWeeksLater = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
-    
-    return filterEvents(events)
+    const fourWeeksLater = new Date(today.getTime() + 28 * 24 * 60 * 60 * 1000);
+    return events
       .filter(e => {
         if (!e.date) return false;
         const eventDate = new Date(e.date);
         eventDate.setHours(0, 0, 0, 0);
-        return eventDate >= oneWeekLater && eventDate <= twoWeeksLater;
+        return eventDate >= today && eventDate <= fourWeeksLater;
       })
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .slice(0, 5);
-  }, [events, filterEvents, isAdminKelompok]);
+  }, [events]);
 
   const scopeLabel = isAdminKelompok && userKelompok
     ? userKelompok
@@ -300,32 +291,32 @@ export default function Dashboard() {
 
        <GenerusBreakdown members={members} />
 
-       {/* For Kelompok Admin: Show upcoming events FIRST at the top */}
-       {isAdminKelompok && upcomingEvents.length > 0 && (
-        <div className="bg-card border border-accent/30 rounded-2xl p-5">
-          <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
-            <CalendarCheck className="w-4 h-4 text-accent" />
-            Kegiatan Minggu Depan
-          </h3>
-          <div className="space-y-2">
-            {upcomingEvents.map(e => (
-              <div key={e.id} className="flex items-center gap-3 p-3 bg-accent/5 rounded-xl border border-accent/10">
-                <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center text-accent shrink-0">
-                  <CalendarCheck className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{e.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(e.date), "dd MMM yyyy", { locale: id })}
-                    {e.location ? ` · ${e.location}` : ""}
-                  </p>
-                </div>
-                <Badge variant="outline" className="text-[10px] shrink-0">{e.level}</Badge>
-              </div>
-            ))}
-          </div>
-        </div>
-       )}
+       {/* Upcoming events — shown for all admin types */}
+        {upcomingEvents.length > 0 && (
+         <div className="bg-card border border-accent/30 rounded-2xl p-5">
+           <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
+             <CalendarCheck className="w-4 h-4 text-accent" />
+             Kegiatan Mendatang (4 Minggu)
+           </h3>
+           <div className="space-y-2">
+             {upcomingEvents.map(e => (
+               <div key={e.id} className="flex items-center gap-3 p-3 bg-accent/5 rounded-xl border border-accent/10">
+                 <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center text-accent shrink-0">
+                   <CalendarCheck className="w-4 h-4" />
+                 </div>
+                 <div className="min-w-0 flex-1">
+                   <p className="text-sm font-medium truncate">{e.name}</p>
+                   <p className="text-xs text-muted-foreground">
+                     {format(new Date(e.date), "dd MMM yyyy", { locale: id })}
+                     {e.location ? ` · ${e.location}` : ""}
+                   </p>
+                 </div>
+                 <Badge variant="outline" className="text-[10px] shrink-0">{e.level}</Badge>
+               </div>
+             ))}
+           </div>
+         </div>
+        )}
 
        {/* Daftar anggota bernomor urut: Dewasa (18+) dulu lalu Generus — admin desa & kelompok */}
        {(isAdminDesa || isAdminKelompok) && (
@@ -366,39 +357,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {upcomingEvents.length > 0 && (
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <h3 className="font-semibold text-sm text-foreground mb-3">
-            {isAdminKelompok ? "Kegiatan Minggu Depan" : "Kegiatan Mendatang"}
-          </h3>
-          <div className="space-y-4">
-            {['Daerah', 'Desa', 'Kelompok'].map(level => {
-              const levelEvents = upcomingEvents.filter(e => e.level === level).slice(0, 7);
-              if (levelEvents.length === 0) return null;
-              return (
-                <div key={level} className="space-y-2">
-                  {level !== 'Daerah' && <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{level}</p>}
-                  {levelEvents.map(e => (
-                    <div key={e.id} className="flex items-center gap-3 p-3 bg-secondary/30 rounded-xl">
-                      <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
-                        <CalendarCheck className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{e.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(e.date), "dd MMM yyyy", { locale: id })}
-                          {e.location ? ` · ${e.location}` : ""}
-                        </p>
-                      </div>
-                      {e.desa && <Badge className="text-[10px] shrink-0 ml-auto">{e.desa}</Badge>}
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+
 
       {!isAdminKelompok && (
         <>
@@ -409,10 +368,10 @@ export default function Dashboard() {
 
       {(isSuperAdmin || isAdminDesa) && <DesaOverview members={members} />}
 
-      {/* Struktur Organisasi Daerah + Desa — untuk admin desa & kelompok */}
-      {(isAdminDesa || isAdminKelompok) && (
+      {/* Struktur Organisasi — Daerah untuk semua admin, Desa/Kelompok sesuai scope */}
+      {(isSuperAdmin || isAdminDesa || isAdminKelompok) && (
         <OrganizationDisplay
-          level={isAdminKelompok ? "Kelompok" : "Desa"}
+          level={isSuperAdmin ? "Daerah" : isAdminKelompok ? "Kelompok" : "Desa"}
           desa={userDesa}
           kelompok={userKelompok}
         />

@@ -23,6 +23,7 @@ import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport
 import BroadcastInbox from "@/components/portal/BroadcastInbox";
 import MemberCardPortal from "@/components/portal/MemberCardPortal";
 import AttendanceSummary from "@/components/portal/AttendanceSummary";
+import PortalPengurusDisplay from "@/components/portal/PortalPengurusDisplay";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { toast } from "sonner";
 import { getDapukanTitle } from "@/lib/constants";
@@ -641,6 +642,19 @@ export default function JamaahPortal() {
                 <CardContent className="py-8 text-center">
                   <Users className="w-10 h-10 text-muted-foreground mx-auto mb-2 opacity-30" />
                   <p className="text-sm text-muted-foreground">Tidak ada anggota keluarga lain</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="struktur" className="mt-4">
+            {myMember ? (
+              <PortalPengurusDisplay desa={myMember.desa} kelompok={myMember.kelompok} />
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <Users className="w-10 h-10 text-muted-foreground mx-auto mb-2 opacity-30" />
+                  <p className="text-sm text-muted-foreground">Data pengurus belum tersedia</p>
                 </CardContent>
               </Card>
             )}

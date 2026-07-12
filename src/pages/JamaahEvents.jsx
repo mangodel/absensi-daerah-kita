@@ -263,11 +263,12 @@ export default function JamaahEvents() {
     </div>
   );
 
-  // Grouped upcoming events for Daftar tab
+  // Grouped upcoming events for Daftar tab — limit to 4 weeks ahead
   const now = new Date();
   now.setHours(0, 0, 0, 0);
+  const fourWeeksLater = new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000);
   const upcomingEvents = visibleEvents
-    .filter(ev => ev.date && new Date(ev.date) >= now)
+    .filter(ev => ev.date && new Date(ev.date) >= now && new Date(ev.date) <= fourWeeksLater)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const byLevel = {

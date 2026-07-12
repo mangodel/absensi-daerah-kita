@@ -54,12 +54,16 @@ export default function JamaahDashboard() {
   const myHadir = myAttendances.filter(a => a.status === "Hadir").length;
   const myRate = myAttendances.length > 0 ? Math.round((myHadir / myAttendances.length) * 100) : 0;
 
-  // Kegiatan mendatang
+  // Kegiatan mendatang — limit to 4 weeks ahead
+  const todayNow = new Date();
+  todayNow.setHours(0, 0, 0, 0);
+  const fourWeeksLater = new Date(todayNow.getTime() + 28 * 24 * 60 * 60 * 1000);
   const upcomingEvents = events
     .filter(e => {
       if (!e.date) return false;
-      const eventDate = new Date(e.date + "T23:59:59");
-      return eventDate >= new Date();
+      const eventDate = new Date(e.date);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= todayNow && eventDate <= fourWeeksLater;
     })
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(0, 5);
