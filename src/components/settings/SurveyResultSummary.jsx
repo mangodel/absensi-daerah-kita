@@ -3,8 +3,12 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Users, BarChart2, MessageSquare, CheckSquare, Circle } from "lucide-react";
+import { Loader2, ArrowLeft, Users, BarChart2, MessageSquare, CheckSquare, Circle, PieChart as PieChartIcon } from "lucide-react";
 import { useUserRole } from "@/lib/useUserRole";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend, BarChart as BarChartRecharts
+} from "recharts";
 
 const typeIcons = {
   text: MessageSquare,
@@ -12,21 +16,72 @@ const typeIcons = {
   checkbox: CheckSquare,
 };
 
-function OptionBar({ label, count, total }) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+const CHART_COLORS = [
+  "hsl(243 75% 59%)",
+  "hsl(167 72% 40%)",
+  "hsl(34 100% 50%)",
+  "hsl(0 84% 60%)",
+  "hsl(270 60% 55%)",
+  "hsl(199 89% 48%)",
+  "hsl(280 65% 60%)",
+  "hsl(45 93% 47%)",
+];
+
+function RadioChart({ data }) {
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-foreground">{label}</span>
-        <span className="text-muted-foreground font-medium">{count} ({pct}%)</span>
-      </div>
-      <div className="h-2 rounded-full bg-secondary overflow-hidden">
-        <div
-          className="h-full rounded-full bg-primary transition-all duration-500"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
+    <ResponsiveContainer width="100%" height={220}>
+      <PieChart>
+        <Pie
+          data={data}
+          dataKey="count"
+          nameKey="label"
+          cx="50%"
+          cy="50%"
+          outerRadius={70}
+          label={({ label, percent }) => percent > 0 ? `${label} ${(percent * 100).toFixed(0)}%` : ""}
+          labelLine={false}
+        >
+          {data.map((_, idx) => (
+            <Cell key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip formatter={(val, name) => [`${val} responden`, name]} />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
+function CheckboxChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height={Math.max(180, data.length * 40)}>
+      <BarChart data={data} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+        <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+        <YAxis type="category" dataKey="label" tick={{ fontSize: 11 }} width={120} />
+        <Tooltip formatter={(val) => [`${val} responden`, "Jumlah"]} />
+        <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+          {data.map((_, idx) => (
+            <Cell key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function DesaChart({ data }) {
+  const chartData = Object.entries(data).map(([desa, cnt]) => ({ desa, count: cnt }));
+  if (chartData.length <= 1) return null;
+  return (
+    <ResponsiveContainer width="100%" height={180}>
+      <BarChartRecharts data={chartData} margin={{ left: 0, right: 10, top: 5, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="desa" tick={{ fontSize: 10 }} />
+        <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+        <Tooltip formatter={(val) => [`${val} responden`, "Jumlah"]} />
+        <Bar dataKey="count" fill="hsl(243 75% 59%)" radius={[4, 4, 0, 0]} />
+      </BarChartRecharts>
+    </ResponsiveContainer>
   );
 }
 
@@ -87,8 +142,8 @@ function QuestionSummary({ question, responses, idx }) {
     });
   }
 
-  const total = question.type === "radio" ? allAnswers.length : allAnswers.reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0);
   const respCount = allAnswers.length;
+  const chartData = Object.entries(optionCounts).map(([label, count]) => ({ label, count }));
 
   return (
     <Card className="border border-border">
@@ -103,11 +158,25 @@ function QuestionSummary({ question, responses, idx }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-2">
-        {Object.entries(optionCounts).map(([label, count]) => (
-          <OptionBar key={label} label={label} count={count} total={question.type === "radio" ? allAnswers.length : total} />
-        ))}
-        {allAnswers.length === 0 && <p className="text-xs text-muted-foreground italic">Belum ada jawaban</p>}
+      <CardContent className="px-4 pb-4">
+        {respCount === 0 ? (
+          <p className="text-xs text-muted-foreground italic">Belum ada jawaban</p>
+        ) : question.type === "radio" ? (
+          <div className="flex flex-col items-center">
+            <RadioChart data={chartData} />
+            <div className="flex flex-wrap gap-3 justify-center mt-2">
+              {chartData.map((d, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-xs">
+                  <div className="w-3 h-3 rounded-sm" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                  <span className="text-muted-foreground">{d.label}</span>
+                  <span className="font-medium">{d.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <CheckboxChart data={chartData} />
+        )}
       </CardContent>
     </Card>
   );
@@ -121,10 +190,7 @@ export default function SurveyResultSummary({ survey, onBack }) {
     queryFn: () => base44.entities.SurveyResponse.filter({ survey_id: survey.id }),
   });
 
-  // Filter responses berdasarkan scope role admin:
-  // super_admin → semua responses
-  // admin_desa → hanya responses dari desa miliknya
-  // admin_kelompok → hanya responses dari desa + kelompok miliknya
+  // Filter responses berdasarkan scope role admin
   const responses = (allResponses || []).filter(r => {
     if (isSuperAdmin) return true;
     if (isAdminDesa && userDesa) return r.desa === userDesa;
@@ -137,6 +203,13 @@ export default function SurveyResultSummary({ survey, onBack }) {
   // Group responses by desa
   const byDesa = responses.reduce((acc, r) => {
     const key = r.desa || "—";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Responden per kelompok (untuk admin yang scope-nya lebih luas)
+  const byKelompok = responses.reduce((acc, r) => {
+    const key = r.kelompok || "—";
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
@@ -198,7 +271,22 @@ export default function SurveyResultSummary({ survey, onBack }) {
             </Card>
           </div>
 
-          {/* Per-question summaries */}
+          {/* Grafik distribusi responden per desa */}
+          {responses.length > 0 && Object.keys(byDesa).length > 1 && (
+            <Card>
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4 text-primary" />
+                  Distribusi Responden per Desa
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <DesaChart data={byDesa} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Per-question summaries with charts */}
           <div className="space-y-3">
             <h4 className="text-sm font-semibold">Ringkasan Per Pertanyaan</h4>
             {questions.map((q, idx) => (

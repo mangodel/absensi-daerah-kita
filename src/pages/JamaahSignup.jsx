@@ -52,6 +52,7 @@ export default function JamaahSignup() {
     try {
       const result = await base44.auth.verifyOtp({ email: formData.email, otpCode });
       base44.auth.setToken(result.access_token);
+      let claimedMemberName = null;
       // Simpan nama lengkap ke profil user
       if (formData.fullName) {
         try {
@@ -64,8 +65,14 @@ export default function JamaahSignup() {
           const unclaimed = matchingMembers.find(m => !m.email);
           if (unclaimed) {
             await base44.entities.Member.update(unclaimed.id, { email: formData.email });
+            claimedMemberName = unclaimed.full_name;
           }
         } catch {}
+      }
+      if (claimedMemberName) {
+        toast.success(`Data jamaah "${claimedMemberName}" berhasil diklaim! Mengarahkan ke portal...`);
+      } else {
+        toast.success("Pendaftaran berhasil! Mengarahkan ke portal...");
       }
       setStep("success");
     } catch (err) {

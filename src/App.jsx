@@ -71,6 +71,11 @@ const AuthenticatedApp = () => {
         <Route path="/event-register" element={<SuspendedPage><EventRegister /></SuspendedPage>} />
         <Route path="/event-display" element={<SuspendedPage><EventDisplay /></SuspendedPage>} />
         <Route path="/scanner-volunteer" element={<SuspendedPage><VolunteerScanner /></SuspendedPage>} />
+        {/* Jamaah routes - public, manage own auth internally */}
+        <Route path="/jamaah" element={<SuspendedPage><JamaahPortal /></SuspendedPage>} />
+        <Route path="/jamaah/survey" element={<SuspendedPage><JamaahSurvey /></SuspendedPage>} />
+        <Route path="/jamaah/absensi" element={<SuspendedPage><JamaahAbsensi /></SuspendedPage>} />
+        <Route path="/jamaah/events" element={<SuspendedPage><JamaahEvents /></SuspendedPage>} />
 
         {/* Protected routes - pakai AppLayout dengan loading state */}
         <Route element={<AppLayout isLoading={isLoadingAuth || isLoadingPublicSettings} />}>
@@ -87,10 +92,6 @@ const AuthenticatedApp = () => {
           <Route path="/event-attendance" element={<SuspendedPage><EventAttendance /></SuspendedPage>} />
           <Route path="/broadcast" element={<SuspendedPage><Broadcast /></SuspendedPage>} />
           <Route path="/survey" element={<SuspendedPage><Survey /></SuspendedPage>} />
-          <Route path="/jamaah" element={<SuspendedPage><JamaahPortal /></SuspendedPage>} />
-          <Route path="/jamaah/survey" element={<SuspendedPage><JamaahSurvey /></SuspendedPage>} />
-          <Route path="/jamaah/absensi" element={<SuspendedPage><JamaahAbsensi /></SuspendedPage>} />
-          <Route path="/jamaah/events" element={<SuspendedPage><JamaahEvents /></SuspendedPage>} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>
