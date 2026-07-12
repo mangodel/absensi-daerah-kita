@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
+import { isWithinFourWeeks } from "@/lib/eventUtils";
 
 export default function EventAttendance() {
   const { toast } = useToast();
@@ -69,15 +70,10 @@ export default function EventAttendance() {
     },
   });
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Filter events from today onwards
+  // Filter events within the next 4 weeks and Active status
   const filteredEvents = events.filter(e => {
     if (!e.event_date) return false;
-    const eventDate = new Date(e.event_date);
-    eventDate.setHours(0, 0, 0, 0);
-    return eventDate >= today && e.status === "Active";
+    return isWithinFourWeeks(e.event_date) && e.status === "Active";
   });
 
   // Separate QR events (has linked_event_id) and non-QR events

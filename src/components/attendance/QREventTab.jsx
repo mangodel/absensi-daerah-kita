@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { QrCode, ExternalLink, CalendarDays, Users, BarChart3, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { isWithinFourWeeks } from "@/lib/eventUtils";
 import QRScanner from "@/components/event-attendance/QRScanner";
 import CheckinDashboard from "@/components/event-attendance/CheckinDashboard";
 
@@ -48,13 +49,15 @@ export default function QREventTab({ events = [], members = [] }) {
   const selectedSession = sessions.find(s => s.id === selectedSessionId);
   const formConfig = formConfigs.find(c => c.event_id === selectedSessionId) || null;
 
-  // Enrich sessions with linked Event info
-  const enrichedSessions = sessions.map(s => {
-    const linked = s.linked_event_id ? events.find(e => e.id === s.linked_event_id) : null;
-    const paxCount = participants.filter(p => p.event_id === s.id).length;
-    const checkinCount = checkins.filter(c => c.event_id === s.id).length;
-    return { ...s, linkedEvent: linked, paxCount, checkinCount };
-  });
+  // Enrich sessions with linked Event info, filtered to upcoming 4 weeks
+  const enrichedSessions = sessions
+    .filter(s => isWithinFourWeeks(s.event_date))
+    .map(s => {
+      const linked = s.linked_event_id ? events.find(e => e.id === s.linked_event_id) : null;
+      const paxCount = participants.filter(p => p.event_id === s.id).length;
+      const checkinCount = checkins.filter(c => c.event_id === s.id).length;
+      return { ...s, linkedEvent: linked, paxCount, checkinCount };
+    });
 
   if (view === "scanner" && selectedSessionId) return (
     <div className="space-y-4">

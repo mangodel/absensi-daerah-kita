@@ -19,6 +19,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 import { MobileSelect } from "@/components/ui/mobile-select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ContinuousCameraScanner from "@/components/shared/ContinuousCameraScanner";
+import { isWithinFourWeeks } from "@/lib/eventUtils";
 import { toast } from "sonner";
 
 const levelColors = {
@@ -82,10 +83,8 @@ export default function Attendance() {
   
   const events = filterEvents(allEvents).filter(e => {
     if (!e.date) return false;
-    const eDate = new Date(e.date);
-    eDate.setHours(0, 0, 0, 0);
-    // Show events from today onwards
-    if (eDate < today) return false;
+    // Only show events within the next 4 weeks
+    if (!isWithinFourWeeks(e.date)) return false;
     if (isAdminKelompok) {
       return e.level === "Daerah" ||
         (e.level === "Desa" && e.desa === userDesa) ||

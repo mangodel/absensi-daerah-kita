@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/lib/useUserRole";
 import { useAuth } from "@/lib/AuthContext";
+import { isWithinFourWeeks, isPastEvent } from "@/lib/eventUtils";
 import { toast } from "sonner";
 
 export default function Events() {
@@ -138,12 +139,13 @@ export default function Events() {
   now.setHours(0, 0, 0, 0);
   const todayString = now.toISOString().split("T")[0];
 
+  // Past events for the Riwayat tab (sorted newest first)
+  const pastEvents = events.filter(e => isPastEvent(e.date)).sort((a, b) => new Date(b.date) - new Date(a.date));
+
   const filtered = events.filter(e => {
     if (!e.date) return false;
-    const eventDate = new Date(e.date);
-    eventDate.setHours(0, 0, 0, 0);
-    // Hanya tampilkan upcoming events dari hari ini ke depan
-    if (eventDate < now) return false;
+    // Hanya tampilkan kegiatan 4 minggu ke depan
+    if (!isWithinFourWeeks(e.date)) return false;
 
     const matchLevel = filterLevel === "all" || e.level === filterLevel;
     const matchDesa = filterDesa === "all" || e.desa === filterDesa || (filterDesa !== "all" && e.level === "Daerah");
@@ -205,6 +207,7 @@ export default function Events() {
         <TabsList>
           <TabsTrigger value="calendar">Kalender</TabsTrigger>
           <TabsTrigger value="list">Daftar</TabsTrigger>
+          <TabsTrigger value="history">Riwayat</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="mt-4">
@@ -314,6 +317,29 @@ export default function Events() {
                   <EventList events={byLevel.Kelompok} sessions={sessions} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
                 </section>
               )}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4 space-y-4">
+          {pastEvents.length === 0 ? (
+            <div className="bg-card rounded-2xl border border-border p-12 text-center">
+              <p className="text-muted-foreground">Belum ada riwayat kegiatan yang sudah berlalu.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {["Daerah", "Desa", "Kelompok"].map(level => {
+                const grp = pastEvents.filter(e => e.level === level);
+                if (grp.length === 0) return null;
+                return (
+                  <section key={level}>
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                      <span className={`inline-block w-2 h-2 rounded-full ${level === "Daerah" ? "bg-primary" : level === "Desa" ? "bg-accent" : "bg-orange-500"}`} /> Tingkat {level} ({grp.length})
+                    </h2>
+                    <EventList events={grp} sessions={sessions} onEdit={e => { setEditEvent(e); setFormOpen(true); }} onDelete={setDeleteEvent} onSelectForAttendance={handleSelectForAttendance} />
+                  </section>
+                );
+              })}
             </div>
           )}
         </TabsContent>
