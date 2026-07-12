@@ -37,6 +37,29 @@ export const DAPUKAN_PENGURUS_ORDER = [
   "Muballigh 4S", "Muballigh Daerah", "Muballigh Desa", "Muballigh Kelompok",
   "PJP", "PJK",
 ];
+/**
+ * Mengembalikan index urutan dapukan untuk sorting struktur pengurus.
+ * Dapukan yang ada di DAPUKAN_PENGURUS_ORDER diurutkan sesuai array tersebut.
+ * Dapukan lainnya (termasuk "Jamaah") diletakkan di akhir.
+ */
+export function getDapukanSortIndex(dapukan) {
+  if (!dapukan) return 999;
+  const idx = DAPUKAN_PENGURUS_ORDER.indexOf(dapukan.trim());
+  return idx === -1 ? 999 : idx;
+}
+
+/**
+ * Comparator untuk mengurutkan member berdasarkan hierarki dapukan,
+ * lalu sort_order, lalu nama lengkap.
+ */
+export function compareByDapukanHierarchy(a, b) {
+  const dapukanDiff = getDapukanSortIndex(a.dapukan) - getDapukanSortIndex(b.dapukan);
+  if (dapukanDiff !== 0) return dapukanDiff;
+  const sortDiff = (a.sort_order || 999) - (b.sort_order || 999);
+  if (sortDiff !== 0) return sortDiff;
+  return (a.full_name || "").localeCompare(b.full_name || "");
+}
+
 export const DAPUKAN_LEVEL_LIST = ["Daerah", "Desa", "Kelompok"];
 export const GENDER_LIST = ["Laki-laki", "Perempuan"];
 export const MARITAL_STATUS_LIST = ["Menikah", "Belum Menikah", "Cerai", "Janda/Duda"];

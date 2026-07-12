@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users } from "lucide-react";
-import { getDapukanTitle } from "@/lib/constants";
+import { getDapukanTitle, compareByDapukanHierarchy } from "@/lib/constants";
 
 function getCategoryColor(category) {
   const colors = {
@@ -56,7 +56,9 @@ function resolveTimMembers(tim, allMembers) {
 }
 
 function TeamCard({ tim, allMembers }) {
-  const timMembers = resolveTimMembers(tim, allMembers);
+  const timMembers = resolveTimMembers(tim, allMembers).sort(compareByDapukanHierarchy);
+
+  const initials = (name) => (name || "?").split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
   return (
     <div className={`rounded-lg border p-4 ${getCategoryColor(tim.tim_category)}`}>
@@ -70,13 +72,22 @@ function TeamCard({ tim, allMembers }) {
         </Badge>
       </div>
       {timMembers.length > 0 ? (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {timMembers.map(member => (
-            <div key={member.id} className="text-xs">
-              <p className="font-medium text-foreground">{member.full_name}</p>
-              <p className="text-muted-foreground">
-                {getDapukanTitle(member.dapukan, member.dapukan_level)}
-              </p>
+            <div key={member.id} className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full overflow-hidden ring-1 ring-border bg-secondary flex items-center justify-center shrink-0">
+                {member.photo_url ? (
+                  <img src={member.photo_url} alt={member.full_name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[9px] font-bold text-muted-foreground">{initials(member.full_name)}</span>
+                )}
+              </div>
+              <div className="text-xs min-w-0">
+                <p className="font-medium text-foreground truncate">{member.full_name}</p>
+                <p className="text-muted-foreground truncate">
+                  {getDapukanTitle(member.dapukan, member.dapukan_level)}
+                </p>
+              </div>
             </div>
           ))}
         </div>

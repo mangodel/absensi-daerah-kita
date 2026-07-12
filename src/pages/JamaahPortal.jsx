@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2, ChevronRight, Users, Edit2, X, CalendarDays } from "lucide-react";
+import PhotoUploadField from "@/components/shared/PhotoUploadField";
 import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
 import BroadcastInbox from "@/components/portal/BroadcastInbox";
 import MemberCardPortal from "@/components/portal/MemberCardPortal";
@@ -149,6 +150,7 @@ export default function JamaahPortal() {
         emergency_contact: myMember.emergency_contact || "",
         emergency_phone: myMember.emergency_phone || "",
         emergency_phone_country_code: myMember.emergency_phone_country_code || "Indonesia",
+        photo_url: myMember.photo_url || "",
       });
     }
   }, [myMember?.id, myMember?.updated_date]);
@@ -388,6 +390,13 @@ export default function JamaahPortal() {
                   <CardTitle className="text-sm font-semibold">Data Jamaah / Data Diri (Dapat Diedit)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Foto Profil</Label>
+                    <PhotoUploadField
+                      value={editData.photo_url || ""}
+                      onChange={v => setEditData(prev => ({ ...prev, photo_url: v }))}
+                    />
+                  </div>
                   {EDITABLE_FIELDS.map(f => {
                      const isPhoneField = f.type === "phone";
                      const countryCodeKey = isPhoneField ? f.key.replace("phone", "country_code").replace("_phone", "_phone_country_code") : null;

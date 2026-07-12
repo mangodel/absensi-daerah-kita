@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Loader2, Phone } from "lucide-react";
-import { getDapukanTitle } from "@/lib/constants";
+import { getDapukanTitle, compareByDapukanHierarchy } from "@/lib/constants";
 
 const LEVEL_STYLES = {
   Daerah: { label: "Pengurus Daerah", dot: "bg-indigo-500", badge: "bg-indigo-50 text-indigo-700 border-indigo-200", ring: "ring-indigo-200" },
@@ -13,10 +13,7 @@ const LEVEL_STYLES = {
 
 function PengrusSection({ members, level }) {
   const style = LEVEL_STYLES[level];
-  const sorted = [...members].sort((a, b) =>
-    (a.sort_order || 999) - (b.sort_order || 999) ||
-    a.full_name.localeCompare(b.full_name)
-  );
+  const sorted = [...members].sort(compareByDapukanHierarchy);
 
   const initials = (name) => (name || "?").split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
 
