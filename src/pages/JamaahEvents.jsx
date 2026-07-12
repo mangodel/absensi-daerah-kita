@@ -55,8 +55,34 @@ export default function JamaahEvents() {
   const [scanResult, setScanResult] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [checkinSuccess, setCheckinSuccess] = useState(null);
+  const [geoLoading, setGeoLoading] = useState(false);
   const scannerRef = useRef(null);
   const html5QrRef = useRef(null);
+
+  const getUserLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation tidak didukung perangkat ini"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => reject(new Error("Gagal mendapatkan lokasi: " + err.message)),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  };
+
+  const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   useEffect(() => {
     base44.auth.me().then(u => setJamaahUser(u)).catch(() => setJamaahUser(null)).finally(() => setCheckingAuth(false));
@@ -64,13 +90,11 @@ export default function JamaahEvents() {
 
   const { data: members = [] } = useQuery({
     queryKey: ["my-member-events", jamaahUser?.email],
-    queryFn: () => base44.entities.Member.list(),
-    enabled: !!jamaahUser,
+    queryFn: () => base44.entities.Member.filter({ email: jamaahUser?.email }),
+    enabled: !!jamaahUser?.email,
   });
 
-  const myMember = jamaahUser?.email
-    ? members.find(m => m.email?.toLowerCase() === jamaahUser.email?.toLowerCase())
-    : null;
+  const myMember = members[0] || null;
 
   const { data: allEvents = [], isLoading } = useQuery({
     queryKey: ["events-public"],
@@ -198,13 +222,26 @@ export default function JamaahEvents() {
     setScanEvent(null);
   };
 
-  const handleDirectCheckin = (event) => {
-    checkinMutation.mutate({ eventId: event.id, eventName: event.name, eventLevel: event.level });
-  };
-
-  const handleConfirmScanCheckin = () => {
+  const handleConfirmScanCheckin = async () => {
     if (!scanResult) return;
-    checkinMutation.mutate({ eventId: scanResult.id, eventName: scanResult.name, eventLevel: scanResult.level });
+    setGeoLoading(true);
+    try {
+      const userLoc = await getUserLocation();
+      if (scanResult.venue_lat && scanResult.venue_lng) {
+        const distance = calculateDistance(userLoc.lat, userLoc.lng, scanResult.venue_lat, scanResult.venue_lng);
+        const radius = scanResult.geofence_radius_m || 500;
+        if (distance > radius) {
+          toast.error(`Anda berada ${Math.round(distance)}m dari lokasi event (maks ${radius}m).`);
+          setGeoLoading(false);
+          return;
+        }
+      }
+      checkinMutation.mutate({ eventId: scanResult.id, eventName: scanResult.name, eventLevel: scanResult.level });
+    } catch (err) {
+      toast.error(err.message || "Gagal mendapatkan lokasi GPS");
+    } finally {
+      setGeoLoading(false);
+    }
   };
 
   // Fire browser notifications for saved reminders
@@ -294,7 +331,7 @@ export default function JamaahEvents() {
                     </h2>
                     <div className="space-y-3">
                       {byLevel.Daerah.map(ev => (
-                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />
+                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />
                       ))}
                     </div>
                   </section>
@@ -306,7 +343,7 @@ export default function JamaahEvents() {
                     </h2>
                     <div className="space-y-3">
                       {byLevel.Desa.map(ev => (
-                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />
+                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />
                       ))}
                     </div>
                   </section>
@@ -318,7 +355,7 @@ export default function JamaahEvents() {
                     </h2>
                     <div className="space-y-3">
                       {byLevel.Kelompok.map(ev => (
-                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />
+                        <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />
                       ))}
                     </div>
                   </section>
@@ -398,7 +435,7 @@ export default function JamaahEvents() {
                   <p className="text-xs text-muted-foreground text-center py-4">Tidak ada kegiatan</p>
                 ) : (
                   <div className="space-y-2">
-                    {selectedDayEvents.map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)}
+                    {selectedDayEvents.map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />)}
                   </div>
                 )}
               </div>
@@ -416,7 +453,7 @@ export default function JamaahEvents() {
                   {visibleEvents
                     .filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth))
                     .sort((a, b) => new Date(a.date) - new Date(b.date))
-                    .map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} onCheckin={handleDirectCheckin} isPending={checkinMutation.isPending} />)
+                    .map(ev => <DetailEventCard key={ev.id} event={ev} myMember={myMember} myAttendances={myAttendances} />)
                   }
                   {visibleEvents.filter(ev => ev.date && isSameMonth(new Date(ev.date), currentMonth)).length === 0 && (
                     <p className="text-xs text-muted-foreground text-center py-6">Tidak ada kegiatan bulan ini</p>
@@ -466,8 +503,8 @@ export default function JamaahEvents() {
               <p className="text-xs text-muted-foreground text-center">Konfirmasi absensi Anda untuk kegiatan ini?</p>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleScanClose} className="flex-1">Batal</Button>
-                <Button onClick={handleConfirmScanCheckin} disabled={checkinMutation.isPending} className="flex-1 bg-accent hover:bg-accent/90">
-                  {checkinMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Konfirmasi Hadir"}
+                <Button onClick={handleConfirmScanCheckin} disabled={checkinMutation.isPending || geoLoading} className="flex-1 bg-accent hover:bg-accent/90">
+                  {(checkinMutation.isPending || geoLoading) ? <Loader2 className="w-4 h-4 animate-spin" /> : "Konfirmasi Hadir"}
                 </Button>
               </div>
             </div>
@@ -478,7 +515,7 @@ export default function JamaahEvents() {
   );
 }
 
-function DetailEventCard({ event, myMember, myAttendances, onCheckin, isPending }) {
+function DetailEventCard({ event, myMember, myAttendances }) {
   const [expanded, setExpanded] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const isEventToday = event.date === today;
@@ -519,17 +556,14 @@ function DetailEventCard({ event, myMember, myAttendances, onCheckin, isPending 
         {/* Actions */}
         <div className="mt-3 flex items-center gap-2 flex-wrap">
           <EventReminderButton event={event} />
-          {isEventToday && myMember && (
-            alreadyCheckedIn ? (
-              <div className="flex items-center gap-1.5 text-accent">
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">Sudah Hadir</span>
-              </div>
-            ) : (
-              <Button size="sm" className="h-7 text-xs px-3 bg-accent hover:bg-accent/90" onClick={() => onCheckin(event)} disabled={isPending}>
-                {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Catat Hadir"}
-              </Button>
-            )
+          {isEventToday && myMember && alreadyCheckedIn && (
+            <div className="flex items-center gap-1.5 text-accent">
+              <CheckCircle className="w-3.5 h-3.5" />
+              <span className="text-xs font-medium">Sudah Hadir</span>
+            </div>
+          )}
+          {isEventToday && myMember && !alreadyCheckedIn && (
+            <span className="text-xs text-muted-foreground">Scan QR di lokasi untuk absensi</span>
           )}
           {hasDetails && (
             <button

@@ -22,6 +22,7 @@ import { User, ClipboardList, QrCode, LogOut, CheckCircle, AlertCircle, Loader2,
 import ProfileCompletionReport from "@/components/portal/ProfileCompletionReport";
 import BroadcastInbox from "@/components/portal/BroadcastInbox";
 import MemberCardPortal from "@/components/portal/MemberCardPortal";
+import AttendanceSummary from "@/components/portal/AttendanceSummary";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { toast } from "sonner";
 import { getDapukanTitle } from "@/lib/constants";
@@ -556,6 +557,13 @@ export default function JamaahPortal() {
             })}
             </CardContent>
           </Card>
+        )}
+
+        {/* Ringkasan Kehadiran */}
+        {myMember && (
+          <div className="mb-6">
+            <AttendanceSummary member={myMember} familyMembers={sortedFamilyMembers} />
+          </div>
         )}
 
         {/* Tab: Data Jamaah, Anggota Keluarga, Struktur Organisasi */}

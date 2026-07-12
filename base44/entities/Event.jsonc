@@ -48,6 +48,19 @@
       "type": "string",
       "description": "Lokasi kegiatan"
     },
+    "venue_lat": {
+      "type": "number",
+      "description": "Latitude lokasi event untuk validasi geolocation absensi"
+    },
+    "venue_lng": {
+      "type": "number",
+      "description": "Longitude lokasi event untuk validasi geolocation absensi"
+    },
+    "geofence_radius_m": {
+      "type": "number",
+      "default": 500,
+      "description": "Radius geofence absensi dalam meter"
+    },
     "materi": {
       "type": "string",
       "description": "Materi / topik yang dibahas dalam kegiatan"
