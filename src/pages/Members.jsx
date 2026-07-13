@@ -324,7 +324,8 @@ export default function Members() {
 
       <MemberFormDialog
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(isOpen) => { if (isOpen) setFormOpen(true); }}
+        onClose={() => { setFormOpen(false); setEditMember(null); }}
         member={editMember}
         onSave={handleSave}
         allMembers={allMembers}

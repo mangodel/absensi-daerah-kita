@@ -74,7 +74,7 @@ function generateMemberId(allMembers) {
   return `AUNZ${String(maxNum + 1).padStart(6, "0")}`;
 }
 
-export default function MemberFormDialog({ open, onOpenChange, member, onSave, allMembers = [] }) {
+export default function MemberFormDialog({ open, onOpenChange, onClose, member, onSave, allMembers = [] }) {
   const { config } = useAppConfig();
   const desaList = config.desa_list || [];
   const desaKelompokMap = config.desa_kelompok_map || {};
@@ -91,7 +91,7 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
         setForm({ ...emptyMember, member_id: generateMemberId(allMembers) });
       }
     }
-  }, [member, open, allMembers.length]);
+  }, [member, open]);
 
   const kelompokOptions = form.desa ? desaKelompokMap[form.desa] || [] : [];
   // Anggota di kelompok yang sama (untuk pilihan KK)
@@ -131,7 +131,7 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (isOpen) onOpenChange(true); }}>
       <DialogContent
         className="max-w-2xl max-h-[90vh] overflow-y-auto"
         onInteractOutside={(e) => e.preventDefault()}
@@ -362,7 +362,7 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
           </Field>
 
           <div className="flex justify-end gap-3 pt-2">
-             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
+             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
              <Button type="submit">{isEdit ? "Simpan Perubahan" : "Tambah Jamaah"}</Button>
            </div>
         </form>
