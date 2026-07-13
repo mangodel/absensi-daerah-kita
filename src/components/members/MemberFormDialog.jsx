@@ -287,7 +287,7 @@ export default function MemberFormDialog({ open, onOpenChange, member, onSave, a
             <Field label="Desa *">
               <ComboField
                 value={form.desa}
-                onChange={v => setForm(prev => ({ ...prev, desa: v, kelompok: "" }))}
+                onChange={v => setForm(prev => prev.desa === v ? prev : { ...prev, desa: v, kelompok: "" })}
                 options={desaList}
                 placeholder="Pilih atau ketik Desa"
               />
