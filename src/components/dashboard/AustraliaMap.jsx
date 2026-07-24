@@ -25,10 +25,17 @@ const CITIES = {
   "Auckland":     { lat: -36.86, lng: 174.76 },
   "Wellington":   { lat: -41.29, lng: 174.78 },
   "Christchurch": { lat: -43.53, lng: 172.62 },
+  "Rarotonga":    { lat: -21.2, lng: -159.82 },
 };
 
+// Rarotonga (Cook Islands) jauh di Pasifik timur — tampilkan dalam inset box
+const COOK_INSET = { x: 585, y: 408, w: 168, h: 120, cx: 669, cy: 470 };
+
 const CITY_COORDS = Object.fromEntries(
-  Object.entries(CITIES).map(([name, { lat, lng }]) => [name, { x: lx(lng), y: ly(lat) }])
+  Object.entries(CITIES).map(([name, { lat, lng }]) => [
+    name,
+    name === "Rarotonga" ? { x: COOK_INSET.cx, y: COOK_INSET.cy } : { x: lx(lng), y: ly(lat) }
+  ])
 );
 
 // Build SVG path string (M ... L ... Z) from array of [lng, lat]
@@ -142,7 +149,7 @@ export default function AustraliaMap({ members }) {
     <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
       <div>
         <h3 className="font-semibold text-sm text-foreground">Sebaran Jamaah</h3>
-        <p className="text-xs text-muted-foreground">Australia &amp; New Zealand — hover & klik untuk detail</p>
+        <p className="text-xs text-muted-foreground">Australia, New Zealand &amp; Cook Islands — hover & klik untuk detail</p>
       </div>
 
       <div className="w-full rounded-xl overflow-hidden" style={{ background: "linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 50%, #dbeafe 100%)" }}>
@@ -193,6 +200,16 @@ export default function AustraliaMap({ members }) {
           {/* Labels */}
           <text x={lx(134)} y={ly(-27)} textAnchor="middle" fontSize="16" fill="#15803d" fontWeight="900" opacity="0.15" fontFamily="Inter,sans-serif" letterSpacing="3">AUSTRALIA</text>
           <text x={lx(173)} y={ly(-43)} textAnchor="middle" fontSize="9" fill="#4f46e5" fontWeight="800" opacity="0.2" fontFamily="Inter,sans-serif" letterSpacing="1">NZ</text>
+
+          {/* Cook Islands inset */}
+          <g>
+            <rect x={COOK_INSET.x} y={COOK_INSET.y} width={COOK_INSET.w} height={COOK_INSET.h}
+              rx="10" fill="#dbeafe" fillOpacity="0.5" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="6,4" />
+            <text x={COOK_INSET.x + COOK_INSET.w / 2} y={COOK_INSET.y + 14} textAnchor="middle"
+              fontSize="8" fill="#2563eb" fontWeight="800" fontFamily="Inter,sans-serif" letterSpacing="1">COOK ISLANDS</text>
+            <ellipse cx={COOK_INSET.cx} cy={COOK_INSET.cy} rx="14" ry="9"
+              fill="#fef3c7" stroke="#f59e0b" strokeWidth="1" opacity="0.9" />
+          </g>
 
           {/* City markers with enhanced interactivity */}
           {Object.entries(CITY_COORDS).map(([city, pos]) => {
@@ -351,7 +368,7 @@ export default function AustraliaMap({ members }) {
 
       {activeCities.length === 0 && (
         <p className="text-xs text-muted-foreground text-center mt-3">
-          Tambahkan nama kota (Perth, Sydney, Melbourne, dll.) pada nama Desa/Kelompok di Pengaturan untuk menampilkan sebaran.
+          Tambahkan nama kota (Perth, Sydney, Melbourne, Rarotonga, dll.) pada nama Desa/Kelompok di Pengaturan untuk menampilkan sebaran.
         </p>
       )}
     </div>
