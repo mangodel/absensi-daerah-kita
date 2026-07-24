@@ -29,7 +29,7 @@ const CITIES = {
 };
 
 // Rarotonga (Cook Islands) jauh di Pasifik timur — tampilkan dalam inset box
-const COOK_INSET = { x: 585, y: 408, w: 168, h: 120, cx: 669, cy: 470 };
+const COOK_INSET = { x: 585, y: 12, w: 168, h: 115, cx: 669, cy: 72 };
 
 const CITY_COORDS = Object.fromEntries(
   Object.entries(CITIES).map(([name, { lat, lng }]) => [
