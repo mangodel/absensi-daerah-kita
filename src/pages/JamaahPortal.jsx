@@ -28,6 +28,7 @@ import PortalPengurusDisplay from "@/components/portal/PortalPengurusDisplay";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { toast } from "sonner";
 import { getDapukanTitle } from "@/lib/constants";
+import AccountDeletion from "@/components/settings/AccountDeletion";
 import { getFamilyMembersWithHead, sortFamilyMembers, getFamilyRole } from "@/lib/familyUtils";
 import { Link } from "react-router-dom";
 
@@ -723,11 +724,24 @@ export default function JamaahPortal() {
                </CardContent>
              </Card>
             </Link>
-           </div>
-          </div>
+            </div>
+            </div>
 
+            {/* Setelan Akun */}
+            <div className="max-w-2xl mx-auto mt-6">
+            <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                <h2 className="font-semibold text-sm text-foreground">Setelan Akun</h2>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Kelola akun Anda. Anda dapat menghapus akun secara permanen jika diperlukan.
+              </p>
+              <AccountDeletion />
+            </div>
+            </div>
 
-      </div>
+            </div>
 
       {/* Dialog Edit Anggota Keluarga */}
       <Dialog open={!!editingFamily} onOpenChange={(open) => !open && setEditingFamily(null)}>

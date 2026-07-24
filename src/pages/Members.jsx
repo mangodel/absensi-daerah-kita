@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Upload, Search, SlidersHorizontal, X, IdCard, Loader2 } from "lucide-react";
+import { Plus, Upload, Search, SlidersHorizontal, X, IdCard, Loader2, Download } from "lucide-react";
 import { useAppConfig } from "@/lib/AppConfigContext";
 import { VISA_STATUS_LIST, MUBALLIGH_STATUS_LIST, DAPUKAN_LIST, DAPUKAN_4S } from "@/lib/constants";
 import MemberFormDialog from "@/components/members/MemberFormDialog";
@@ -161,6 +161,45 @@ export default function Members() {
     setFilterMuballigh("all"); setFilterStatus("all"); setFilterBirthYear(""); setFilterDapukan("all"); setFilter4S(false);
   };
 
+  const handleDownloadCSV = () => {
+    const headers = [
+      "Member ID", "Nama Lengkap", "Email", "Jenis Kelamin", "Status Pernikahan",
+      "Desa", "Kelompok", "Sub Kelompok", "Keluarga (KK)", "Tahun Lahir",
+      "Tempat Lahir", "Status Visa", "Pekerjaan", "Status Muballigh",
+      "Dapukan", "Level Dapukan", "Status", "Telepon", "Kode Negara Telp",
+      "WhatsApp", "Kode Negara WA", "Alamat", "Suburb", "State", "Postcode",
+      "Kontak Darurat", "Telp Darurat", "Catatan"
+    ];
+
+    const escapeCSV = (val) => {
+      if (val === null || val === undefined) return "";
+      const str = String(val);
+      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = filtered.map(m => [
+      m.member_id, m.full_name, m.email, m.gender, m.marital_status,
+      m.desa, m.kelompok, m.sub_kelompok, m.family_group, m.birth_year,
+      m.birthplace, m.visa_status, m.employment, m.muballigh_status,
+      m.dapukan, m.dapukan_level, m.status, m.phone, m.phone_country_code,
+      m.whatsapp, m.whatsapp_country_code, m.address, m.suburb, m.state, m.postcode,
+      m.emergency_contact, m.emergency_phone, m.notes
+    ].map(escapeCSV).join(","));
+
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `data_jamaah_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${filtered.length} data jamaah berhasil diunduh`);
+  };
+
   return (
     <div className="space-y-6 pb-20 md:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -197,6 +236,9 @@ export default function Members() {
               )}
               <Button variant="outline" onClick={() => setCsvOpen(true)}>
                 <Upload className="w-4 h-4 mr-2" />Upload CSV
+              </Button>
+              <Button variant="outline" onClick={handleDownloadCSV} disabled={filtered.length === 0}>
+                <Download className="w-4 h-4 mr-2" />Download CSV
               </Button>
               <Button onClick={() => { setEditMember(null); setFormOpen(true); }}>
                 <Plus className="w-4 h-4 mr-2" />Tambah Jamaah

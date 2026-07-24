@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Users, CalendarCheck, CalendarDays, Bell, FileBarChart, Settings, FolderOpen, LogOut, ScanLine, UserCircle, Megaphone, GitBranch, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserRole } from "@/lib/useUserRole";
@@ -19,9 +19,9 @@ import {
 
 export default function MobileNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { canAccessSettings, isSuperAdmin, isAdminDesa, isAdminKelompok, isJamaah } = useUserRole();
   const [showLogout, setShowLogout] = useState(false);
-  const [tabStacks, setTabStacks] = useState({});
 
   const { data: reminders = [] } = useQuery({
     queryKey: ["reminders"],
@@ -50,23 +50,16 @@ export default function MobileNav() {
     ...(canAccessSettings ? [{ label: "Setelan", icon: Settings, path: "/settings" }] : []),
   ];
 
-  // Handle tab press with stack reset on double-tap (no full reload)
+  // Re-selecting an active tab resets to its root route
   const handleTabPress = (path) => {
-    const currentPath = location.pathname;
-    const isCurrentTab = currentPath === path || currentPath.startsWith(path + '/');
-    
-    if (isCurrentTab && tabStacks[path]) {
-      // Double tap: reset stack by navigating to root of this tab (React Router handles it)
-      setTabStacks(prev => ({ ...prev, [path]: false }));
-    } else if (!isCurrentTab) {
-      // New tab: save as current
-      setTabStacks(prev => ({ ...prev, [path]: true }));
+    if (location.pathname !== path) {
+      navigate(path);
     }
   };
 
   return (
     <>
-      <nav className="md:hidden fixed bottom-12 left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden">
+      <nav className="md:hidden fixed bottom-[calc(3rem+env(safe-area-inset-bottom))] left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden">
         <div className="overflow-x-auto flex items-center h-24 px-1 gap-0.5 w-full scrollbar-hide">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
@@ -77,8 +70,6 @@ export default function MobileNav() {
                  onClick={(e) => {
                     if (isActive) {
                       e.preventDefault();
-                      handleTabPress(item.path);
-                    } else {
                       handleTabPress(item.path);
                     }
                   }}
